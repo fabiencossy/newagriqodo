@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
 import ParcellairePage from './modules/parcellaire/ParcellairePage';
 import ParcelleDetailPage from './modules/parcellaire/ParcelleDetailPage';
+import AssolementPage from './modules/assolement/AssolementPage';
 import TravauxPage from './modules/travaux/TravauxPage';
 import TroupeauPage from './modules/troupeau/TroupeauPage';
 import RHLayout from './modules/rh/RHLayout';
@@ -17,6 +18,7 @@ export default function App() {
         <Route index element={<Navigate to="/parcellaire" replace />} />
         <Route path="/parcellaire" element={<ParcellairePage />} />
         <Route path="/parcellaire/:id" element={<ParcelleDetailPage />} />
+        <Route path="/assolement" element={<AssolementPage />} />
         <Route path="/travaux" element={<TravauxPage />} />
         <Route path="/troupeau" element={<TroupeauPage />} />
 

@@ -17,6 +17,15 @@ export const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
+    path: '/assolement',
+    label: "Plan d'assolement",
+    icon: (
+      <>
+        <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />
+      </>
+    ),
+  },
+  {
     path: '/travaux',
     label: 'Travaux',
     icon: (

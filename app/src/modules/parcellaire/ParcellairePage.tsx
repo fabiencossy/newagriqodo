@@ -10,6 +10,8 @@ import { AsideCard, type FieldConfig } from '../../components/AsideCard';
 import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
 import { filterParcels } from './filtering';
 import { ParcellaireTable } from './ParcellaireTable';
+import { getAvailableYears, getCurrentAssolement } from '../assolement/assolement.helpers';
+import { cultureColor } from '../assolement/cultures';
 
 const FIELDS: FieldDescriptor[] = [
   { id: 'name', label: 'Nom', type: 'text' },
@@ -91,15 +93,38 @@ export default function ParcellairePage() {
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [parcels, setParcels] = useState<ParcelDetail[]>(PARCELLES);
   const [asideMode, setAsideMode] = useState<'view' | 'edit'>('view');
+  const currentYear = useMemo(() => getAvailableYears()[0] ?? new Date().getFullYear(), []);
 
   // Masque le FAB sur mobile quand le bottom sheet de sélection est ouvert
   // (sinon le `+` chevauche le bouton Enregistrer du sheet).
   useHideFab(!isDesktop && Boolean(selectedId));
 
-  const filtered = useMemo(() => filterParcels(parcels, searchState), [parcels, searchState]);
+  // Enrichissement : culture / variété / couleur dérivées de l'assolement de la campagne courante.
+  // L'entité Assolement (module dédié) pilote ces propriétés agronomiques ;
+  // ParcelDetail conserve uniquement l'identité géographique de la parcelle.
+  const parcelsWithAssolement = useMemo<ParcelDetail[]>(
+    () =>
+      parcels.map((p) => {
+        const a = getCurrentAssolement(p.id, currentYear);
+        if (!a) return p;
+        return {
+          ...p,
+          culture: a.culture,
+          varietyName: a.varietyName ?? p.varietyName,
+          sowingDate: a.sowingDate ?? p.sowingDate,
+          color: cultureColor(a.culture),
+        };
+      }),
+    [parcels, currentYear],
+  );
+
+  const filtered = useMemo(
+    () => filterParcels(parcelsWithAssolement, searchState),
+    [parcelsWithAssolement, searchState],
+  );
   const selected = useMemo(
-    () => (selectedId ? parcels.find((p) => p.id === selectedId) : undefined),
-    [parcels, selectedId],
+    () => (selectedId ? parcelsWithAssolement.find((p) => p.id === selectedId) : undefined),
+    [parcelsWithAssolement, selectedId],
   );
   const totalSurface = filtered.reduce((s, p) => s + p.surfaceHa, 0);
   const summary = `${filtered.length} parcelles · ${totalSurface.toFixed(1)} ha`;

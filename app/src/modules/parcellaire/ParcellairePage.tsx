@@ -1,19 +1,43 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import shp from 'shpjs';
+import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import { useFabActions, useHideFab } from '../../layouts/useFab';
 import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { SearchBar, type FieldDescriptor, type SearchState } from '../../components/SearchBar';
 import { ViewSwitcher, type ViewKey } from '../../components/ViewSwitcher';
 import { ExportButton, type ExportColumn } from '../../components/ExportButton';
 import { MapView } from '../../components/MapView';
-import { AsideCard, type FieldConfig } from '../../components/AsideCard';
 import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
+import { ParcelleSummaryPanel } from './ParcelleSummaryPanel';
 import { filterParcels } from './filtering';
 import { ParcellaireTable } from './ParcellaireTable';
 import { getActiveSegment } from '../assolement/assolement.helpers';
 import { cultureColor } from '../assolement/cultures';
 
 const TODAY = new Date().toISOString().slice(0, 10);
+
+/** Surface (ha) approximée d'un polygon lat/lng via shoelace + correction latitude. */
+function estimateSurfaceHa(geom: Polygon | MultiPolygon): number {
+  const polygons = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
+  let total = 0;
+  for (const polygon of polygons) {
+    const outer = polygon[0];
+    if (!outer || outer.length < 4) continue;
+    let area = 0;
+    for (let i = 0; i < outer.length - 1; i++) {
+      const [x1, y1] = outer[i]!;
+      const [x2, y2] = outer[i + 1]!;
+      area += x1! * y2! - x2! * y1!;
+    }
+    area = Math.abs(area) / 2;
+    const meanLat = outer.reduce((s, p) => s + p[1]!, 0) / outer.length;
+    const mPerDegLat = 111_320;
+    const mPerDegLng = 111_320 * Math.cos((meanLat * Math.PI) / 180);
+    total += (area * mPerDegLat * mPerDegLng) / 10_000;
+  }
+  return total;
+}
 
 const FIELDS: FieldDescriptor[] = [
   { id: 'name', label: 'Nom', type: 'text' },
@@ -67,26 +91,6 @@ const EXPORT_COLUMNS: ExportColumn[] = [
   { key: 'year', label: 'Année' },
 ];
 
-const ASIDE_FIELDS: FieldConfig[] = [
-  { key: 'id', label: 'Code', type: 'text', readonly: true },
-  { key: 'name', label: 'Nom', type: 'text' },
-  { key: 'surfaceHa', label: 'Surface (ha)', type: 'number' },
-  {
-    key: 'culture',
-    label: 'Culture',
-    type: 'select',
-    options: [
-      { label: 'Blé', value: 'Blé' },
-      { label: 'Maïs', value: 'Maïs' },
-      { label: 'Colza', value: 'Colza' },
-      { label: 'Orge', value: 'Orge' },
-      { label: 'Jachère', value: 'Jachère' },
-    ],
-  },
-  { key: 'varietyName', label: 'Variété', type: 'text' },
-  { key: 'notes', label: 'Notes', type: 'textarea' },
-];
-
 export default function ParcellairePage() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
@@ -94,7 +98,67 @@ export default function ParcellairePage() {
   const [searchState, setSearchState] = useState<SearchState>({ facets: [], groupBy: [] });
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [parcels, setParcels] = useState<ParcelDetail[]>(PARCELLES);
-  const [asideMode, setAsideMode] = useState<'view' | 'edit'>('view');
+  const geojsonInputRef = useRef<HTMLInputElement>(null);
+  const shapefileInputRef = useRef<HTMLInputElement>(null);
+
+  const importFeatures = (features: ReadonlyArray<Feature>) => {
+    const additions: ParcelDetail[] = [];
+    const year = new Date().getFullYear();
+    for (const f of features) {
+      if (!f.geometry) continue;
+      if (f.geometry.type !== 'Polygon' && f.geometry.type !== 'MultiPolygon') continue;
+      const props = (f.properties ?? {}) as Record<string, unknown>;
+      const id = String(
+        props.id ?? props.code ?? props.ID ?? `IMP-${Date.now()}-${additions.length}`,
+      );
+      const name = String(props.name ?? props.nom ?? props.Name ?? props.NAME ?? `Parcelle ${id}`);
+      const provided = Number(props.surfaceHa ?? props.surface ?? props.area_ha ?? 0);
+      const surfaceHa =
+        Number.isFinite(provided) && provided > 0
+          ? provided
+          : estimateSurfaceHa(f.geometry as Polygon | MultiPolygon);
+      additions.push({
+        id,
+        name,
+        surfaceHa,
+        status: 'active',
+        year,
+        geometry: f.geometry as Polygon | MultiPolygon,
+      });
+    }
+    if (additions.length === 0) {
+      alert('Aucune parcelle exploitable (polygones requis) dans le fichier.');
+      return;
+    }
+    setParcels((curr) => [...curr, ...additions]);
+    alert(`${additions.length} parcelle(s) importée(s).`);
+  };
+
+  const handleGeojsonFile = async (file: File) => {
+    try {
+      const text = await file.text();
+      const json = JSON.parse(text);
+      const features: Feature[] =
+        json?.type === 'FeatureCollection' ? json.features : json?.type === 'Feature' ? [json] : [];
+      importFeatures(features);
+    } catch (err) {
+      console.error(err);
+      alert('Fichier GeoJSON invalide.');
+    }
+  };
+
+  const handleShapefile = async (file: File) => {
+    try {
+      const buffer = await file.arrayBuffer();
+      const result = await shp(buffer);
+      const collections = Array.isArray(result) ? result : [result];
+      const features = collections.flatMap((c) => c.features as Feature[]);
+      importFeatures(features);
+    } catch (err) {
+      console.error(err);
+      alert('Shapefile invalide. Fournir une archive .zip contenant .shp/.dbf/.shx.');
+    }
+  };
 
   // Masque le FAB sur mobile quand le bottom sheet de sélection est ouvert
   // (sinon le `+` chevauche le bouton Enregistrer du sheet).
@@ -129,13 +193,6 @@ export default function ParcellairePage() {
   );
   const totalSurface = filtered.reduce((s, p) => s + p.surfaceHa, 0);
   const summary = `${filtered.length} parcelles · ${totalSurface.toFixed(1)} ha`;
-
-  const handleSaveAside = async (next: Record<string, unknown>) => {
-    setParcels((curr) =>
-      curr.map((p) => (p.id === next.id ? ({ ...p, ...next } as ParcelDetail) : p)),
-    );
-    setAsideMode('view');
-  };
 
   // FAB contextuel : actions changent selon qu'une parcelle est sélectionnée ou non
   useFabActions(
@@ -206,6 +263,18 @@ export default function ParcellairePage() {
       columns={EXPORT_COLUMNS}
       filenameBase="parcelles"
       pdfMeta={{ title: 'Parcelles — Domaine Darval' }}
+      extraActions={[
+        {
+          id: 'import-geojson',
+          label: 'Importer GeoJSON…',
+          onClick: () => geojsonInputRef.current?.click(),
+        },
+        {
+          id: 'import-shapefile',
+          label: 'Importer Shapefile (.zip)…',
+          onClick: () => shapefileInputRef.current?.click(),
+        },
+      ]}
     />
   );
 
@@ -246,6 +315,30 @@ export default function ParcellairePage() {
    * ============================================================ */
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {/* Inputs cachés pour l'import fichier */}
+      <input
+        ref={geojsonInputRef}
+        type="file"
+        accept=".geojson,.json,application/geo+json,application/json"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleGeojsonFile(f);
+          e.target.value = '';
+        }}
+      />
+      <input
+        ref={shapefileInputRef}
+        type="file"
+        accept=".zip,application/zip"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleShapefile(f);
+          e.target.value = '';
+        }}
+      />
+
       {/* Top bar identique partout, dans le flow */}
       <div className="flex-shrink-0 border-b border-(--color-border) bg-(--color-surface) px-3 py-2">
         {topBar}
@@ -261,39 +354,14 @@ export default function ParcellairePage() {
             height="100%"
             className="!rounded-none !border-0"
           />
-          {/* Aside flottant à droite (desktop) */}
+          {/* Panneau riche : aside desktop / bottom-sheet mobile */}
           {selected && (
-            <div className="absolute top-3 right-3 bottom-3 z-30 hidden w-[360px] max-w-[calc(100%-1.5rem)] rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-popup) lg:flex">
-              <AsideCard
-                title={`${selected.id} — ${selected.name}`}
-                subtitle="Sélection courante"
-                data={selected as unknown as Record<string, unknown>}
-                fields={ASIDE_FIELDS}
-                mode={asideMode}
-                onModeChange={setAsideMode}
-                editable
-                onEdit={() => navigate(`/parcellaire/${selected.id}`)}
+            <div className="absolute inset-x-0 bottom-0 z-[1000] lg:top-0 lg:right-0 lg:bottom-0 lg:left-auto lg:w-[440px] lg:border-l lg:border-(--color-border) lg:shadow-(--shadow-popup)">
+              <ParcelleSummaryPanel
+                parcel={selected}
                 onClose={() => setSelectedId(undefined)}
-                onSave={handleSaveAside}
-                layout="aside"
-                className="!h-full !border-0"
-              />
-            </div>
-          )}
-          {selected && (
-            <div className="fixed inset-x-0 bottom-0 z-[1000] lg:hidden">
-              <AsideCard
-                title={`${selected.id} — ${selected.name}`}
-                subtitle="Sélection courante"
-                data={selected as unknown as Record<string, unknown>}
-                fields={ASIDE_FIELDS}
-                mode={asideMode}
-                onModeChange={setAsideMode}
-                editable
-                onEdit={() => navigate(`/parcellaire/${selected.id}`)}
-                onClose={() => setSelectedId(undefined)}
-                onSave={handleSaveAside}
-                layout="bottomsheet"
+                onOpenFiche={() => navigate(`/parcellaire/${selected.id}`)}
+                onOpenAssolement={() => navigate('/assolement')}
               />
             </div>
           )}

@@ -64,8 +64,20 @@ export function MapView({
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const parcelLayerRef = useRef<L.GeoJSON | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const drawnLayerRef = useRef<L.LayerGroup | null>(null);
+  const draftLayerRef = useRef<L.LayerGroup | null>(null);
   const hasFittedRef = useRef(false);
   const [basemap, setBasemap] = useState<Basemap>(basemapProp ?? 'satellite');
+  const [basemapPickerOpen, setBasemapPickerOpen] = useState(false);
+
+  // Éléments dessinés via les outils (markers / polygones) — state local, MVP.
+  const [drawnMarkers, setDrawnMarkers] = useState<
+    Array<{ id: string; lat: number; lng: number; kind: 'pin' | 'measure' }>
+  >([]);
+  const [drawnPolygons, setDrawnPolygons] = useState<
+    Array<{ id: string; coords: Array<[number, number]> }>
+  >([]);
+  const [hint, setHint] = useState<string | null>(null);
 
   const effectiveSelectedIds = useMemo(
     () => [...(selectedIds ?? []), ...(selectedId ? [selectedId] : [])].filter(Boolean),
@@ -106,6 +118,8 @@ export function MapView({
 
     // Groupes vides pour les markers et parcelles (mis à jour dans effets séparés)
     markersLayerRef.current = L.layerGroup().addTo(map);
+    drawnLayerRef.current = L.layerGroup().addTo(map);
+    draftLayerRef.current = L.layerGroup().addTo(map);
 
     mapRef.current = map;
 
@@ -115,6 +129,8 @@ export function MapView({
       tileLayerRef.current = null;
       parcelLayerRef.current = null;
       markersLayerRef.current = null;
+      drawnLayerRef.current = null;
+      draftLayerRef.current = null;
       hasFittedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -279,6 +295,203 @@ export function MapView({
     }
   }, [markers]);
 
+  /* ---------- Re-render des éléments dessinés (markers utilisateur + polygons) ---------- */
+  useEffect(() => {
+    const layer = drawnLayerRef.current;
+    if (!layer) return;
+    layer.clearLayers();
+    for (const m of drawnMarkers) {
+      const color = m.kind === 'pin' ? '#ec4899' : '#06b6d4';
+      const icon = L.divIcon({
+        html: `<span style="display:inline-block;width:14px;height:14px;background:${color};border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,0.35);"></span>`,
+        className: '',
+        iconSize: [14, 14],
+        iconAnchor: [7, 7],
+      });
+      L.marker([m.lat, m.lng], { icon }).addTo(layer);
+    }
+    for (const p of drawnPolygons) {
+      L.polygon(p.coords, {
+        color: '#a855f7',
+        weight: 3,
+        fillColor: '#a855f7',
+        fillOpacity: 0.25,
+      }).addTo(layer);
+    }
+  }, [drawnMarkers, drawnPolygons]);
+
+  /* ---------- Outils carte (add-marker, measure, draw-parcel, lasso) ----------
+   *
+   * Les setState dans les handlers Leaflet ci-dessous sont déclenchés sur
+   * des events utilisateur (click / mouseup), pas synchrones dans l'effet :
+   * pas de cascade de renders. La règle ESLint ne sait pas distinguer.
+   */
+  /* eslint-disable react-hooks/set-state-in-effect */
+  useEffect(() => {
+    const map = mapRef.current;
+    const draftLayer = draftLayerRef.current;
+    if (!map || !draftLayer) return;
+    draftLayer.clearLayers();
+
+    if (activeTool === 'add-marker') {
+      setHint('Cliquez sur la carte pour poser un point.');
+      const onClick = (e: L.LeafletMouseEvent) => {
+        setDrawnMarkers((curr) => [
+          ...curr,
+          { id: `m-${Date.now()}`, lat: e.latlng.lat, lng: e.latlng.lng, kind: 'pin' },
+        ]);
+      };
+      map.on('click', onClick);
+      return () => {
+        map.off('click', onClick);
+        setHint(null);
+      };
+    }
+
+    if (activeTool === 'measure') {
+      setHint('Cliquez deux points pour mesurer la distance.');
+      let points: L.LatLng[] = [];
+      const onClick = (e: L.LeafletMouseEvent) => {
+        points.push(e.latlng);
+        L.circleMarker(e.latlng, {
+          radius: 5,
+          color: '#06b6d4',
+          fillColor: '#06b6d4',
+          fillOpacity: 1,
+        }).addTo(draftLayer);
+        if (points.length === 2) {
+          const dist = points[0]!.distanceTo(points[1]!);
+          const label = dist > 1000 ? `${(dist / 1000).toFixed(2)} km` : `${Math.round(dist)} m`;
+          const line = L.polyline(points, { color: '#06b6d4', weight: 3, dashArray: '6 4' });
+          line.bindTooltip(label, {
+            permanent: true,
+            direction: 'center',
+            className: 'qodo-measure-label',
+          });
+          line.addTo(draftLayer);
+          points = [];
+        }
+      };
+      map.on('click', onClick);
+      return () => {
+        map.off('click', onClick);
+        draftLayer.clearLayers();
+        setHint(null);
+      };
+    }
+
+    if (activeTool === 'draw-parcel') {
+      setHint('Cliquez pour ajouter des sommets. Double-clic pour fermer la parcelle.');
+      let vertices: L.LatLng[] = [];
+      let previewLine: L.Polyline | null = null;
+      map.doubleClickZoom.disable();
+
+      const renderPreview = () => {
+        if (previewLine) draftLayer.removeLayer(previewLine);
+        if (vertices.length >= 2) {
+          previewLine = L.polyline(vertices, {
+            color: '#a855f7',
+            weight: 3,
+            dashArray: '6 4',
+          });
+          previewLine.addTo(draftLayer);
+        }
+      };
+      const onClick = (e: L.LeafletMouseEvent) => {
+        vertices.push(e.latlng);
+        L.circleMarker(e.latlng, {
+          radius: 5,
+          color: '#a855f7',
+          fillColor: '#a855f7',
+          fillOpacity: 1,
+        }).addTo(draftLayer);
+        renderPreview();
+      };
+      const onDblClick = (e: L.LeafletMouseEvent) => {
+        L.DomEvent.stop(e as unknown as L.LeafletEvent);
+        if (vertices.length < 3) return;
+        const coords: Array<[number, number]> = vertices.map((v) => [v.lat, v.lng]);
+        coords.push(coords[0]!);
+        setDrawnPolygons((curr) => [...curr, { id: `poly-${Date.now()}`, coords }]);
+        vertices = [];
+        draftLayer.clearLayers();
+        previewLine = null;
+      };
+      map.on('click', onClick);
+      map.on('dblclick', onDblClick);
+      return () => {
+        map.off('click', onClick);
+        map.off('dblclick', onDblClick);
+        map.doubleClickZoom.enable();
+        draftLayer.clearLayers();
+        setHint(null);
+      };
+    }
+
+    if (activeTool === 'lasso') {
+      setHint('Maintenez la souris et tracez une forme libre pour sélectionner.');
+      let pts: L.LatLng[] = [];
+      let line: L.Polyline | null = null;
+      let dragging = false;
+
+      const onMouseDown = (e: L.LeafletMouseEvent) => {
+        dragging = true;
+        pts = [e.latlng];
+        map.dragging.disable();
+        if (line) draftLayer.removeLayer(line);
+        line = L.polyline(pts, { color: '#a855f7', weight: 2, dashArray: '4 3' });
+        line.addTo(draftLayer);
+      };
+      const onMouseMove = (e: L.LeafletMouseEvent) => {
+        if (!dragging || !line) return;
+        pts.push(e.latlng);
+        line.setLatLngs(pts);
+      };
+      const onMouseUp = () => {
+        if (!dragging) return;
+        dragging = false;
+        map.dragging.enable();
+        if (pts.length >= 3) {
+          const lassoLngLat = pts.map((p): [number, number] => [p.lng, p.lat]);
+          const selected: string[] = [];
+          for (const p of parcels) {
+            const ring =
+              p.geometry.type === 'Polygon'
+                ? p.geometry.coordinates[0]!
+                : p.geometry.coordinates[0]![0]!;
+            let sumX = 0;
+            let sumY = 0;
+            let n = 0;
+            for (let i = 0; i < ring.length - 1; i++) {
+              sumX += ring[i]![0]!;
+              sumY += ring[i]![1]!;
+              n++;
+            }
+            const centroid: [number, number] = [sumX / n, sumY / n];
+            if (isPointInPolygon(centroid, lassoLngLat)) selected.push(p.id);
+          }
+          onSelectionRef.current(selected);
+        }
+        draftLayer.clearLayers();
+        line = null;
+      };
+      map.on('mousedown', onMouseDown);
+      map.on('mousemove', onMouseMove);
+      map.on('mouseup', onMouseUp);
+      return () => {
+        map.off('mousedown', onMouseDown);
+        map.off('mousemove', onMouseMove);
+        map.off('mouseup', onMouseUp);
+        map.dragging.enable();
+        draftLayer.clearLayers();
+        setHint(null);
+      };
+    }
+
+    return undefined;
+  }, [activeTool, parcels]);
+  /* eslint-enable react-hooks/set-state-in-effect */
+
   /* ---------- Raccourcis clavier outils ---------- */
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
@@ -302,6 +515,10 @@ export function MapView({
     (tool: MapTool) => {
       if (tool === 'group' && effectiveSelectedIds.length > 0) {
         onCreateGroup?.(effectiveSelectedIds.slice());
+        return;
+      }
+      if (tool === 'layers') {
+        setBasemapPickerOpen((v) => !v);
         return;
       }
       onToolChange?.(tool);
@@ -397,9 +614,43 @@ export function MapView({
       )}
 
       {/* Toggle basemap */}
-      {showBasemapToggle && <BasemapPicker basemap={basemap} onChange={setBasemap} />}
+      {showBasemapToggle && (
+        <BasemapPicker
+          basemap={basemap}
+          onChange={setBasemap}
+          open={basemapPickerOpen}
+          onOpenChange={setBasemapPickerOpen}
+        />
+      )}
+
+      {/* Hint outil actif */}
+      {hint && (
+        <div className="pointer-events-none absolute bottom-4 left-1/2 z-[450] -translate-x-1/2 transform">
+          <div className="rounded-(--radius-pill) bg-(--color-surface) px-3 py-1.5 text-xs font-medium text-(--color-text) shadow-(--shadow-card)">
+            {hint}
+          </div>
+        </div>
+      )}
     </div>
   );
+}
+
+/** Ray casting : true si le point est dans le polygon. Coordonnées en [lng, lat]. */
+function isPointInPolygon(
+  point: [number, number],
+  polygon: ReadonlyArray<[number, number]>,
+): boolean {
+  let inside = false;
+  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+    const xi = polygon[i]![0];
+    const yi = polygon[i]![1];
+    const xj = polygon[j]![0];
+    const yj = polygon[j]![1];
+    const intersect =
+      yi > point[1] !== yj > point[1] && point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
+    if (intersect) inside = !inside;
+  }
+  return inside;
 }
 
 function LegendDot({ color, label }: { color: string; label: string }) {
@@ -420,22 +671,25 @@ const PICKER_OPTIONS: Basemap[] = ['satellite', 'topo'];
 function BasemapPicker({
   basemap,
   onChange,
+  open,
+  onOpenChange,
 }: {
   basemap: Basemap;
   onChange: (b: Basemap) => void;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!open) return;
     function onDoc(e: MouseEvent) {
       if (wrapperRef.current?.contains(e.target as Node)) return;
-      setOpen(false);
+      onOpenChange(false);
     }
     document.addEventListener('mousedown', onDoc);
     return () => document.removeEventListener('mousedown', onDoc);
-  }, [open]);
+  }, [open, onOpenChange]);
 
   return (
     <div ref={wrapperRef} className="absolute top-3 right-3 z-[400]">
@@ -444,7 +698,7 @@ function BasemapPicker({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-label="Fond de carte"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => onOpenChange(!open)}
         className="inline-flex h-9 items-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium shadow-(--shadow-card) hover:bg-[#f5f5f0]"
       >
         <LayersGlyph />
@@ -465,7 +719,7 @@ function BasemapPicker({
                   aria-selected={isActive}
                   onClick={() => {
                     onChange(b);
-                    setOpen(false);
+                    onOpenChange(false);
                   }}
                   className={[
                     'flex h-9 w-full items-center gap-2 px-3 text-xs',

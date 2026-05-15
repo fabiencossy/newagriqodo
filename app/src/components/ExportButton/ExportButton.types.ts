@@ -57,6 +57,13 @@ export interface ExportButtonProps {
   label?: string;
   /** Classe CSS optionnelle. */
   className?: string;
+  /** Items custom affichés au-dessus des formats d'export (séparateur entre). */
+  extraActions?: ReadonlyArray<{
+    id: string;
+    label: string;
+    onClick: () => void;
+    icon?: React.ReactNode;
+  }>;
 }
 
 export const EXPORT_DEFAULTS = {

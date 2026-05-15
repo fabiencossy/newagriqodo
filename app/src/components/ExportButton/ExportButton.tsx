@@ -39,6 +39,7 @@ export function ExportButton({
   onError,
   label = 'Exporter',
   className,
+  extraActions = [],
 }: ExportButtonProps) {
   const [open, setOpen] = useState(false);
   const [busyFormat, setBusyFormat] = useState<ExportFormat | null>(null);
@@ -48,7 +49,8 @@ export function ExportButton({
   const menuRef = useRef<HTMLUListElement>(null);
 
   const isBusy = busyFormat !== null;
-  const isDisabled = disabled || data.length === 0;
+  // Si on a des extraActions (ex. import), le menu reste ouvrable même sans data.
+  const isDisabled = (disabled || data.length === 0) && extraActions.length === 0;
 
   // Fermer au clic extérieur / Esc
   useEffect(() => {
@@ -147,27 +149,49 @@ export function ExportButton({
           id={menuId}
           role="menu"
           aria-label={label}
-          className="absolute right-0 z-10 mt-1 w-[240px] rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-1 shadow-(--shadow-popup)"
+          className="absolute right-0 z-[1200] mt-1 w-[260px] rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-1 shadow-(--shadow-popup)"
         >
-          {formats.map((fmt) => {
-            const Icon = FORMAT_ICON[fmt];
-            return (
-              <li key={fmt}>
-                <button
-                  type="button"
-                  role="menuitem"
-                  onClick={() => void runExport(fmt)}
-                  className="flex h-10 w-full items-center gap-2.5 rounded-(--radius-sm) px-3 text-sm hover:bg-[#f8f8f5]"
-                >
-                  <span className="text-(--color-muted)">
-                    <Icon />
-                  </span>
-                  <span>{FORMAT_LABELS[fmt]}</span>
-                  <span className="ml-auto text-xs text-(--color-muted)">{FORMAT_HINTS[fmt]}</span>
-                </button>
-              </li>
-            );
-          })}
+          {extraActions.map((action) => (
+            <li key={action.id}>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  action.onClick();
+                  setOpen(false);
+                }}
+                className="flex h-10 w-full items-center gap-2.5 rounded-(--radius-sm) px-3 text-sm hover:bg-[#f8f8f5]"
+              >
+                {action.icon && <span className="text-(--color-muted)">{action.icon}</span>}
+                <span>{action.label}</span>
+              </button>
+            </li>
+          ))}
+          {extraActions.length > 0 && data.length > 0 && (
+            <li aria-hidden="true" className="my-1 border-t border-(--color-border)" />
+          )}
+          {data.length > 0 &&
+            formats.map((fmt) => {
+              const Icon = FORMAT_ICON[fmt];
+              return (
+                <li key={fmt}>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => void runExport(fmt)}
+                    className="flex h-10 w-full items-center gap-2.5 rounded-(--radius-sm) px-3 text-sm hover:bg-[#f8f8f5]"
+                  >
+                    <span className="text-(--color-muted)">
+                      <Icon />
+                    </span>
+                    <span>{FORMAT_LABELS[fmt]}</span>
+                    <span className="ml-auto text-xs text-(--color-muted)">
+                      {FORMAT_HINTS[fmt]}
+                    </span>
+                  </button>
+                </li>
+              );
+            })}
         </ul>
       )}
 

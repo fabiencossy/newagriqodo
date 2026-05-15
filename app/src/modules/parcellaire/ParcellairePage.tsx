@@ -235,41 +235,12 @@ export default function ParcellairePage() {
           )}
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[1fr_360px]">
-            <div className="min-w-0">
-              {view === 'table' ? (
-                <ParcellaireTable
-                  parcels={filtered}
-                  selectedId={selectedId}
-                  onSelect={setSelectedId}
-                />
-              ) : (
-                <DashboardView parcels={filtered} />
-              )}
-            </div>
-            <div className="hidden lg:block">
-              {selected ? (
-                <AsideCard
-                  title={`${selected.id} — ${selected.name}`}
-                  subtitle="Sélection courante"
-                  data={selected as unknown as Record<string, unknown>}
-                  fields={ASIDE_FIELDS}
-                  mode={asideMode}
-                  onModeChange={setAsideMode}
-                  editable
-                  onClose={() => setSelectedId(undefined)}
-                  onSave={handleSaveAside}
-                  layout="aside"
-                  width="100%"
-                />
-              ) : (
-                <aside className="flex h-full min-h-[400px] flex-col items-center justify-center rounded-(--radius) border border-dashed border-(--color-border) bg-(--color-surface) p-6 text-center text-sm text-(--color-muted)">
-                  <p className="m-0">Sélectionnez une parcelle pour voir le détail.</p>
-                </aside>
-              )}
-            </div>
-          </div>
+        <div className="flex-1 overflow-y-auto p-4">
+          {view === 'table' ? (
+            <ParcellaireTable parcels={filtered} selectedId={selectedId} onSelect={setSelectedId} />
+          ) : (
+            <DashboardView parcels={filtered} />
+          )}
         </div>
       )}
     </div>

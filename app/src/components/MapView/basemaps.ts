@@ -41,16 +41,14 @@ const BASE_SATELLITE: StyleSpecification = {
   sources: {
     sat: {
       type: 'raster',
-      // EOX Sentinel-2 cloudless 2024 — service public européen, CORS OK,
-      // gratuit pour usage non commercial / dev. Fonctionne sur localhost
-      // sans key. Couvre toute la Terre, max zoom 15 (suffisant pour l'agri).
-      tiles: [
-        'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/g/{z}/{y}/{x}.jpg',
-      ],
+      // Stadia Maps "alidade_satellite" — fonctionne en localhost sans key,
+      // CORS OK, gratuit pour usage de développement.
+      // Pour la prod : créer un compte Stadia (gratuit jusqu'à 200k req/mois)
+      // ou self-hoster les tuiles.
+      tiles: ['https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}.jpg'],
       tileSize: 256,
-      attribution:
-        'Sentinel-2 cloudless 2024 by EOX (Contains modified Copernicus Sentinel data 2024)',
-      maxzoom: 15,
+      attribution: '© Stadia Maps © Stamen Design © OpenMapTiles © OpenStreetMap contributors',
+      maxzoom: 20,
     },
   },
   layers: [

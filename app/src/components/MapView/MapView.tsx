@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { MapIcon, type IconName } from './icons';
 import {
   MAP_VIEW_DEFAULTS,
@@ -45,7 +46,7 @@ export function MapView({
   selectedId,
   selectedIds,
   onSelectionChange,
-  activeTool = MAP_VIEW_DEFAULTS.activeTool,
+  activeTool: activeToolProp = MAP_VIEW_DEFAULTS.activeTool,
   onToolChange,
   enabledTools = MAP_VIEW_DEFAULTS.enabledTools,
   onCreateGroup,
@@ -67,8 +68,17 @@ export function MapView({
   const drawnLayerRef = useRef<L.LayerGroup | null>(null);
   const draftLayerRef = useRef<L.LayerGroup | null>(null);
   const hasFittedRef = useRef(false);
+  const isDesktop = useIsDesktop();
   const [basemap, setBasemap] = useState<Basemap>(basemapProp ?? 'satellite');
   const [basemapPickerOpen, setBasemapPickerOpen] = useState(false);
+  // Mode mixte : `activeTool` est piloté localement par défaut, le parent peut
+  // aussi le contrôler via la prop. Quand la prop change, on synchronise.
+  const [activeTool, setActiveTool] = useState<MapTool>(activeToolProp);
+  const [prevActiveToolProp, setPrevActiveToolProp] = useState(activeToolProp);
+  if (activeToolProp !== prevActiveToolProp) {
+    setPrevActiveToolProp(activeToolProp);
+    setActiveTool(activeToolProp);
+  }
 
   // Éléments dessinés via les outils (markers / polygones) — state local, MVP.
   const [drawnMarkers, setDrawnMarkers] = useState<
@@ -504,6 +514,7 @@ export function MapView({
         ([, k]) => k === key,
       );
       if (tool && enabledTools.includes(tool[0])) {
+        setActiveTool(tool[0]);
         onToolChange?.(tool[0]);
       }
     }
@@ -521,6 +532,7 @@ export function MapView({
         setBasemapPickerOpen((v) => !v);
         return;
       }
+      setActiveTool(tool);
       onToolChange?.(tool);
     },
     [onToolChange, onCreateGroup, effectiveSelectedIds],
@@ -537,8 +549,8 @@ export function MapView({
     >
       <div ref={containerRef} className="absolute inset-0" style={{ background: '#e5e3df' }} />
 
-      {/* Toolbar latérale gauche (cachée si aucun outil enabled) */}
-      {enabledTools.length > 0 && (
+      {/* Toolbar latérale gauche — desktop uniquement (trop complexe sur mobile). */}
+      {enabledTools.length > 0 && isDesktop && (
         <div
           role="toolbar"
           aria-label="Outils carte"

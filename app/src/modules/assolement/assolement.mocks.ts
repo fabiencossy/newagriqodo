@@ -19,10 +19,11 @@ import type { AssolementSegment } from './assolement.types';
  */
 
 const ROTATION: Record<string, string> = {
-  Blé: 'Colza',
-  Colza: 'Maïs',
-  Maïs: 'Blé',
-  Orge: 'Maïs',
+  "Blé d'automne": "Colza d'automne",
+  "Colza d'automne": 'Maïs ensilage',
+  'Maïs ensilage': "Blé d'automne",
+  'Maïs grain': "Blé d'automne",
+  "Orge d'automne": 'Maïs ensilage',
 };
 
 function rotate(culture: string): string {
@@ -42,18 +43,22 @@ interface CultureWindow {
  */
 function cultureWindow(culture: string, year: number): CultureWindow | undefined {
   switch (culture) {
-    case 'Blé':
+    case "Blé d'automne":
+      return { start: `${year - 1}-10-15`, end: `${year}-07-31` };
+    case 'Blé de printemps':
       return { start: `${year}-03-12`, end: `${year}-07-31` };
-    case 'Maïs':
+    case 'Maïs ensilage':
       return { start: `${year}-04-22`, end: `${year}-10-05` };
-    case 'Orge':
+    case 'Maïs grain':
+      return { start: `${year}-04-25`, end: `${year}-10-25` };
+    case "Orge d'automne":
       return { start: `${year - 1}-10-12`, end: `${year}-07-15` };
-    case 'Colza':
+    case 'Orge de printemps':
+      return { start: `${year}-03-15`, end: `${year}-07-25` };
+    case "Colza d'automne":
       return { start: `${year - 1}-08-25`, end: `${year}-07-15` };
     case 'Jachère':
       return { start: `${year}-01-01`, end: `${year}-12-31` };
-    case 'Archivé':
-      return undefined;
     default:
       return undefined;
   }

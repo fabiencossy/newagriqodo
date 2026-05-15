@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageContainer } from '../_shared/PageContainer';
 import { MapView } from '../../components/MapView';
@@ -59,34 +59,35 @@ export default function ParcelleDetailPage() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
-  // FAB contextuel : actions disponibles sur la fiche parcelle.
-  // (Affichées dans le header `PageContainer` via `actions` ci-dessous pour ne pas
-  // chevaucher le bouton Enregistrer du footer sticky.)
-  useFabActions(useMemo(() => [], []));
-  // Masque le FAB sur cette page : le footer sticky d'enregistrement prime.
-  useHideFab(true);
+  // FAB principal : "Créer une intervention" (et observation).
+  // Masqué quand le footer sticky d'enregistrement est visible (dirty).
+  useFabActions(
+    useMemo(
+      () => [
+        {
+          id: 'add-intervention',
+          label: 'Créer une intervention',
+          onClick: () => {
+            alert("Création d'une intervention (à brancher Phase 2.5 avec le Carnet).");
+          },
+        },
+        {
+          id: 'add-observation',
+          label: 'Ajouter une observation',
+          onClick: () => {
+            alert('Marker observation (à brancher Phase 2.5).');
+          },
+        },
+      ],
+      [],
+    ),
+  );
 
-  const headerActions = useMemo(() => {
-    if (!draft) return undefined;
-    return [
-      {
-        label: 'Itinéraire',
-        onClick: () => window.open(googleMapsDirUrl(draft), '_blank', 'noopener'),
-      },
-      {
-        label: 'Intervention',
-        onClick: () => {
-          alert("Création d'une intervention (à brancher Phase 2.5 avec le Carnet).");
-        },
-      },
-      {
-        label: 'Dupliquer',
-        onClick: () => {
-          alert('Duplication de parcelle (à brancher Phase 2.5).');
-        },
-      },
-    ];
-  }, [draft]);
+  const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
+
+  // Le FAB ("Créer une intervention") cède la place au footer sticky d'enregistrement
+  // quand il y a des modifications à sauvegarder (sinon ils se chevauchent).
+  useHideFab(dirty);
 
   if (!initial || !draft) {
     return (
@@ -120,16 +121,14 @@ export default function ParcelleDetailPage() {
     setDraft((d) => (d ? { ...d, [key]: value } : d));
   };
 
-  const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
-
   return (
     <PageContainer>
-      <header className="mb-5 flex flex-wrap items-center gap-3">
+      <header className="mb-5 flex items-center gap-2">
         <button
           type="button"
           onClick={() => navigate('/parcellaire')}
           aria-label="Retour au parcellaire"
-          className="inline-flex h-9 w-9 items-center justify-center rounded-(--radius-sm) text-(--color-text) hover:bg-[#f1f1ee]"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-(--radius-sm) text-(--color-text) hover:bg-[#f1f1ee]"
         >
           <BackIcon />
         </button>
@@ -137,7 +136,7 @@ export default function ParcelleDetailPage() {
           <h1 className="m-0 truncate text-xl font-semibold">
             {draft.id} — {draft.name}
           </h1>
-          <p className="m-0 mt-0.5 text-sm text-(--color-muted)">
+          <p className="m-0 mt-0.5 truncate text-sm text-(--color-muted)">
             {draft.surfaceHa.toFixed(2)} ha
             {(() => {
               const active = getActiveSegment(draft.id, TODAY);
@@ -148,27 +147,47 @@ export default function ParcelleDetailPage() {
         {draft.status && (
           <span
             className={[
-              'inline-flex items-center rounded-(--radius-pill) px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase',
+              'hidden shrink-0 items-center rounded-(--radius-pill) px-2.5 py-0.5 text-[11px] font-semibold tracking-wider uppercase sm:inline-flex',
               STATUS_STYLES[draft.status],
             ].join(' ')}
           >
             {STATUS_LABELS[draft.status]}
           </span>
         )}
-        {headerActions && headerActions.length > 0 && (
-          <div className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
-            {headerActions.map((a) => (
-              <button
-                key={a.label}
-                type="button"
-                onClick={a.onClick}
-                className="inline-flex h-9 items-center rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium hover:bg-[#f8f8f5]"
-              >
-                {a.label}
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Icône fine "Itinéraire" — accès rapide à Google Maps */}
+        <a
+          href={googleMapsDirUrl(draft)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Itinéraire (Google Maps)"
+          title="Itinéraire vers la parcelle"
+          className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-(--radius-sm) text-(--color-muted) hover:bg-[#f1f1ee] hover:text-(--color-text)"
+        >
+          <GoogleMapsIcon />
+        </a>
+        {/* Kebab : actions secondaires */}
+        <KebabMenu
+          actions={[
+            {
+              id: 'duplicate',
+              label: 'Dupliquer',
+              onClick: () => alert('Duplication de parcelle (à brancher Phase 2.5).'),
+            },
+            {
+              id: 'archive',
+              label: draft.status === 'archived' ? 'Désarchiver' : 'Archiver',
+              onClick: () =>
+                setField('status', draft.status === 'archived' ? 'active' : 'archived'),
+            },
+            {
+              id: 'delete',
+              label: 'Supprimer',
+              variant: 'danger',
+              onClick: () =>
+                confirm(`Supprimer la parcelle ${draft.id} ?`) && navigate('/parcellaire'),
+            },
+          ]}
+        />
       </header>
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
@@ -495,6 +514,83 @@ function ExternalLinkIcon() {
     >
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
       <path d="M15 3h6v6M10 14 21 3" />
+    </svg>
+  );
+}
+
+interface KebabAction {
+  id: string;
+  label: string;
+  onClick: () => void;
+  variant?: 'danger';
+}
+
+function KebabMenu({ actions }: { actions: ReadonlyArray<KebabAction> }) {
+  const [open, setOpen] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (ref.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') setOpen(false);
+    }
+    document.addEventListener('mousedown', onDoc);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDoc);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [open]);
+  return (
+    <div ref={ref} className="relative shrink-0">
+      <button
+        type="button"
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-label="Plus d'actions"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex h-9 w-9 items-center justify-center rounded-(--radius-sm) text-(--color-muted) hover:bg-[#f1f1ee] hover:text-(--color-text)"
+      >
+        <MoreVerticalGlyph />
+      </button>
+      {open && (
+        <ul
+          role="menu"
+          className="absolute right-0 z-[1200] mt-1 w-[200px] rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-1 shadow-(--shadow-popup)"
+        >
+          {actions.map((a) => (
+            <li key={a.id}>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  a.onClick();
+                  setOpen(false);
+                }}
+                className={[
+                  'flex h-9 w-full items-center rounded-(--radius-sm) px-2.5 text-sm hover:bg-[#f8f8f5]',
+                  a.variant === 'danger' ? 'text-(--color-error)' : 'text-(--color-text)',
+                ].join(' ')}
+              >
+                {a.label}
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function MoreVerticalGlyph() {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" width={18} height={18} aria-hidden="true">
+      <circle cx="12" cy="5" r="1.5" />
+      <circle cx="12" cy="12" r="1.5" />
+      <circle cx="12" cy="19" r="1.5" />
     </svg>
   );
 }

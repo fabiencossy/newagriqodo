@@ -116,8 +116,8 @@ describe('getAvailableYears', () => {
 
 describe('cultures catalog', () => {
   it('cultureColor mappe les libellés connus', () => {
-    expect(cultureColor('Blé')).toBe('#f4a261');
-    expect(cultureColor('Maïs')).toBe('#f59e0b');
+    expect(cultureColor("Blé d'automne")).toBe('#f97316');
+    expect(cultureColor('Maïs ensilage')).toBe('#dc2626');
     expect(cultureColor('Jachère')).toBe('#a3a380');
   });
 
@@ -127,18 +127,33 @@ describe('cultures catalog', () => {
   });
 
   it('cultureByLabel est insensible à la casse', () => {
-    expect(cultureByLabel('blé')?.key).toBe('wheat');
-    expect(cultureByLabel('MAÏS')?.key).toBe('corn');
+    expect(cultureByLabel("blé d'automne")?.key).toBe('wheat-winter');
+    expect(cultureByLabel('LUZERNE')?.key).toBe('lucerne');
   });
 
   it('listCultureLabels exclut "archivé" (catégorie other)', () => {
     const labels = listCultureLabels();
-    expect(labels).toContain('Blé');
+    expect(labels).toContain("Blé d'automne");
+    expect(labels).toContain('Prairie naturelle');
     expect(labels).not.toContain('Archivé');
   });
 
-  it('CULTURES contient au moins les cultures attendues', () => {
+  it('CULTURES couvre les principales familles Agridéa', () => {
     const keys = CULTURES.map((c) => c.key);
-    expect(keys).toEqual(expect.arrayContaining(['wheat', 'corn', 'rapeseed', 'barley', 'fallow']));
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        'wheat-winter',
+        'corn-silage',
+        'rapeseed-winter',
+        'barley-winter',
+        'sunflower',
+        'potato',
+        'sugar-beet',
+        'natural-meadow',
+        'lucerne',
+        'vineyard',
+        'fallow',
+      ]),
+    );
   });
 });

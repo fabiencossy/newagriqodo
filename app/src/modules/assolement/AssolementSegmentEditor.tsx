@@ -44,7 +44,6 @@ export function AssolementSegmentEditor({
                 {c}
               </option>
             ))}
-            <option value="Jachère">Jachère</option>
           </select>
         </Field>
         <Field label="Variété">
@@ -82,14 +81,6 @@ export function AssolementSegmentEditor({
           className={inputClass.replace('h-9', 'min-h-[60px] py-2')}
         />
       </Field>
-      <label className="inline-flex items-center gap-2 text-xs text-(--color-muted)">
-        <input
-          type="checkbox"
-          checked={Boolean(draft.planned)}
-          onChange={(e) => setDraft({ ...draft, planned: e.target.checked })}
-        />
-        Segment prévu (non encore réalisé)
-      </label>
       {invalid && (
         <p className="m-0 text-xs text-(--color-error)">
           La date de fin doit être postérieure à la date de début.

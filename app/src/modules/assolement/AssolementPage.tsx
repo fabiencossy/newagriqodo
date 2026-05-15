@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { MapView, type Parcel } from '../../components/MapView';
 import { SearchBar, type FieldDescriptor, type SearchState } from '../../components/SearchBar';
 import { ViewSwitcher, type ViewKey } from '../../components/ViewSwitcher';
 import { ExportButton, type ExportColumn } from '../../components/ExportButton';
-import { useHideFab } from '../../layouts/useFab';
+import { useFabActions, useHideFab } from '../../layouts/useFab';
 import { PARCELLES } from '../parcellaire/parcellaire.mocks';
 import { AssolementTable, type AssolementRow } from './AssolementTable';
 import { AssolementTimeline } from './AssolementTimeline';
@@ -14,6 +15,7 @@ import {
   getAvailableYears,
   getDominantCulture,
   getSegmentsForParcelYear,
+  resolveOverlaps,
 } from './assolement.helpers';
 import { ASSOLEMENT_SEGMENTS } from './assolement.mocks';
 import type { AssolementSegment } from './assolement.types';
@@ -53,7 +55,12 @@ export default function AssolementPage() {
   const [year, setYear] = useState<number>(years[0] ?? new Date().getFullYear());
   const [view, setView] = useState<AssolementView>('map');
   const [searchState, setSearchState] = useState<SearchState>({ facets: [], groupBy: [] });
-  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const [searchParams] = useSearchParams();
+  // Permet l'arrivée depuis une page Parcellaire avec /assolement?parcel=PF-001
+  // → pré-sélectionne la parcelle (panneau de détail ouvert).
+  const [selectedId, setSelectedId] = useState<string | undefined>(
+    () => searchParams.get('parcel') ?? undefined,
+  );
   const [segments, setSegments] = useState<AssolementSegment[]>([...ASSOLEMENT_SEGMENTS]);
   const [editingSegment, setEditingSegment] = useState<AssolementSegment | 'new' | null>(null);
 
@@ -116,11 +123,9 @@ export default function AssolementPage() {
   /* ============ Édition segments ============ */
 
   const saveSegment = (next: AssolementSegment) => {
-    setSegments((curr) => {
-      const exists = curr.some((s) => s.id === next.id);
-      if (exists) return curr.map((s) => (s.id === next.id ? next : s));
-      return [...curr, next];
-    });
+    // resolveOverlaps découpe les segments existants chevauchés pour qu'il
+    // n'y ait jamais deux cultures simultanées sur la même parcelle.
+    setSegments((curr) => resolveOverlaps(next, curr));
     setEditingSegment(null);
   };
 
@@ -134,13 +139,35 @@ export default function AssolementPage() {
     const draft: AssolementSegment = {
       id: `AS-${selectedRow.parcel.id}-${Date.now()}`,
       parcelId: selectedRow.parcel.id,
-      culture: 'Blé',
+      culture: "Blé d'automne",
       startDate: `${year}-04-01`,
       endDate: `${year}-08-31`,
-      planned: true,
     };
     setEditingSegment(draft);
   };
+
+  // FAB : actions contextuelles à la sélection (Ajouter segment) ou globales.
+  useFabActions(
+    useMemo(() => {
+      if (selectedRow) {
+        return [
+          {
+            id: 'add-segment',
+            label: 'Ajouter un segment',
+            onClick: startNew,
+          },
+        ];
+      }
+      return [
+        {
+          id: 'import-geojson',
+          label: 'Importer GeoJSON',
+          onClick: () => alert("L'import GeoJSON est disponible depuis la page Parcellaire."),
+        },
+      ];
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [selectedRow]),
+  );
 
   /* ============ Rendu ============ */
 
@@ -417,11 +444,6 @@ function SelectionPanel({
                       <span className="font-medium">{s.culture}</span>
                       {s.varietyName && (
                         <span className="text-(--color-muted)"> · {s.varietyName}</span>
-                      )}
-                      {s.planned && (
-                        <span className="ml-2 inline-flex items-center rounded-(--radius-pill) bg-(--color-warning)/15 px-1.5 py-px text-[9px] font-semibold tracking-wider text-[#92400e] uppercase">
-                          Prévu
-                        </span>
                       )}
                     </span>
                     <span className="shrink-0 font-mono text-[11px] text-(--color-muted)">

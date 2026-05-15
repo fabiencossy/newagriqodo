@@ -201,7 +201,7 @@ function DropdownVariant({
           id={menuId}
           role="listbox"
           aria-label={ariaLabel}
-          className="absolute z-10 mt-1 w-56 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-1 shadow-(--shadow-popup)"
+          className="absolute right-0 z-[1200] mt-1 w-56 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-1 shadow-(--shadow-popup)"
         >
           {views.map((view) => {
             const isActive = view === activeView;

@@ -360,7 +360,7 @@ function AssolementSection({ parcelId, year }: { parcelId: string; year: number 
         </h2>
         <button
           type="button"
-          onClick={() => navigate('/assolement')}
+          onClick={() => navigate(`/assolement?parcel=${parcelId}`)}
           className="inline-flex h-9 items-center gap-1.5 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium text-(--color-text) hover:bg-[#f8f8f5]"
         >
           Modifier dans le Plan d'assolement

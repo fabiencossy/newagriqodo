@@ -7,7 +7,7 @@ import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { SearchBar, type FieldDescriptor, type SearchState } from '../../components/SearchBar';
 import { ViewSwitcher, type ViewKey } from '../../components/ViewSwitcher';
 import { ExportButton, type ExportColumn } from '../../components/ExportButton';
-import { MapView } from '../../components/MapView';
+import { MapView, type MapTool } from '../../components/MapView';
 import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
 import { ParcelleSummaryPanel } from './ParcelleSummaryPanel';
 import { filterParcels } from './filtering';
@@ -91,6 +91,7 @@ export default function ParcellairePage() {
   const navigate = useNavigate();
   const isDesktop = useIsDesktop();
   const [view, setView] = useState<ViewKey>('map');
+  const [activeTool, setActiveTool] = useState<MapTool>('select');
   const [searchState, setSearchState] = useState<SearchState>({ facets: [], groupBy: [] });
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [parcels, setParcels] = useState<ParcelDetail[]>(PARCELLES);
@@ -231,15 +232,18 @@ export default function ParcellairePage() {
           label: 'Nouvelle parcelle (dessin)',
           onClick: () => {
             setView('map');
-            alert("Active l'outil de dessin sur la carte (à brancher Phase 2.5).");
+            setActiveTool('draw-parcel');
           },
         },
         {
           id: 'import-geojson',
-          label: 'Importer (GeoJSON / Shapefile)',
-          onClick: () => {
-            alert('Import GELAN / Acorda (à brancher Phase 2.5 avec shpjs).');
-          },
+          label: 'Importer GeoJSON',
+          onClick: () => geojsonInputRef.current?.click(),
+        },
+        {
+          id: 'import-shapefile',
+          label: 'Importer Shapefile (.zip)',
+          onClick: () => shapefileInputRef.current?.click(),
         },
       ];
     }, [selectedId, navigate]),
@@ -346,6 +350,8 @@ export default function ParcellairePage() {
             parcels={filtered}
             selectedId={selectedId}
             onSelectionChange={(ids) => setSelectedId(ids[0])}
+            activeTool={activeTool}
+            onToolChange={setActiveTool}
             height="100%"
             className="!rounded-none !border-0"
           />
@@ -356,7 +362,7 @@ export default function ParcellairePage() {
                 parcel={selected}
                 onClose={() => setSelectedId(undefined)}
                 onOpenFiche={() => navigate(`/parcellaire/${selected.id}`)}
-                onOpenAssolement={() => navigate('/assolement')}
+                onOpenAssolement={() => navigate(`/assolement?parcel=${selected.id}`)}
               />
             </div>
           )}

@@ -107,15 +107,12 @@ export function AssolementTimeline({
               onSegmentClick
                 ? 'cursor-pointer transition-opacity hover:opacity-90'
                 : 'cursor-default',
-              segment.planned ? 'opacity-70' : '',
             ].join(' ')}
             style={{
               left: `${left}%`,
               width: `max(${width}%, 4px)`,
               background: cultureColor(segment.culture),
-              border: segment.planned
-                ? '1px dashed rgba(255,255,255,0.7)'
-                : '1px solid rgba(0,0,0,0.1)',
+              border: '1px solid rgba(0,0,0,0.1)',
               borderRadius: 'var(--radius-sm)',
             }}
           >

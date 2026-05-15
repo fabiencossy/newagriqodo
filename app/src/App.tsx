@@ -110,10 +110,10 @@ export default function App() {
       </section>
 
       <section className="mt-6 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">
-        <h2 className="mb-4 text-xs font-medium tracking-wider text-(--color-muted) uppercase">
-          ExportButton
-        </h2>
-        <div className="flex flex-wrap items-start gap-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-xs font-medium tracking-wider text-(--color-muted) uppercase">
+            ExportButton
+          </h2>
           <ExportButton
             data={SAMPLE_PARCELS}
             columns={EXPORT_COLUMNS}
@@ -121,15 +121,8 @@ export default function App() {
             formats={['pdf', 'xlsx', 'csv']}
             pdfMeta={{ title: 'Parcelles — Domaine Darval' }}
           />
-          <ExportButton
-            data={SAMPLE_PARCELS}
-            columns={EXPORT_COLUMNS}
-            filenameBase="parcelles"
-            formats={['csv']}
-            variant="primary"
-          />
         </div>
-        <p className="mt-3 text-xs text-(--color-muted)">
+        <p className="text-xs text-(--color-muted)">
           {SAMPLE_PARCELS.length} parcelles. CSV fonctionnel (téléchargement réel) ; PDF/Excel stub
           (libs à brancher Phase 1).
         </p>

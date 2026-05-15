@@ -1,5 +1,5 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ExportButton } from './ExportButton';
 import { generateCsv } from './generators';
@@ -16,19 +16,29 @@ const columns = [
   { key: 'culture', label: 'Culture' },
 ];
 
-describe('ExportButton — bouton single format', () => {
-  it('rend un bouton direct avec libellé du format', () => {
+describe('ExportButton — kebab menu', () => {
+  it('rend un bouton kebab fermé par défaut', () => {
     render(
       <ExportButton data={data} columns={columns} filenameBase="parcelles" formats={['csv']} />,
     );
-    expect(screen.getByRole('button', { name: /Télécharger CSV/i })).toBeInTheDocument();
-    // Pas de menu en mode single
+    const btn = screen.getByRole('button', { name: 'Exporter' });
+    expect(btn).toHaveAttribute('aria-expanded', 'false');
     expect(screen.queryByRole('menu')).not.toBeInTheDocument();
   });
-});
 
-describe('ExportButton — dropdown multi-format', () => {
-  it('ouvre un menu avec les 3 formats', async () => {
+  it('ouvre un menu avec 1 item en single-format', async () => {
+    const user = userEvent.setup();
+    render(
+      <ExportButton data={data} columns={columns} filenameBase="parcelles" formats={['csv']} />,
+    );
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
+    const menu = screen.getByRole('menu');
+    expect(menu).toBeInTheDocument();
+    expect(within(menu).getAllByRole('menuitem')).toHaveLength(1);
+    expect(within(menu).getByRole('menuitem', { name: /CSV/ })).toBeInTheDocument();
+  });
+
+  it('ouvre un menu avec les 3 formats en multi-format', async () => {
     const user = userEvent.setup();
     render(
       <ExportButton
@@ -38,15 +48,13 @@ describe('ExportButton — dropdown multi-format', () => {
         formats={['pdf', 'xlsx', 'csv']}
       />,
     );
-    const trigger = screen.getByRole('button', { name: /Exporter/i });
-    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    const trigger = screen.getByRole('button', { name: 'Exporter' });
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
     const menu = screen.getByRole('menu');
-    expect(menu).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /PDF/ })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /Excel/ })).toBeInTheDocument();
-    expect(screen.getByRole('menuitem', { name: /CSV/ })).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: /PDF/ })).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: /Excel/ })).toBeInTheDocument();
+    expect(within(menu).getByRole('menuitem', { name: /CSV/ })).toBeInTheDocument();
   });
 });
 
@@ -100,7 +108,8 @@ describe('ExportButton — onBeforeExport', () => {
         onExported={onExported}
       />,
     );
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
+    await user.click(screen.getByRole('menuitem', { name: /CSV/ }));
     expect(onBeforeExport).toHaveBeenCalledExactlyOnceWith('csv');
     expect(onExported).not.toHaveBeenCalled();
   });
@@ -117,7 +126,8 @@ describe('ExportButton — onBeforeExport', () => {
         onExported={onExported}
       />,
     );
-    await user.click(screen.getByRole('button'));
+    await user.click(screen.getByRole('button', { name: 'Exporter' }));
+    await user.click(screen.getByRole('menuitem', { name: /CSV/ }));
     await waitFor(() => {
       expect(onExported).toHaveBeenCalled();
     });

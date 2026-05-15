@@ -53,9 +53,7 @@ export interface ExportButtonProps {
   onExported?: (format: ExportFormat, filename: string) => void;
   /** Callback en cas d'erreur. */
   onError?: (format: ExportFormat, error: Error) => void;
-  /** Variante visuelle. Défaut 'secondary'. */
-  variant?: 'primary' | 'secondary';
-  /** Label custom du bouton. Défaut 'Exporter' ou 'Télécharger <FORMAT>'. */
+  /** Label ARIA + tooltip du bouton. Défaut 'Exporter'. */
   label?: string;
   /** Classe CSS optionnelle. */
   className?: string;
@@ -63,7 +61,6 @@ export interface ExportButtonProps {
 
 export const EXPORT_DEFAULTS = {
   formats: ['pdf', 'xlsx', 'csv'] as ExportFormat[],
-  variant: 'secondary' as const,
   csvSeparator: ';' as ',' | ';',
   csvUtf8Bom: true,
 };

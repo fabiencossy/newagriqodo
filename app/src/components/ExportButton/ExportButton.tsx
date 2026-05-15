@@ -2,11 +2,10 @@ import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import {
   AlertIcon,
   CheckIcon,
-  ChevronDownIcon,
-  DownloadIcon,
   FileCsvIcon,
   FilePdfIcon,
   FileXlsxIcon,
+  MoreVerticalIcon,
 } from './icons';
 import { buildFilename, deriveColumns, exportCsv, exportPdf, exportXlsx } from './generators';
 import {
@@ -38,8 +37,7 @@ export function ExportButton({
   onBeforeExport,
   onExported,
   onError,
-  variant = EXPORT_DEFAULTS.variant,
-  label,
+  label = 'Exporter',
   className,
 }: ExportButtonProps) {
   const [open, setOpen] = useState(false);
@@ -49,8 +47,6 @@ export function ExportButton({
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLUListElement>(null);
 
-  const isMultiFormat = formats.length > 1;
-  const singleFormat = isMultiFormat ? null : formats[0];
   const isBusy = busyFormat !== null;
   const isDisabled = disabled || data.length === 0;
 
@@ -119,54 +115,39 @@ export function ExportButton({
 
   /* ---------- Render ---------- */
 
-  const baseBtn = [
-    'inline-flex items-center gap-2 h-10 px-3.5 rounded-(--radius) text-sm font-medium',
-    'transition-colors disabled:cursor-not-allowed disabled:opacity-50',
-    variant === 'primary'
-      ? 'bg-(--color-primary) text-white border border-(--color-primary) hover:bg-(--color-primary-hover)'
-      : 'bg-(--color-surface) text-(--color-text) border border-(--color-border) hover:bg-[#f8f8f5]',
-  ].join(' ');
-
   return (
     <div className={['relative inline-block', className ?? ''].join(' ')}>
-      {/* Bouton trigger */}
+      {/* Bouton kebab (3 dots) — même UI mobile et desktop */}
       <button
         ref={triggerRef}
         type="button"
         disabled={isDisabled || isBusy}
         aria-busy={isBusy}
-        aria-haspopup={isMultiFormat ? 'menu' : undefined}
-        aria-expanded={isMultiFormat ? open : undefined}
-        aria-controls={isMultiFormat ? menuId : undefined}
-        onClick={() => {
-          if (singleFormat) {
-            void runExport(singleFormat);
-          } else {
-            setOpen((o) => !o);
-          }
-        }}
-        className={baseBtn}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        aria-controls={menuId}
+        aria-label={label}
+        title={label}
+        onClick={() => setOpen((o) => !o)}
+        className={[
+          'inline-flex h-10 w-10 items-center justify-center rounded-(--radius)',
+          'border border-(--color-border) bg-(--color-surface) text-(--color-text)',
+          'transition-colors hover:bg-[#f8f8f5]',
+          'disabled:cursor-not-allowed disabled:opacity-50',
+          open ? 'bg-[#f1f1ee]' : '',
+        ].join(' ')}
       >
-        {isBusy ? <Spinner /> : <DownloadIcon />}
-        <span>
-          {isBusy
-            ? 'Génération…'
-            : (label ?? (singleFormat ? `Télécharger ${FORMAT_LABELS[singleFormat]}` : 'Exporter'))}
-        </span>
-        {isMultiFormat && !isBusy && (
-          <span className="text-(--color-muted)">
-            <ChevronDownIcon />
-          </span>
-        )}
+        {isBusy ? <Spinner /> : <MoreVerticalIcon size={18} />}
       </button>
 
-      {/* Dropdown menu */}
-      {open && isMultiFormat && (
+      {/* Dropdown menu (toujours visible quand open, single ou multi-format) */}
+      {open && (
         <ul
           ref={menuRef}
           id={menuId}
           role="menu"
-          className="absolute z-10 mt-1 w-[240px] rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-1 shadow-(--shadow-popup)"
+          aria-label={label}
+          className="absolute right-0 z-10 mt-1 w-[240px] rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-1 shadow-(--shadow-popup)"
         >
           {formats.map((fmt) => {
             const Icon = FORMAT_ICON[fmt];
@@ -213,7 +194,7 @@ function Spinner() {
   return (
     <span
       aria-hidden="true"
-      className="inline-block h-3.5 w-3.5 animate-spin rounded-(--radius-pill) border-2 border-current border-r-transparent"
+      className="inline-block h-4 w-4 animate-spin rounded-(--radius-pill) border-2 border-current border-r-transparent"
     />
   );
 }

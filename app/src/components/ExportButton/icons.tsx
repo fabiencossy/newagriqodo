@@ -15,6 +15,16 @@ export function DownloadIcon({ size = 16 }: { size?: number }) {
   );
 }
 
+export function MoreVerticalIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg {...BASE} width={size} height={size} aria-hidden="true">
+      <circle cx="12" cy="5" r="1.4" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.4" fill="currentColor" />
+      <circle cx="12" cy="19" r="1.4" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function ChevronDownIcon({ size = 14 }: { size?: number }) {
   return (
     <svg {...BASE} width={size} height={size} aria-hidden="true">

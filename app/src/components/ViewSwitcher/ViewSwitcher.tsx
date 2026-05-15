@@ -136,9 +136,11 @@ function DropdownVariant({
   activeView,
   onSelect,
   isDisabled,
+  display,
   ariaLabel,
   className,
 }: VariantProps) {
+  const iconOnly = display === 'icon-only';
   const [open, setOpen] = useState(false);
   const menuId = useId();
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -174,15 +176,23 @@ function DropdownVariant({
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={menuId}
-        aria-label={ariaLabel}
+        aria-label={iconOnly ? `${ariaLabel} (${VIEW_LABELS[activeView]})` : ariaLabel}
+        title={iconOnly ? VIEW_LABELS[activeView] : undefined}
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex h-11 min-w-[160px] items-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3.5 text-sm hover:bg-[#fbfbf9]"
+        className={[
+          'inline-flex h-10 items-center gap-1.5 rounded-(--radius) border border-(--color-border) bg-(--color-surface) text-sm hover:bg-[#fbfbf9]',
+          iconOnly ? 'w-10 justify-center px-0' : 'min-w-[160px] px-3.5',
+        ].join(' ')}
       >
-        <ViewIcon view={activeView} />
-        <span className="font-medium">{VIEW_LABELS[activeView]}</span>
-        <span className="ml-auto text-(--color-muted)">
-          <ChevronDownIcon />
-        </span>
+        <ViewIcon view={activeView} size={18} />
+        {!iconOnly && (
+          <>
+            <span className="font-medium">{VIEW_LABELS[activeView]}</span>
+            <span className="ml-auto text-(--color-muted)">
+              <ChevronDownIcon />
+            </span>
+          </>
+        )}
       </button>
 
       {open && (

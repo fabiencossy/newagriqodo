@@ -283,13 +283,13 @@ export default function ParcellairePage() {
           ariaLabel="Rechercher dans le parcellaire"
         />
       </div>
-      {/* Vues : segmented icônes seules sur mobile, icon+label sur desktop. */}
+      {/* Vues : dropdown icône seule sur mobile, segmented icon+label sur desktop. */}
       <div className="shrink-0 md:hidden">
         <ViewSwitcher
           views={['map', 'table', 'dashboard']}
           activeView={view}
           onChange={setView}
-          layout="segmented"
+          layout="dropdown"
           display="icon-only"
         />
       </div>

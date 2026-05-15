@@ -44,7 +44,7 @@ Le `layout` est `'auto'` par défaut, peut être forcé via `layout: 'popup' \| 
 | Desktop : plein écran ? | **Non** — popup attaché au trigger (~480 px de large par défaut, suit la largeur du trigger). |
 | Position du popup | Sous le trigger. Si pas la place en bas, flip au-dessus (Phase 1). |
 | Catégories desktop | **Onglets horizontaux** (`pop-cats`), pas de panneau latéral. Plus compact. |
-| Catégories mobile | **Chips scrollables** style segment iOS (pill 32 px, ronds). |
+| Catégories mobile | **Chips horizontales si ≤ 5 catégories**, **dropdown vertical au-delà**. Seuil configurable via `mobileCategoryDropdownThreshold` (défaut 5). Si plusieurs groupes nommés → toujours dropdown. |
 | Bouton Valider mobile | Remplacé par "OK (N)" en **haut à droite** du header (pattern iOS/Android). |
 | Bouton retour mobile | Flèche gauche en haut à gauche (pattern iOS/Android). |
 | Création inline | Identique desktop/mobile : bouton "+ Créer" footer + dans empty state. |

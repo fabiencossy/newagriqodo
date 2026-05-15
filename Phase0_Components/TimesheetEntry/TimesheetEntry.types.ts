@@ -4,7 +4,15 @@
  * Modèle unique : toujours heure de début + heure de fin + pauses (0 à N).
  * Le total effectif (en heures décimales) est calculé : `plage − pauses`.
  *
- * Submit → création d'une Attendance Odoo (`hr.attendance`, Hook 1).
+ * Submit → Hook 1 :
+ *  - Persistance complète côté Qodo (start, end, breaks[], hoursWorked, …)
+ *  - Côté Odoo : 1 seule `hr.attendance` (check_in = start, check_out = end).
+ *    **Les pauses ne sont PAS envoyées à Odoo** — elles vivent uniquement dans Qodo.
+ *  - Si `interventionId` → 1 `account.analytic.line` avec `unit_amount = hoursWorked`
+ *    (effectif après déduction des pauses).
+ *
+ * Mapping user → employee : le user Qodo doit être lié à un `hr.employee` Odoo
+ * via une table de mapping côté backend (non géré par ce composant).
  */
 
 export type ProjectType = 'Parcellaire' | 'Travaux' | 'Troupeau' | 'RH';

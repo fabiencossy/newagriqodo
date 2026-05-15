@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SearchBar — Wireframe Phase 0 v3 (dark compact)</title>
+<title>SearchBar — Wireframe Phase 0 v4 (light par défaut)</title>
 <style>
   :root {
     --primary: #2d5016;
@@ -15,14 +15,6 @@
     --muted: #6b6b6b;
     --border: #e5e5e5;
     --radius: 6px;
-
-    /* Dark bar tokens */
-    --bar-bg: #1f242b;
-    --bar-bg-hover: #262c34;
-    --bar-fg: #e8eaed;
-    --bar-muted: #8a93a0;
-    --bar-border: #2d343d;
-    --bar-divider: #3a414b;
   }
   * { box-sizing: border-box; }
   body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
@@ -35,34 +27,35 @@
   .icon-sm { width: 13px; height: 13px; }
 
   /* ===========================================================
-     SearchBar — DARK COMPACT (référence visuelle)
+     SearchBar — LIGHT par défaut
      =========================================================== */
   .sb {
     display: flex; align-items: stretch;
-    background: var(--bar-bg);
-    border: 1px solid var(--bar-border);
+    background: var(--surface);
+    border: 1px solid var(--border);
     border-radius: var(--radius);
     height: 36px;
     overflow: hidden;
-    color: var(--bar-fg);
+    color: var(--text);
   }
-  .sb:focus-within { border-color: var(--accent); }
+  .sb:hover { border-color: #c9c9c2; }
+  .sb:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(45,80,22,0.12); }
 
   /* Bloc gauche : loupe + icône filtre */
   .sb .lead {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 0 10px;
-    color: var(--bar-muted);
-    border-right: 1px solid var(--bar-divider);
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 0 8px;
+    color: var(--muted);
+    border-right: 1px solid var(--border);
   }
   .sb .lead button {
-    width: 22px; height: 22px;
+    width: 26px; height: 26px;
     background: transparent; border: 0; cursor: pointer; color: inherit;
     display: inline-flex; align-items: center; justify-content: center;
     border-radius: 3px;
   }
-  .sb .lead button:hover { background: rgba(255,255,255,0.05); color: var(--bar-fg); }
-  .sb .lead button[aria-pressed="true"] { color: var(--accent); }
+  .sb .lead button:hover { background: #f1f1ee; color: var(--text); }
+  .sb .lead button[aria-pressed="true"] { color: var(--accent); background: rgba(135,90,123,0.08); }
 
   /* Zone middle : facets + input */
   .sb .mid {
@@ -72,12 +65,12 @@
   .sb .mid input {
     flex: 1; min-width: 40px;
     background: transparent; border: 0; outline: 0;
-    color: var(--bar-fg); font-size: 13px; padding: 0;
+    color: var(--text); font-size: 13px; padding: 0;
     height: 100%;
   }
-  .sb .mid input::placeholder { color: var(--bar-muted); }
+  .sb .mid input::placeholder { color: var(--muted); }
 
-  /* Facet (chip violet "Mes devis ×") */
+  /* Facet (chip aubergine) */
   .facet {
     display: inline-flex; align-items: center; gap: 4px;
     background: var(--accent); color: #fff;
@@ -99,19 +92,17 @@
   .sb .tail {
     display: inline-flex; align-items: center;
     padding: 0 10px;
-    color: var(--bar-muted);
-    border-left: 1px solid var(--bar-divider);
+    color: var(--muted);
+    border-left: 1px solid var(--border);
     background: transparent;
-    border: 0; cursor: pointer;
-    border-top-right-radius: var(--radius);
-    border-bottom-right-radius: var(--radius);
+    border-top: 0; border-right: 0; border-bottom: 0;
+    cursor: pointer;
   }
-  .sb .tail:hover { background: var(--bar-bg-hover); color: var(--bar-fg); }
-  .sb .tail[aria-expanded="true"] { color: var(--accent); }
+  .sb .tail:hover { background: #fbfbf9; color: var(--text); }
+  .sb .tail[aria-expanded="true"] { color: var(--accent); background: rgba(135,90,123,0.06); }
 
   /* ===========================================================
      DROPDOWN — 3 colonnes Filtres / Regrouper / Favoris
-     (s'ouvre sous la barre, fond clair)
      =========================================================== */
   .dropdown {
     margin-top: 4px;
@@ -153,9 +144,7 @@
   .sub .item { padding-left: 14px; font-size: 12px; }
   .col .divider { height: 1px; background: var(--border); margin: 6px 0; }
 
-  /* ===========================================================
-     Suggestions sur saisie (barre dark + dropdown attaché)
-     =========================================================== */
+  /* Suggestions */
   .suggestions {
     margin-top: 4px;
     background: var(--surface);
@@ -169,23 +158,21 @@
   .suggestions .item .term { background: rgba(45,80,22,0.1); color: var(--primary); padding: 1px 6px; border-radius: 3px; font-weight: 500; }
   .suggestions .item.focused { background: rgba(45,80,22,0.07); }
 
-  /* Variante light de la barre (pour pages claires) */
-  .sb.light {
-    background: var(--surface);
-    border-color: var(--border);
-    color: var(--text);
-  }
-  .sb.light .lead, .sb.light .mid input, .sb.light .tail { color: var(--text); }
-  .sb.light .lead, .sb.light .tail { color: var(--muted); }
-  .sb.light .lead { border-right-color: var(--border); }
-  .sb.light .tail { border-left-color: var(--border); }
-  .sb.light .mid input::placeholder { color: var(--muted); }
-  .sb.light .lead button:hover { background: #f1f1ee; color: var(--text); }
-  .sb.light .tail:hover { background: #fbfbf9; color: var(--text); }
-
   /* ===========================================================
-     Mobile
+     Variante DARK (opt-in, .sb.dark)
      =========================================================== */
+  .sb.dark {
+    background: #1f242b;
+    border-color: #2d343d;
+    color: #e8eaed;
+  }
+  .sb.dark .lead, .sb.dark .tail { color: #8a93a0; border-color: #3a414b; }
+  .sb.dark .mid input { color: #e8eaed; }
+  .sb.dark .mid input::placeholder { color: #8a93a0; }
+  .sb.dark .lead button:hover { background: rgba(255,255,255,0.06); color: #e8eaed; }
+  .sb.dark .tail:hover { background: #262c34; color: #e8eaed; }
+
+  /* Mobile */
   @media (max-width: 600px) {
     .sb { height: 40px; }
     .sb .mid input { font-size: 14px; }
@@ -203,18 +190,19 @@
     <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
   </svg>
 
-  <h1>SearchBar — Wireframe v3 (dark compact, réf. Odoo)</h1>
+  <h1>SearchBar — Wireframe v4 (light par défaut)</h1>
   <div class="note">
-    Une seule barre horizontale, compacte, fond sombre. Loupe + icône filtre à gauche, facets et input au milieu, chevron à droite pour ouvrir le menu Filtres / Regrouper / Favoris.
-    Variante claire (<code>.sb.light</code>) disponible pour les pages au fond clair.
+    Barre compacte d'une seule ligne, fond clair par défaut.
+    Loupe + icône filtre à gauche, facets et input au milieu, chevron à droite pour ouvrir Filtres / Regrouper / Favoris.
+    Variante dark (<code>.sb.dark</code>) reste disponible pour les contextes au fond sombre.
   </div>
 
-  <h2>1. État de référence — avec une facet (dark)</h2>
-  <div class="stage" style="background: #2a3038; border-color: #3a414b;">
+  <h2>1. État de référence — avec une facet</h2>
+  <div class="stage">
     <div class="sb" role="search" aria-label="Rechercher">
       <div class="lead">
         <button aria-label="Rechercher"><svg class="icon"><use href="#i-search"/></svg></button>
-        <button aria-label="Filtres" aria-pressed="false"><svg class="icon"><use href="#i-filter"/></svg></button>
+        <button aria-label="Filtres" aria-pressed="true"><svg class="icon"><use href="#i-filter"/></svg></button>
       </div>
       <div class="mid">
         <span class="facet">
@@ -228,7 +216,7 @@
   </div>
 
   <h2>2. Barre vide</h2>
-  <div class="stage" style="background: #2a3038; border-color: #3a414b;">
+  <div class="stage">
     <div class="sb" role="search">
       <div class="lead">
         <button aria-label="Rechercher"><svg class="icon"><use href="#i-search"/></svg></button>
@@ -242,7 +230,7 @@
   </div>
 
   <h2>3. Plusieurs facets actives</h2>
-  <div class="stage" style="background: #2a3038; border-color: #3a414b;">
+  <div class="stage">
     <div class="sb" role="search">
       <div class="lead">
         <button aria-label="Rechercher"><svg class="icon"><use href="#i-search"/></svg></button>
@@ -258,8 +246,8 @@
     </div>
   </div>
 
-  <h2>4. Suggestions sur saisie (dropdown attaché)</h2>
-  <div class="stage" style="background: #2a3038; border-color: #3a414b;">
+  <h2>4. Suggestions sur saisie</h2>
+  <div class="stage">
     <div class="sb" role="search">
       <div class="lead">
         <button aria-label="Rechercher"><svg class="icon"><use href="#i-search"/></svg></button>
@@ -281,7 +269,7 @@
   </div>
 
   <h2>5. Dropdown ouvert (Filtres / Regrouper / Favoris)</h2>
-  <div class="stage" style="background: #2a3038; border-color: #3a414b;">
+  <div class="stage">
     <div class="sb" role="search">
       <div class="lead">
         <button aria-label="Rechercher"><svg class="icon"><use href="#i-search"/></svg></button>
@@ -327,15 +315,15 @@
     </div>
   </div>
 
-  <h2>6. Variante claire (page au fond clair)</h2>
-  <div class="stage">
-    <div class="sb light" role="search">
+  <h2>6. Variante dark (opt-in pour contextes sombres)</h2>
+  <div class="stage" style="background: #2a3038; border-color: #3a414b;">
+    <div class="sb dark" role="search">
       <div class="lead">
         <button aria-label="Rechercher"><svg class="icon"><use href="#i-search"/></svg></button>
-        <button aria-label="Filtres"><svg class="icon"><use href="#i-filter"/></svg></button>
+        <button aria-label="Filtres" aria-pressed="true"><svg class="icon"><use href="#i-filter"/></svg></button>
       </div>
       <div class="mid">
-        <span class="facet"><span class="label">Mes devis</span><button aria-label="Retirer"><svg class="icon icon-sm"><use href="#i-x"/></svg></button></span>
+        <span class="facet"><span class="label">Mes devis</span><button><svg class="icon icon-sm"><use href="#i-x"/></svg></button></span>
         <input placeholder="Rechercher…">
       </div>
       <button class="tail"><svg class="icon"><use href="#i-chevron-down"/></svg></button>
@@ -343,7 +331,7 @@
   </div>
 
   <h2>7. Mobile</h2>
-  <div class="stage" style="max-width: 360px; background: #2a3038; border-color: #3a414b;">
+  <div class="stage" style="max-width: 360px;">
     <div class="sb" role="search">
       <div class="lead">
         <button aria-label="Rechercher"><svg class="icon"><use href="#i-search"/></svg></button>
@@ -366,8 +354,8 @@
     <li>Facets : bouton retrait avec <code>aria-label</code> explicite ("Retirer Mes devis").</li>
     <li>Suggestions : <code>role="listbox"</code> + <code>role="option"</code> + <code>aria-selected</code>.</li>
     <li>Navigation clavier : ↑/↓ suggestions, Enter valide, Backspace efface dernière facet quand input vide, Esc ferme.</li>
-    <li>Contraste vérifié : texte #e8eaed sur fond #1f242b = 12.7:1 ✓ ; accent #875a7b sur #1f242b = 4.6:1 ✓.</li>
-    <li>Cibles tactiles : barre 36 px desktop / 40 px mobile, boutons internes 22 px (zone élargie au padding).</li>
+    <li>Contraste vérifié light : texte #1a1a1a sur #fff = 18.6:1 ✓ ; aubergine sur fond clair = 5.5:1 ✓.</li>
+    <li>Cibles tactiles : barre 36 px desktop / 40 px mobile, boutons internes 26 px (zone élargie au padding).</li>
   </ul>
 </body>
 </html>

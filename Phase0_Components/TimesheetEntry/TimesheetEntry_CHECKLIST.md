@@ -63,17 +63,26 @@ Cela colle directement à la sémantique Odoo `hr.attendance` (`check_in` / `che
 - [x] Total effectif négatif (pauses > plage) → clampé à 0 + warning
 - [x] Présence sans pause → autorisée (effectif = plage)
 
-## Conformité Hook 1 (Odoo)
-- [x] Trigger : création TimesheetEntry
-- [x] Action : `hr.attendance` Odoo avec `check_in` = `startTime`, `check_out` = `endTime`
-- [x] Pauses : stockées en `hr.attendance.break` (modèle custom à créer Phase 1) OU encodées en notes
-- [x] Idempotency : même date + même employé → ne pas dupliquer (merge ou erreur)
+## Conformité Hook 1 (Odoo) — décision Fabien 2026-05-15
 
-## Question Phase 1
-- Comment stocker les pauses côté Odoo ? 3 options :
-  1. **Modèle custom** `hr.attendance.break` (one2many, propre, recommandé)
-  2. **Champ JSON** sur `hr.attendance` (simple, mais moins requêtable)
-  3. **Multiples `hr.attendance`** (plage 07:30-10:00, 10:15-12:00, 13:00-17:30) — fidèle au modèle Odoo natif mais complique l'UX
+**Les pauses ne sont PAS stockées dans Odoo.** Elles servent uniquement à calculer
+le total effectif côté Qodo. Odoo reçoit seulement les bornes finales.
+
+- [x] Trigger : création TimesheetEntry
+- [x] Action côté Qodo : persister la présence complète (startTime, endTime, pauses[], hoursWorked, projectType, interventionId)
+- [x] Action côté Odoo : créer **1 seule `hr.attendance`** avec :
+  - `check_in` = `startTime`
+  - `check_out` = `endTime`
+  - **Pas de pauses dans Odoo** (elles vivent uniquement dans Qodo)
+- [x] Si une intervention est liée → créer aussi 1 `account.analytic.line` (timesheet) avec `unit_amount = hoursWorked` (effectif, pauses déduites)
+- [x] Mapping employé : le user Qodo doit être lié à un `hr.employee` Odoo. À résoudre côté backend (table de mapping ou champ Odoo custom).
+- [x] Idempotency : même date + même employé → erreur 409, l'utilisateur édite la présence existante
+
+### Conséquence côté UI
+- L'utilisateur saisit ses pauses → Qodo calcule le total
+- Côté Odoo, on ne verra qu'une présence continue (`check_in` 07:30 → `check_out` 17:30)
+- Le total dans `account.analytic.line` reflète les pauses déduites (8h45 plutôt que 10h)
+- C'est cohérent avec le `HoursTableMonth` qui affiche les **heures effectives**
 
 ## Réutilisation
 - Module RH (entry standalone)

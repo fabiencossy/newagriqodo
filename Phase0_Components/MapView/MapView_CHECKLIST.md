@@ -66,9 +66,39 @@
 - `maplibre-gl-draw` ou équivalent (lasso + polygon + measure)
 - `@turf/turf` (calculs surface/distance, intersection)
 
-## Infra Phase 1
-- [ ] Tile server self-hosted (OpenMapTiles sur VPS) — décision Fabien attendue (bloquant)
-- [ ] Style Qodo personnalisé (3 basemaps : satellite, topo, rues)
+## Infra Phase 1 — Recommandation tile server
+
+### Comparatif
+
+| Critère | **Self-hosted OpenMapTiles** | MapTiler Cloud |
+|---|---|---|
+| Coût initial | Setup ~½ journée | 0 |
+| Coût récurrent | 0 (VPS déjà payé) | ~30-100 €/mois selon trafic |
+| Performance | Excellente (LAN VPS) | Bonne (latence CDN) |
+| Souveraineté | ✅ Données chez Qodo | ❌ Dépendance tiers |
+| Taille tiles CH+EU | ~15-30 GB | n/a (CDN) |
+| Maintenance | Mise à jour OSM 2-4×/an | Aucune |
+| Risque vendor lock-in | 0 | Élevé |
+| Style custom Qodo | Total contrôle | Possible mais moins flexible |
+
+### 🟢 Recommandation : **Self-hosted OpenMapTiles** sur VPS Qodo
+
+**Pourquoi** :
+1. **Tu as déjà un VPS Infomaniak performant** (cf. `reference_vps.md` mémoire) → coût additionnel quasi nul.
+2. **Souveraineté agricole** : les coordonnées GPS des parcelles clients sont des données stratégiques, autant ne pas les router via un tiers.
+3. **Couverture limitée** : Suisse + frontaliers → ~15-30 GB de tiles seulement.
+4. **Stack simple** : `docker run` un seul conteneur (`openmaptiles/openmaptiles-server`) + un fichier `.mbtiles`.
+5. **Mise à jour : 2×/an suffisent** pour le contexte agricole (le paysage évolue lentement).
+6. **Cohérent avec ta philosophie** : tu containerises tout (cf. mémoire `project_containerisation.md`).
+
+### Étapes Phase 1 (setup ~½ journée)
+1. Télécharger les tiles Switzerland (~5-10 GB) depuis OpenMapTiles ou les générer avec [Planetiler](https://github.com/onthegomap/planetiler).
+2. Pour le satellite : utiliser tiles [ESRI World Imagery](https://services.arcgisonline.com/arcgis/rest/services/World_Imagery/MapServer/) (CDN gratuit) ou tiles Sentinel-2 via [Sentinel Hub](https://www.sentinel-hub.com/).
+3. Déployer un container `tileserver-gl` ou `openmaptiles-server` sur VPS.
+4. Configurer `styles/satellite.json` + `styles/topo.json` + `styles/streets.json` avec branding Qodo (vert primary).
+5. Setter `MAP_VIEW_DEFAULTS.styleUrl` vers `https://tiles.qodo.ch/styles/{style}.json`.
+
+### Décision Fabien 2026-05-15 : ✅ **Self-hosted**
 
 ## Réutilisation
 - Module Parcellaire (vue principale)

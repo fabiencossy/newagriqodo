@@ -275,6 +275,65 @@
   }
   .mob-item.single-select .check { display: none; }
   .mob-item.single-select .checkmark { color: var(--primary); }
+
+  /* === MOBILE — dropdown de catégories (si > 5 catégories) === */
+  .mob-cat-dropdown {
+    padding: 8px 12px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+  }
+  .mob-cat-dropdown-trigger {
+    width: 100%;
+    display: flex; align-items: center; gap: 8px;
+    height: 40px; padding: 0 12px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); cursor: pointer;
+    font-size: 14px; color: var(--text);
+  }
+  .mob-cat-dropdown-trigger:hover { background: #fbfbf9; }
+  .mob-cat-dropdown-trigger .label-current { flex: 1; text-align: left; font-weight: 500; }
+  .mob-cat-dropdown-trigger .badge {
+    background: rgba(45,80,22,0.1); color: var(--primary);
+    padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 500;
+  }
+  .mob-cat-dropdown-trigger .chevron { color: var(--muted); }
+
+  /* Menu déroulant catégories (mobile) */
+  .mob-cat-menu {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    overflow: hidden;
+    max-height: 260px; overflow-y: auto;
+  }
+  .mob-cat-menu .group-title {
+    padding: 8px 14px 4px;
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+    background: #fbfbf9;
+  }
+  .mob-cat-menu-item {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px;
+    border: 0; background: transparent; cursor: pointer;
+    font-size: 14px; color: var(--text); text-align: left;
+    border-top: 1px solid #f1f1ee;
+  }
+  .mob-cat-menu-item:first-child { border-top: 0; }
+  .mob-cat-menu-item:hover, .mob-cat-menu-item:active { background: #fbfbf9; }
+  .mob-cat-menu-item[aria-pressed="true"] {
+    background: rgba(45,80,22,0.06); color: var(--primary); font-weight: 500;
+  }
+  .mob-cat-menu-item .badge {
+    margin-left: auto;
+    background: #ececea; color: var(--muted);
+    padding: 1px 7px; border-radius: 10px; font-size: 11px; font-weight: 500;
+  }
+  .mob-cat-menu-item[aria-pressed="true"] .badge {
+    background: rgba(45,80,22,0.18); color: var(--primary);
+  }
+  .mob-cat-menu-item .check { color: var(--primary); }
 </style>
 </head>
 <body>
@@ -432,7 +491,7 @@
   <!-- =================================================================
        MOBILE — VUE PLEIN ÉCRAN
        ================================================================= -->
-  <h2>Mobile — Plein écran (multi-select)</h2>
+  <h2>Mobile — Plein écran (multi-select, ≤ 5 catégories → chips)</h2>
   <div class="mob-stage">
     <div class="mob-screen" role="dialog" aria-modal="true" aria-label="Sélectionner des parcelles">
       <div class="mob-bar">
@@ -574,16 +633,124 @@
     </div>
   </div>
 
+  <h2>Mobile — Plein écran (multi-select, &gt; 5 catégories → dropdown)</h2>
+  <p style="font-size:13px;color:var(--muted);max-width:760px;">
+    Au-delà de 5 catégories, les chips deviennent peu pratiques (scroll horizontal pénible). On bascule sur un <strong>dropdown vertical</strong> qui prend toute la largeur, avec compteurs.
+  </p>
+
+  <div class="mob-stage">
+    <div class="mob-screen" role="dialog" aria-modal="true" aria-label="Sélectionner un produit phyto" style="grid-template-rows: auto auto auto 1fr auto;">
+      <div class="mob-bar">
+        <button class="close" aria-label="Retour"><svg class="icon" style="width:20px;height:20px;"><use href="#i-back"/></svg></button>
+        <h3>Produit phyto</h3>
+        <button class="save" disabled>OK</button>
+      </div>
+      <div class="mob-search">
+        <div class="input">
+          <svg class="icon"><use href="#i-search"/></svg>
+          <input value="" placeholder="Rechercher…" aria-label="Recherche">
+        </div>
+      </div>
+      <div class="mob-cat-dropdown">
+        <button class="mob-cat-dropdown-trigger" aria-haspopup="listbox" aria-expanded="false">
+          <span class="label-current">Toutes les catégories</span>
+          <span class="badge">128</span>
+          <svg class="icon chevron"><use href="#i-chevron-down"/></svg>
+        </button>
+      </div>
+      <div class="mob-results">
+        <div class="mob-item single-select" role="option"><div class="content"><div class="title">Roundup Flex</div><div class="meta">Herbicide · Glyphosate 480 g/L</div></div></div>
+        <div class="mob-item single-select" role="option"><div class="content"><div class="title">Karate Zeon</div><div class="meta">Insecticide · Lambda-cyhalothrine 100 g/L</div></div></div>
+        <div class="mob-item single-select" role="option"><div class="content"><div class="title">Opera New</div><div class="meta">Fongicide · Epoxiconazole + Pyraclostrobine</div></div></div>
+        <div class="mob-item single-select" role="option"><div class="content"><div class="title">Score 250 EC</div><div class="meta">Fongicide · Difénoconazole 250 g/L</div></div></div>
+        <div class="mob-item single-select" role="option"><div class="content"><div class="title">Decis Protech</div><div class="meta">Insecticide · Deltaméthrine 15 g/L</div></div></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Mobile — Dropdown catégories ouvert</h2>
+  <p style="font-size:13px;color:var(--muted);max-width:760px;">
+    Liste verticale large, groupes optionnels (ex: "Type" / "Mode d'action"). Chaque catégorie affiche son compteur.
+  </p>
+
+  <div class="mob-stage">
+    <div class="mob-screen" role="dialog" aria-modal="true" style="grid-template-rows: auto auto auto 1fr;">
+      <div class="mob-bar">
+        <button class="close"><svg class="icon" style="width:20px;height:20px;"><use href="#i-back"/></svg></button>
+        <h3>Produit phyto</h3>
+        <button class="save" disabled>OK</button>
+      </div>
+      <div class="mob-search">
+        <div class="input"><svg class="icon"><use href="#i-search"/></svg><input placeholder="Rechercher…"></div>
+      </div>
+      <div class="mob-cat-dropdown">
+        <button class="mob-cat-dropdown-trigger" aria-haspopup="listbox" aria-expanded="true">
+          <span class="label-current">Toutes les catégories</span>
+          <span class="badge">128</span>
+          <svg class="icon chevron" style="transform: rotate(180deg);"><use href="#i-chevron-down"/></svg>
+        </button>
+        <div class="mob-cat-menu" role="listbox" aria-label="Choisir une catégorie" style="margin-top: 6px;">
+          <div class="group-title">Type</div>
+          <button class="mob-cat-menu-item" aria-pressed="true">
+            <svg class="icon check"><use href="#i-check"/></svg>
+            Toutes <span class="badge">128</span>
+          </button>
+          <button class="mob-cat-menu-item">
+            <span style="width: 14px;"></span>
+            Herbicide <span class="badge">42</span>
+          </button>
+          <button class="mob-cat-menu-item">
+            <span style="width: 14px;"></span>
+            Fongicide <span class="badge">38</span>
+          </button>
+          <button class="mob-cat-menu-item">
+            <span style="width: 14px;"></span>
+            Insecticide <span class="badge">23</span>
+          </button>
+          <button class="mob-cat-menu-item">
+            <span style="width: 14px;"></span>
+            Engrais <span class="badge">25</span>
+          </button>
+          <div class="group-title">Mode d'action</div>
+          <button class="mob-cat-menu-item">
+            <span style="width: 14px;"></span>
+            Systémique <span class="badge">52</span>
+          </button>
+          <button class="mob-cat-menu-item">
+            <span style="width: 14px;"></span>
+            Contact <span class="badge">48</span>
+          </button>
+          <button class="mob-cat-menu-item">
+            <span style="width: 14px;"></span>
+            Translaminaire <span class="badge">28</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Règle de bascule chips ↔ dropdown (mobile)</h2>
+  <div style="background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px 18px; max-width: 600px; font-size: 13px; line-height: 1.6;">
+    <strong>Seuil : 5 catégories</strong> (configurable via prop <code>mobileCategoryDropdownThreshold</code>).
+    <ul style="margin: 8px 0 0; padding-left: 20px;">
+      <li><strong>≤ 5</strong> catégories visibles sans scroll → chips horizontales (rapides, scannables).</li>
+      <li><strong>&gt; 5</strong> catégories → dropdown vertical (pas de scroll horizontal, lisibilité optimale).</li>
+      <li>Compte la catégorie active ("Toutes") dans le seuil.</li>
+      <li>Si <code>groups.length &gt; 1</code> → toujours dropdown (les groupes ne marchent pas en chips).</li>
+    </ul>
+  </div>
+
   <h2>Accessibilité</h2>
   <ul style="font-size: 13px; color: var(--muted);">
     <li><strong>Desktop popup</strong> : <code>role="dialog"</code> ou <code>role="listbox"</code> selon mode, fermeture Esc + clic extérieur.</li>
     <li><strong>Mobile fullscreen</strong> : <code>role="dialog"</code> + <code>aria-modal="true"</code>, focus trap, fermeture via bouton retour.</li>
     <li>Trigger : <code>aria-haspopup="dialog"</code> + <code>aria-expanded</code>.</li>
-    <li>Catégories : <code>role="tablist"</code> + <code>aria-pressed</code> sur l'actif.</li>
+    <li>Catégories chips : <code>role="tablist"</code> + <code>aria-pressed</code> sur l'actif.</li>
+    <li>Catégories dropdown : <code>aria-haspopup="listbox"</code> + menu <code>role="listbox"</code> + items <code>aria-pressed</code>.</li>
     <li>Items : <code>role="option"</code> + <code>aria-selected</code>, <code>aria-multiselectable</code> sur la liste en mode multi.</li>
     <li>Compteur de sélection : <code>aria-live="polite"</code>.</li>
     <li>Bouton OK mobile : <code>disabled</code> si aucune sélection (single).</li>
-    <li>Cibles tactiles : 44 px (items mobile), 36 px (chips catégories), 40 px (items popup desktop).</li>
+    <li>Cibles tactiles : 44 px (items mobile + dropdown trigger), 36 px (chips catégories), 40 px (items popup desktop).</li>
   </ul>
 </body>
 </html>

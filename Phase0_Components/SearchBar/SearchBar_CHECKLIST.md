@@ -25,7 +25,7 @@ Découpée en 3 zones :
 
 | Question | Réponse |
 |---|---|
-| Style visuel | **Dark compact** (fond `#1f242b`, texte clair), variante `light` disponible. |
+| Style visuel | **Light compact** par défaut (fond clair), variante `dark` opt-in pour contextes sombres. |
 | Hauteur | 36 px desktop / 40 px mobile. Cibles tactiles élargies via padding. |
 | Position des facets | **Inline dans la barre**, à gauche de l'input (pas en dessous). |
 | Couleur des facets | Aubergine Odoo `#875a7b`, texte blanc. |

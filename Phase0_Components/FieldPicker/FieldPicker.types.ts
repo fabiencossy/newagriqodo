@@ -111,6 +111,13 @@ export interface FieldPickerProps<T = unknown> {
   /** Hauteur max de la liste (mode popup desktop). Défaut '280px'. */
   popupMaxHeight?: string;
 
+  /**
+   * Mobile : seuil au-delà duquel les catégories passent de chips horizontales à dropdown vertical.
+   * Défaut 5. Mettre 0 pour forcer dropdown, Infinity pour forcer chips.
+   * Si `categoryGroups.length > 1` (groupes nommés), le dropdown est toujours utilisé.
+   */
+  mobileCategoryDropdownThreshold?: number;
+
   /** Identifiant ARIA. */
   ariaLabel?: string;
   /** Classe CSS optionnelle. */
@@ -129,6 +136,8 @@ export const FIELD_PICKER_DEFAULTS = {
   popupMaxHeight: '280px',
   /** Breakpoint (px) entre popup et fullscreen en mode 'auto'. */
   fullscreenBreakpointPx: 600,
+  /** Seuil de bascule chips → dropdown sur mobile. */
+  mobileCategoryDropdownThreshold: 5,
 } as const;
 
 /* ============================================================

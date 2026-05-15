@@ -3,7 +3,7 @@
  * Spec : Phase0_Components/ViewSwitcher/ViewSwitcher_CHECKLIST.md
  */
 
-export type ViewKey = 'table' | 'map' | 'dashboard' | 'kanban' | 'list' | 'calendar';
+export type ViewKey = 'table' | 'map' | 'dashboard' | 'kanban' | 'list' | 'calendar' | 'timeline';
 
 export const VIEW_LABELS: Record<ViewKey, string> = {
   table: 'Table',
@@ -12,6 +12,7 @@ export const VIEW_LABELS: Record<ViewKey, string> = {
   kanban: 'Kanban',
   list: 'Liste',
   calendar: 'Calendrier',
+  timeline: 'Timeline',
 };
 
 export type ViewSwitcherDisplay = 'icon+label' | 'icon-only' | 'label-only';

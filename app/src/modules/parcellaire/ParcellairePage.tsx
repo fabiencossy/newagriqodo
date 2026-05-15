@@ -10,8 +10,10 @@ import { AsideCard, type FieldConfig } from '../../components/AsideCard';
 import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
 import { filterParcels } from './filtering';
 import { ParcellaireTable } from './ParcellaireTable';
-import { getAvailableYears, getCurrentAssolement } from '../assolement/assolement.helpers';
+import { getActiveSegment } from '../assolement/assolement.helpers';
 import { cultureColor } from '../assolement/cultures';
+
+const TODAY = new Date().toISOString().slice(0, 10);
 
 const FIELDS: FieldDescriptor[] = [
   { id: 'name', label: 'Nom', type: 'text' },
@@ -93,29 +95,28 @@ export default function ParcellairePage() {
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [parcels, setParcels] = useState<ParcelDetail[]>(PARCELLES);
   const [asideMode, setAsideMode] = useState<'view' | 'edit'>('view');
-  const currentYear = useMemo(() => getAvailableYears()[0] ?? new Date().getFullYear(), []);
 
   // Masque le FAB sur mobile quand le bottom sheet de sélection est ouvert
   // (sinon le `+` chevauche le bouton Enregistrer du sheet).
   useHideFab(!isDesktop && Boolean(selectedId));
 
-  // Enrichissement : culture / variété / couleur dérivées de l'assolement de la campagne courante.
-  // L'entité Assolement (module dédié) pilote ces propriétés agronomiques ;
-  // ParcelDetail conserve uniquement l'identité géographique de la parcelle.
+  // Enrichissement : culture / variété / couleur dérivées du segment d'assolement
+  // ACTIF à la date du jour. L'entité AssolementSegment (module dédié) pilote ces
+  // propriétés agronomiques ; ParcelDetail conserve l'identité géographique seule.
   const parcelsWithAssolement = useMemo<ParcelDetail[]>(
     () =>
       parcels.map((p) => {
-        const a = getCurrentAssolement(p.id, currentYear);
-        if (!a) return p;
+        const s = getActiveSegment(p.id, TODAY);
+        if (!s) return p;
         return {
           ...p,
-          culture: a.culture,
-          varietyName: a.varietyName ?? p.varietyName,
-          sowingDate: a.sowingDate ?? p.sowingDate,
-          color: cultureColor(a.culture),
+          culture: s.culture,
+          varietyName: s.varietyName ?? p.varietyName,
+          sowingDate: s.startDate,
+          color: cultureColor(s.culture),
         };
       }),
-    [parcels, currentYear],
+    [parcels],
   );
 
   const filtered = useMemo(

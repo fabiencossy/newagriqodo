@@ -1,169 +1,509 @@
 import { useMemo, useState } from 'react';
+import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { MapView, type Parcel } from '../../components/MapView';
+import { SearchBar, type FieldDescriptor, type SearchState } from '../../components/SearchBar';
+import { ViewSwitcher, type ViewKey } from '../../components/ViewSwitcher';
 import { ExportButton, type ExportColumn } from '../../components/ExportButton';
+import { useHideFab } from '../../layouts/useFab';
 import { PARCELLES } from '../parcellaire/parcellaire.mocks';
-import { AssolementTable } from './AssolementTable';
+import { AssolementTable, type AssolementRow } from './AssolementTable';
+import { AssolementTimeline } from './AssolementTimeline';
+import { AssolementDetailPanel } from './AssolementDetailPanel';
+import { AssolementSegmentEditor } from './AssolementSegmentEditor';
 import {
-  getAssolementsByYear,
   getAvailableYears,
-  getCurrentAssolement,
+  getDominantCulture,
+  getSegmentsForParcelYear,
 } from './assolement.helpers';
-import { cultureColor } from './cultures';
+import { ASSOLEMENT_SEGMENTS } from './assolement.mocks';
+import type { AssolementSegment } from './assolement.types';
+import { CULTURES, cultureColor } from './cultures';
+
+const TODAY = new Date().toISOString().slice(0, 10);
+
+const FIELDS: FieldDescriptor[] = [
+  { id: 'name', label: 'Nom', type: 'text' },
+  { id: 'code', label: 'Code', type: 'text' },
+  { id: 'variety', label: 'Variété', type: 'text' },
+  {
+    id: 'culture',
+    label: 'Culture',
+    type: 'select',
+    options: CULTURES.filter((c) => c.category !== 'other').map((c) => ({
+      label: c.label,
+      value: c.label,
+    })),
+    groupable: true,
+  },
+];
 
 const EXPORT_COLUMNS: ExportColumn[] = [
   { key: 'parcelId', label: 'Parcelle' },
   { key: 'parcelName', label: 'Nom' },
   { key: 'culture', label: 'Culture' },
   { key: 'varietyName', label: 'Variété' },
-  { key: 'surfaceHa', label: 'Surface (ha)' },
-  { key: 'sowingDate', label: 'Semis' },
-  { key: 'harvestDate', label: 'Récolte' },
+  { key: 'startDate', label: 'Début' },
+  { key: 'endDate', label: 'Fin' },
 ];
 
+type AssolementView = Extract<ViewKey, 'map' | 'timeline' | 'table'>;
+
 export default function AssolementPage() {
+  const isDesktop = useIsDesktop();
   const years = useMemo(() => getAvailableYears(), []);
   const [year, setYear] = useState<number>(years[0] ?? new Date().getFullYear());
+  const [view, setView] = useState<AssolementView>('map');
+  const [searchState, setSearchState] = useState<SearchState>({ facets: [], groupBy: [] });
+  const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
+  const [segments, setSegments] = useState<AssolementSegment[]>([...ASSOLEMENT_SEGMENTS]);
+  const [editingSegment, setEditingSegment] = useState<AssolementSegment | 'new' | null>(null);
 
-  const assolements = useMemo(() => getAssolementsByYear(year), [year]);
+  // Masque le FAB sur mobile quand le panel de sélection est ouvert
+  useHideFab(!isDesktop && Boolean(selectedId));
 
-  // Parcelles coloriées selon la culture de la campagne sélectionnée.
-  const coloredParcels = useMemo<Parcel[]>(() => {
-    return PARCELLES.map((p) => {
-      const a = getCurrentAssolement(p.id, year);
-      return {
-        id: p.id,
-        name: p.name,
-        surfaceHa: p.surfaceHa,
-        status: p.status,
-        culture: a?.culture,
-        color: a ? cultureColor(a.culture) : '#9ca3af',
-        geometry: p.geometry,
-      };
-    });
-  }, [year]);
+  // Pour chaque parcelle, calculer ses segments de l'année et la culture dominante
+  const rows: AssolementRow[] = useMemo(
+    () =>
+      PARCELLES.map((parcel) => ({
+        parcel,
+        segments: getSegmentsForParcelYear(parcel.id, year, segments),
+        dominant: getDominantCulture(parcel.id, year, segments),
+      })),
+    [year, segments],
+  );
 
-  // Stats par culture pour la campagne
-  const cultureStats = useMemo(() => {
-    const acc = new Map<string, number>();
-    assolements.forEach((a) => {
-      const parcel = PARCELLES.find((p) => p.id === a.parcelId);
-      if (!parcel) return;
-      acc.set(a.culture, (acc.get(a.culture) ?? 0) + parcel.surfaceHa);
-    });
-    return [...acc.entries()].sort(([, a], [, b]) => b - a);
-  }, [assolements]);
+  // Filtrage SearchBar (sur le tableau de rows)
+  const filtered = useMemo(() => filterRows(rows, searchState), [rows, searchState]);
 
-  // Rows export — flatten avec name et surface
+  // Parcelles peintes pour la carte : couleur = culture dominante de l'année
+  const coloredParcels = useMemo<Parcel[]>(
+    () =>
+      filtered.map(({ parcel, dominant }) => ({
+        id: parcel.id,
+        name: parcel.name,
+        surfaceHa: parcel.surfaceHa,
+        status: parcel.status,
+        culture: dominant?.culture,
+        color: dominant ? cultureColor(dominant.culture) : '#9ca3af',
+        geometry: parcel.geometry,
+      })),
+    [filtered],
+  );
+
+  // Stats globales (sur les rows filtrés)
+  const totalHa = filtered.reduce((s, r) => s + r.parcel.surfaceHa, 0);
+  const summary = `${filtered.length} parcelles · ${totalHa.toFixed(1)} ha · Campagne ${year}`;
+
+  // Lignes d'export (un row par segment)
   const exportRows = useMemo(() => {
-    return assolements.map((a) => {
-      const parcel = PARCELLES.find((p) => p.id === a.parcelId);
-      return {
-        parcelId: a.parcelId,
-        parcelName: parcel?.name ?? '',
-        culture: a.culture,
-        varietyName: a.varietyName ?? '',
-        surfaceHa: parcel?.surfaceHa ?? 0,
-        sowingDate: a.sowingDate ?? '',
-        harvestDate: a.harvestDate ?? '',
-      };
+    const list: Array<Record<string, unknown>> = [];
+    for (const { parcel, segments: segs } of filtered) {
+      for (const s of segs) {
+        list.push({
+          parcelId: parcel.id,
+          parcelName: parcel.name,
+          culture: s.culture,
+          varietyName: s.varietyName ?? '',
+          startDate: s.startDate,
+          endDate: s.endDate,
+        });
+      }
+    }
+    return list;
+  }, [filtered]);
+
+  const selectedRow = selectedId ? rows.find((r) => r.parcel.id === selectedId) : undefined;
+
+  /* ============ Édition segments ============ */
+
+  const saveSegment = (next: AssolementSegment) => {
+    setSegments((curr) => {
+      const exists = curr.some((s) => s.id === next.id);
+      if (exists) return curr.map((s) => (s.id === next.id ? next : s));
+      return [...curr, next];
     });
-  }, [assolements]);
+    setEditingSegment(null);
+  };
 
-  const totalHa = cultureStats.reduce((s, [, ha]) => s + ha, 0);
+  const deleteSegment = (id: string) => {
+    setSegments((curr) => curr.filter((s) => s.id !== id));
+    setEditingSegment(null);
+  };
 
-  return (
-    <div className="flex h-full flex-col overflow-hidden">
-      {/* Top bar */}
-      <div className="flex-shrink-0 border-b border-(--color-border) bg-(--color-surface) px-3 py-2">
-        <div className="flex w-full items-center gap-2">
-          <div className="hidden shrink-0 items-baseline gap-2 md:flex">
-            <h1 className="m-0 truncate text-base font-semibold">Plan d'assolement</h1>
-            <span className="truncate text-xs text-(--color-muted)">
-              Campagne {year} · {assolements.length} parcelles · {totalHa.toFixed(1)} ha
-            </span>
-          </div>
-          <div className="ml-auto flex shrink-0 items-center gap-2">
-            <label className="inline-flex items-center gap-2 text-xs text-(--color-muted)">
-              Campagne
-              <select
-                value={year}
-                onChange={(e) => setYear(Number(e.target.value))}
-                className="rounded-(--radius-sm) border border-(--color-border) bg-(--color-surface) px-2 py-1 text-sm text-(--color-text)"
-              >
-                {years.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <ExportButton
-              data={exportRows as unknown as ReadonlyArray<Record<string, unknown>>}
-              columns={EXPORT_COLUMNS}
-              filenameBase={`assolement-${year}`}
-              pdfMeta={{ title: `Plan d'assolement ${year} — Domaine Darval` }}
-            />
-          </div>
-        </div>
+  const startNew = () => {
+    if (!selectedRow) return;
+    const draft: AssolementSegment = {
+      id: `AS-${selectedRow.parcel.id}-${Date.now()}`,
+      parcelId: selectedRow.parcel.id,
+      culture: 'Blé',
+      startDate: `${year}-04-01`,
+      endDate: `${year}-08-31`,
+      planned: true,
+    };
+    setEditingSegment(draft);
+  };
+
+  /* ============ Rendu ============ */
+
+  const yearSelect = (
+    <label className="inline-flex items-center gap-2 text-xs text-(--color-muted)">
+      Campagne
+      <select
+        value={year}
+        onChange={(e) => setYear(Number(e.target.value))}
+        className="rounded-(--radius-sm) border border-(--color-border) bg-(--color-surface) px-2 py-1 text-sm text-(--color-text)"
+      >
+        {years.map((y) => (
+          <option key={y} value={y}>
+            {y}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
+
+  // Topbar identique en structure à ParcellairePage
+  const topBar = (
+    <div className="flex w-full items-center gap-2">
+      <div className="hidden shrink-0 items-baseline gap-2 md:flex">
+        <h1 className="m-0 truncate text-base font-semibold">Plan d'assolement</h1>
+        <span className="truncate text-xs text-(--color-muted)">{summary}</span>
       </div>
-
-      {/* Contenu */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-          {/* Carte */}
-          <div className="h-[420px] overflow-hidden rounded-(--radius) border border-(--color-border)">
-            <MapView
-              parcels={coloredParcels}
-              onSelectionChange={() => undefined}
-              height="100%"
-              className="!rounded-none !border-0"
-              showLegend={false}
-            />
-          </div>
-
-          {/* Stats par culture */}
-          <div className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-4">
-            <h2 className="m-0 mb-3 text-sm font-semibold">Par culture · {year}</h2>
-            {cultureStats.length === 0 ? (
-              <p className="m-0 text-xs text-(--color-muted)">Aucune donnée.</p>
-            ) : (
-              <ul className="m-0 list-none space-y-2 p-0">
-                {cultureStats.map(([culture, ha]) => (
-                  <li key={culture}>
-                    <div className="mb-1 flex items-baseline justify-between text-sm">
-                      <span className="inline-flex items-center gap-2">
-                        <span
-                          aria-hidden="true"
-                          className="inline-block h-3 w-3 rounded-(--radius-pill)"
-                          style={{ background: cultureColor(culture) }}
-                        />
-                        {culture}
-                      </span>
-                      <span className="font-mono tabular-nums text-(--color-muted)">
-                        {ha.toFixed(1)} ha · {totalHa > 0 ? ((ha / totalHa) * 100).toFixed(0) : 0} %
-                      </span>
-                    </div>
-                    <div className="h-2 overflow-hidden rounded-(--radius-pill) bg-[#f1f1ee]">
-                      <div
-                        className="h-full"
-                        style={{
-                          width: `${totalHa > 0 ? (ha / totalHa) * 100 : 0}%`,
-                          background: cultureColor(culture),
-                        }}
-                      />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        {/* Table */}
-        <div className="mt-4">
-          <AssolementTable assolements={assolements} />
-        </div>
+      <div className="min-w-0 flex-1 md:mx-auto md:max-w-[640px]">
+        <SearchBar
+          fields={FIELDS}
+          value={searchState}
+          onChange={setSearchState}
+          ariaLabel="Rechercher dans le plan d'assolement"
+        />
+      </div>
+      <div className="shrink-0">{yearSelect}</div>
+      <div className="shrink-0 md:hidden">
+        <ViewSwitcher
+          views={['map', 'timeline', 'table']}
+          activeView={view}
+          onChange={(v) => setView(v as AssolementView)}
+          layout="segmented"
+          display="icon-only"
+        />
+      </div>
+      <div className="hidden shrink-0 md:block">
+        <ViewSwitcher
+          views={['map', 'timeline', 'table']}
+          activeView={view}
+          onChange={(v) => setView(v as AssolementView)}
+          layout="segmented"
+        />
+      </div>
+      <div className="shrink-0">
+        <ExportButton
+          data={exportRows}
+          columns={EXPORT_COLUMNS}
+          filenameBase={`assolement-${year}`}
+          pdfMeta={{ title: `Plan d'assolement ${year} — Domaine Darval` }}
+        />
       </div>
     </div>
   );
+
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      <div className="flex-shrink-0 border-b border-(--color-border) bg-(--color-surface) px-3 py-2">
+        {topBar}
+      </div>
+
+      {/* CONTENU */}
+      {view === 'map' ? (
+        <div className="relative flex-1 overflow-hidden">
+          <MapView
+            parcels={coloredParcels}
+            selectedId={selectedId}
+            onSelectionChange={(ids) => setSelectedId(ids[0])}
+            height="100%"
+            className="!rounded-none !border-0"
+            showLegend={false}
+          />
+          <SelectionPanel
+            selectedRow={selectedRow}
+            year={year}
+            editingSegment={editingSegment}
+            onSelectSegment={(s) => setEditingSegment(s)}
+            onSaveSegment={saveSegment}
+            onDeleteSegment={deleteSegment}
+            onCancelEdit={() => setEditingSegment(null)}
+            onAddSegment={startNew}
+            onClose={() => {
+              setSelectedId(undefined);
+              setEditingSegment(null);
+            }}
+          />
+        </div>
+      ) : view === 'timeline' ? (
+        <div className="flex-1 overflow-y-auto p-4">
+          <TimelineView
+            rows={filtered}
+            year={year}
+            selectedId={selectedId}
+            onSelect={setSelectedId}
+          />
+          {selectedRow && (
+            <SelectionPanel
+              selectedRow={selectedRow}
+              year={year}
+              editingSegment={editingSegment}
+              onSelectSegment={(s) => setEditingSegment(s)}
+              onSaveSegment={saveSegment}
+              onDeleteSegment={deleteSegment}
+              onCancelEdit={() => setEditingSegment(null)}
+              onAddSegment={startNew}
+              onClose={() => {
+                setSelectedId(undefined);
+                setEditingSegment(null);
+              }}
+            />
+          )}
+        </div>
+      ) : (
+        <div className="flex-1 overflow-y-auto p-4">
+          <AssolementTable rows={filtered} selectedId={selectedId} onSelect={setSelectedId} />
+          {selectedRow && (
+            <SelectionPanel
+              selectedRow={selectedRow}
+              year={year}
+              editingSegment={editingSegment}
+              onSelectSegment={(s) => setEditingSegment(s)}
+              onSaveSegment={saveSegment}
+              onDeleteSegment={deleteSegment}
+              onCancelEdit={() => setEditingSegment(null)}
+              onAddSegment={startNew}
+              onClose={() => {
+                setSelectedId(undefined);
+                setEditingSegment(null);
+              }}
+            />
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ============ Vue Timeline (Gantt — lignes parcelles × 12 mois) ============ */
+
+function TimelineView({
+  rows,
+  year,
+  selectedId,
+  onSelect,
+}: {
+  rows: ReadonlyArray<AssolementRow>;
+  year: number;
+  selectedId?: string;
+  onSelect: (id: string) => void;
+}) {
+  if (rows.length === 0) {
+    return (
+      <div className="py-10 text-center text-sm text-(--color-muted)">
+        Aucune parcelle pour cette campagne.
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface)">
+      {rows.map((row, idx) => (
+        <button
+          key={row.parcel.id}
+          type="button"
+          onClick={() => onSelect(row.parcel.id)}
+          className={[
+            'flex w-full items-center gap-3 px-3 py-3 text-left transition-colors hover:bg-[#fbfbf9]',
+            idx > 0 ? 'border-t border-(--color-border)' : '',
+            selectedId === row.parcel.id ? 'bg-(--color-primary)/5' : '',
+          ].join(' ')}
+        >
+          <div className="w-40 shrink-0">
+            <div className="truncate text-sm font-medium">{row.parcel.name}</div>
+            <div className="font-mono text-[11px] text-(--color-muted)">
+              {row.parcel.id} · {row.parcel.surfaceHa.toFixed(2)} ha
+            </div>
+          </div>
+          <div className="min-w-0 flex-1">
+            <AssolementTimeline segments={row.segments} year={year} today={TODAY} />
+          </div>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ============ Panneau de sélection (timeline détaillée + édition segments) ============ */
+
+function SelectionPanel({
+  selectedRow,
+  year,
+  editingSegment,
+  onSelectSegment,
+  onSaveSegment,
+  onDeleteSegment,
+  onCancelEdit,
+  onAddSegment,
+  onClose,
+}: {
+  selectedRow: AssolementRow | undefined;
+  year: number;
+  editingSegment: AssolementSegment | 'new' | null;
+  onSelectSegment: (s: AssolementSegment) => void;
+  onSaveSegment: (s: AssolementSegment) => void;
+  onDeleteSegment: (id: string) => void;
+  onCancelEdit: () => void;
+  onAddSegment: () => void;
+  onClose: () => void;
+}) {
+  if (!selectedRow) return null;
+  const { parcel, segments: segs, dominant } = selectedRow;
+  const dominantLabel = dominant
+    ? `Campagne ${year} · ${dominant.culture} dominant`
+    : `Campagne ${year}`;
+
+  const subject = editingSegment && editingSegment !== 'new' ? editingSegment : undefined;
+
+  return (
+    <div className="absolute inset-x-0 bottom-0 z-[1000] max-h-[88vh] lg:fixed lg:top-0 lg:right-0 lg:bottom-0 lg:left-auto lg:max-h-none lg:w-[440px] lg:border-l lg:border-(--color-border) lg:bg-(--color-surface) lg:shadow-(--shadow-popup)">
+      <AssolementDetailPanel
+        title={`${parcel.id} — ${parcel.name}`}
+        subtitle={dominantLabel}
+        onClose={onClose}
+      >
+        <section>
+          <h3 className="m-0 mb-2 text-[11px] font-semibold tracking-wider text-(--color-muted) uppercase">
+            Timeline {year}
+          </h3>
+          <AssolementTimeline
+            segments={segs}
+            year={year}
+            variant="detail"
+            today={TODAY}
+            onSegmentClick={onSelectSegment}
+            onAdd={onAddSegment}
+          />
+        </section>
+
+        <section className="mt-5">
+          <h3 className="m-0 mb-2 text-[11px] font-semibold tracking-wider text-(--color-muted) uppercase">
+            Segments
+          </h3>
+          {segs.length === 0 ? (
+            <p className="m-0 text-sm text-(--color-muted)">Aucun segment pour cette campagne.</p>
+          ) : (
+            <ul className="m-0 list-none space-y-1.5 p-0">
+              {segs.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => onSelectSegment(s)}
+                    className={[
+                      'flex w-full items-center gap-2 rounded-(--radius-sm) border px-2.5 py-2 text-left text-sm transition-colors',
+                      subject?.id === s.id
+                        ? 'border-(--color-primary) bg-(--color-primary)/5'
+                        : 'border-(--color-border) bg-(--color-surface) hover:bg-[#fbfbf9]',
+                    ].join(' ')}
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-3 w-3 shrink-0 rounded-(--radius-pill)"
+                      style={{ background: cultureColor(s.culture) }}
+                    />
+                    <span className="min-w-0 flex-1 truncate">
+                      <span className="font-medium">{s.culture}</span>
+                      {s.varietyName && (
+                        <span className="text-(--color-muted)"> · {s.varietyName}</span>
+                      )}
+                      {s.planned && (
+                        <span className="ml-2 inline-flex items-center rounded-(--radius-pill) bg-(--color-warning)/15 px-1.5 py-px text-[9px] font-semibold tracking-wider text-[#92400e] uppercase">
+                          Prévu
+                        </span>
+                      )}
+                    </span>
+                    <span className="shrink-0 font-mono text-[11px] text-(--color-muted)">
+                      {fmtShort(s.startDate)} → {fmtShort(s.endDate)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {/* Éditeur */}
+        {subject && (
+          <section className="mt-5">
+            <h3 className="m-0 mb-2 text-[11px] font-semibold tracking-wider text-(--color-muted) uppercase">
+              Éditer le segment
+            </h3>
+            <AssolementSegmentEditor
+              segment={subject}
+              onSave={onSaveSegment}
+              onCancel={onCancelEdit}
+              onDelete={() => onDeleteSegment(subject.id)}
+            />
+          </section>
+        )}
+      </AssolementDetailPanel>
+    </div>
+  );
+}
+
+/* ============ Filtering (local, simple) ============ */
+
+function filterRows(
+  rows: ReadonlyArray<AssolementRow>,
+  state: SearchState,
+): ReadonlyArray<AssolementRow> {
+  return rows.filter((row) => {
+    const { parcel, dominant, segments } = row;
+    if (state.query) {
+      const q = state.query.toLowerCase();
+      const hay = [parcel.name, parcel.id, dominant?.culture, dominant?.segment.varietyName]
+        .filter(Boolean)
+        .map((s) => (s as string).toLowerCase());
+      if (!hay.some((s) => s.includes(q))) return false;
+    }
+    for (const facet of state.facets) {
+      const ok = facetMatches(parcel, dominant, segments, facet);
+      if (!ok) return false;
+    }
+    return true;
+  });
+}
+
+function facetMatches(
+  parcel: AssolementRow['parcel'],
+  dominant: AssolementRow['dominant'],
+  segments: AssolementRow['segments'],
+  facet: { fieldId: string; values: ReadonlyArray<unknown> },
+): boolean {
+  if (facet.values.length === 0) return true;
+  switch (facet.fieldId) {
+    case 'name':
+      return facet.values.some((v) => parcel.name.toLowerCase().includes(String(v).toLowerCase()));
+    case 'code':
+      return facet.values.some((v) => parcel.id.toLowerCase().includes(String(v).toLowerCase()));
+    case 'culture':
+      return facet.values.some(
+        (v) =>
+          dominant?.culture.toLowerCase() === String(v).toLowerCase() ||
+          segments.some((s) => s.culture.toLowerCase() === String(v).toLowerCase()),
+      );
+    case 'variety':
+      return facet.values.some((v) =>
+        segments.some((s) => (s.varietyName ?? '').toLowerCase().includes(String(v).toLowerCase())),
+      );
+    default:
+      return true;
+  }
+}
+
+function fmtShort(date: string): string {
+  const [y, m, d] = date.split('-');
+  return `${d}/${m}/${y!.slice(2)}`;
 }

@@ -44,6 +44,14 @@ const ICONS: Record<ViewKey, React.ReactNode> = {
       <path d="M16 2v4M8 2v4M3 10h18" />
     </>
   ),
+  timeline: (
+    <>
+      <path d="M3 7h6M3 12h12M3 17h9" />
+      <circle cx="9" cy="7" r="1.5" fill="currentColor" />
+      <circle cx="15" cy="12" r="1.5" fill="currentColor" />
+      <circle cx="12" cy="17" r="1.5" fill="currentColor" />
+    </>
+  ),
 };
 
 export function ViewIcon({ view, size = 20 }: { view: ViewKey; size?: number }) {

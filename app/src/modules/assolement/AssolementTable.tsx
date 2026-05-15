@@ -1,26 +1,20 @@
-import { useNavigate } from 'react-router-dom';
-import type { Assolement } from './assolement.types';
+import type { AssolementSegment } from './assolement.types';
+import type { ParcelDetail } from '../parcellaire/parcellaire.mocks';
 import { cultureColor } from './cultures';
-import { PARCELLES } from '../parcellaire/parcellaire.mocks';
 
-interface Row {
-  assolement: Assolement;
-  parcelName: string;
-  surfaceHa: number;
+export interface AssolementRow {
+  parcel: ParcelDetail;
+  segments: ReadonlyArray<AssolementSegment>;
+  dominant: { culture: string; days: number; segment: AssolementSegment } | undefined;
 }
 
-export function AssolementTable({ assolements }: { assolements: ReadonlyArray<Assolement> }) {
-  const navigate = useNavigate();
+interface AssolementTableProps {
+  rows: ReadonlyArray<AssolementRow>;
+  selectedId?: string;
+  onSelect: (id: string) => void;
+}
 
-  const rows: Row[] = assolements
-    .map<Row | undefined>((a) => {
-      const parcel = PARCELLES.find((p) => p.id === a.parcelId);
-      if (!parcel) return undefined;
-      return { assolement: a, parcelName: parcel.name, surfaceHa: parcel.surfaceHa };
-    })
-    .filter((r): r is Row => Boolean(r))
-    .sort((a, b) => a.assolement.parcelId.localeCompare(b.assolement.parcelId));
-
+export function AssolementTable({ rows, selectedId, onSelect }: AssolementTableProps) {
   if (rows.length === 0) {
     return (
       <div className="py-10 text-center text-sm text-(--color-muted)">
@@ -35,42 +29,53 @@ export function AssolementTable({ assolements }: { assolements: ReadonlyArray<As
         <thead>
           <tr className="text-[11px] tracking-wider text-(--color-muted) uppercase">
             <Th>Parcelle</Th>
-            <Th>Culture</Th>
+            <Th>Culture dominante</Th>
             <Th>Variété</Th>
             <Th align="right">Surface</Th>
-            <Th>Semis</Th>
-            <Th>Récolte</Th>
+            <Th align="right">Durée</Th>
+            <Th align="right">Segments</Th>
           </tr>
         </thead>
         <tbody>
-          {rows.map(({ assolement, parcelName, surfaceHa }) => (
+          {rows.map(({ parcel, segments, dominant }) => (
             <tr
-              key={assolement.id}
-              onClick={() => navigate(`/parcellaire/${assolement.parcelId}`)}
-              className="cursor-pointer border-b border-(--color-border) last:border-b-0 hover:bg-[#fbfbf9]"
+              key={parcel.id}
+              onClick={() => onSelect(parcel.id)}
+              className={[
+                'cursor-pointer border-b border-(--color-border) last:border-b-0 hover:bg-[#fbfbf9]',
+                selectedId === parcel.id ? 'bg-(--color-primary)/5' : '',
+              ].join(' ')}
             >
               <td className="px-3 py-2">
-                <div className="font-medium">{parcelName}</div>
-                <div className="font-mono text-[11px] text-(--color-muted)">
-                  {assolement.parcelId}
-                </div>
+                <div className="font-medium">{parcel.name}</div>
+                <div className="font-mono text-[11px] text-(--color-muted)">{parcel.id}</div>
               </td>
               <td className="px-3 py-2">
-                <span className="inline-flex items-center gap-2">
-                  <span
-                    aria-hidden="true"
-                    className="inline-block h-3 w-3 rounded-(--radius-pill)"
-                    style={{ background: cultureColor(assolement.culture) }}
-                  />
-                  {assolement.culture}
-                </span>
+                {dominant ? (
+                  <span className="inline-flex items-center gap-2">
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-3 w-3 rounded-(--radius-pill)"
+                      style={{ background: cultureColor(dominant.culture) }}
+                    />
+                    {dominant.culture}
+                  </span>
+                ) : (
+                  <span className="text-(--color-muted)">—</span>
+                )}
               </td>
-              <td className="px-3 py-2 text-(--color-muted)">{assolement.varietyName ?? '—'}</td>
+              <td className="px-3 py-2 text-(--color-muted)">
+                {dominant?.segment.varietyName ?? '—'}
+              </td>
               <td className="px-3 py-2 text-right font-mono tabular-nums">
-                {surfaceHa.toFixed(2)} ha
+                {parcel.surfaceHa.toFixed(2)} ha
               </td>
-              <td className="px-3 py-2 font-mono text-xs">{formatDate(assolement.sowingDate)}</td>
-              <td className="px-3 py-2 font-mono text-xs">{formatDate(assolement.harvestDate)}</td>
+              <td className="px-3 py-2 text-right font-mono text-xs tabular-nums text-(--color-muted)">
+                {dominant ? `${Math.round((dominant.days / 365) * 12)} mois` : '—'}
+              </td>
+              <td className="px-3 py-2 text-right font-mono tabular-nums text-(--color-muted)">
+                {segments.length}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -90,11 +95,4 @@ function Th({ children, align = 'left' }: { children: React.ReactNode; align?: '
       {children}
     </th>
   );
-}
-
-function formatDate(date: string | undefined): string {
-  if (!date) return '—';
-  const parts = date.split('-');
-  if (parts.length !== 3) return date;
-  return `${parts[2]}/${parts[1]}/${parts[0]}`;
 }

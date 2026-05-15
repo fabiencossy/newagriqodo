@@ -4,6 +4,15 @@ import { PageContainer } from '../_shared/PageContainer';
 import { MapView } from '../../components/MapView';
 import { useFabActions, useHideFab } from '../../layouts/useFab';
 import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
+import { AssolementTimeline } from '../assolement/AssolementTimeline';
+import {
+  getActiveSegment,
+  getDominantCulture,
+  getSegmentsForParcelYear,
+} from '../assolement/assolement.helpers';
+import { cultureColor } from '../assolement/cultures';
+
+const TODAY = new Date().toISOString().slice(0, 10);
 
 /** URL Google Maps en mode itinéraire vers le centroïde de la parcelle. */
 function googleMapsDirUrl(parcel: ParcelDetail): string {
@@ -40,8 +49,6 @@ const STATUS_STYLES: Record<NonNullable<ParcelDetail['status']>, string> = {
   fallow: 'bg-(--color-warning)/12 text-[#92400e]',
   archived: 'bg-[#e5e5e5] text-(--color-muted)',
 };
-
-const CULTURES = ['Blé', 'Maïs', 'Colza', 'Orge', 'Jachère', 'Archivé'];
 
 export default function ParcelleDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -131,7 +138,11 @@ export default function ParcelleDetailPage() {
             {draft.id} — {draft.name}
           </h1>
           <p className="m-0 mt-0.5 text-sm text-(--color-muted)">
-            {draft.surfaceHa.toFixed(2)} ha · {draft.culture}
+            {draft.surfaceHa.toFixed(2)} ha
+            {(() => {
+              const active = getActiveSegment(draft.id, TODAY);
+              return active ? ` · ${active.culture}` : '';
+            })()}
           </p>
         </div>
         {draft.status && (
@@ -222,43 +233,8 @@ export default function ParcelleDetailPage() {
           </div>
         </section>
 
-        {/* Culture */}
-        <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-2">
-          <h2 className="m-0 mb-4 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
-            Culture en place
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Culture" htmlFor="f-cult">
-              <select
-                id="f-cult"
-                value={draft.culture ?? ''}
-                onChange={(e) => setField('culture', e.target.value)}
-                className={inputClass}
-              >
-                {CULTURES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </Field>
-            <Field label="Variété" htmlFor="f-var">
-              <input
-                id="f-var"
-                type="text"
-                value={draft.varietyName ?? ''}
-                onChange={(e) => setField('varietyName', e.target.value)}
-                placeholder="ex. Arnold"
-                className={inputClass}
-              />
-            </Field>
-          </div>
-          <p className="mt-3 text-xs text-(--color-muted)">
-            La date de semis et l'historique de culture seront gérés depuis le module
-            <span className="font-medium"> Plan d'assolement</span> (à venir). Les couleurs des
-            parcelles sur la carte refléteront l'assolement courant (instant T).
-          </p>
-        </section>
+        {/* Assolement — timeline + segments de la campagne */}
+        <AssolementSection parcelId={draft.id} year={draft.year} />
 
         {/* Notes */}
         <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5">
@@ -349,6 +325,98 @@ export default function ParcelleDetailPage() {
       </footer>
     </PageContainer>
   );
+}
+
+function AssolementSection({ parcelId, year }: { parcelId: string; year: number }) {
+  const navigate = useNavigate();
+  const segments = useMemo(() => getSegmentsForParcelYear(parcelId, year), [parcelId, year]);
+  const active = useMemo(() => getActiveSegment(parcelId, TODAY), [parcelId]);
+  const dominant = useMemo(() => getDominantCulture(parcelId, year), [parcelId, year]);
+
+  return (
+    <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-2">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="m-0 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
+          Assolement · campagne {year}
+        </h2>
+        <button
+          type="button"
+          onClick={() => navigate('/assolement')}
+          className="inline-flex h-9 items-center gap-1.5 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium text-(--color-text) hover:bg-[#f8f8f5]"
+        >
+          Modifier dans le Plan d'assolement
+        </button>
+      </div>
+
+      {/* Résumé : segment actif (instant T) + culture dominante de la campagne */}
+      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <ResumeCard
+          title="Aujourd'hui"
+          culture={active?.culture}
+          variety={active?.varietyName}
+          subtitle={
+            active
+              ? `${fmtDate(active.startDate)} → ${fmtDate(active.endDate)}`
+              : 'Aucun segment actif'
+          }
+        />
+        <ResumeCard
+          title="Dominant"
+          culture={dominant?.culture}
+          variety={dominant?.segment.varietyName}
+          subtitle={
+            dominant ? `${Math.round((dominant.days / 365) * 12)} mois sur la campagne` : '—'
+          }
+        />
+      </div>
+
+      {/* Timeline */}
+      <AssolementTimeline segments={segments} year={year} variant="detail" today={TODAY} />
+    </section>
+  );
+}
+
+function ResumeCard({
+  title,
+  culture,
+  variety,
+  subtitle,
+}: {
+  title: string;
+  culture?: string;
+  variety?: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-3">
+      <div className="text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
+        {title}
+      </div>
+      <div className="mt-1 flex items-center gap-2 text-sm font-medium">
+        {culture ? (
+          <>
+            <span
+              aria-hidden="true"
+              className="inline-block h-3 w-3 rounded-(--radius-pill)"
+              style={{ background: cultureColor(culture) }}
+            />
+            <span>
+              {culture}
+              {variety ? ` · ${variety}` : ''}
+            </span>
+          </>
+        ) : (
+          <span className="text-(--color-muted)">—</span>
+        )}
+      </div>
+      <div className="mt-0.5 text-[11px] text-(--color-muted)">{subtitle}</div>
+    </div>
+  );
+}
+
+function fmtDate(date: string): string {
+  const [y, m, d] = date.split('-');
+  return `${d}/${m}/${y}`;
 }
 
 const inputClass =

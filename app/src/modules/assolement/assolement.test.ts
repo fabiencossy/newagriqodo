@@ -1,58 +1,116 @@
 import { describe, expect, it } from 'vitest';
 import {
-  getAssolementsByYear,
+  getActiveSegment,
   getAvailableYears,
-  getCurrentAssolement,
+  getDominantCulture,
+  getSegmentsForParcelYear,
+  segmentDaysInYear,
 } from './assolement.helpers';
-import type { Assolement } from './assolement.types';
+import type { AssolementSegment } from './assolement.types';
 import { CULTURES, cultureByLabel, cultureColor, listCultureLabels } from './cultures';
 
-const SAMPLE: Assolement[] = [
-  { id: 'AS-A-2026', parcelId: 'A', year: 2026, culture: 'Blé' },
-  { id: 'AS-A-2025', parcelId: 'A', year: 2025, culture: 'Colza' },
-  { id: 'AS-A-2024', parcelId: 'A', year: 2024, culture: 'Maïs' },
-  { id: 'AS-B-2026', parcelId: 'B', year: 2026, culture: 'Maïs' },
-  { id: 'AS-B-2024', parcelId: 'B', year: 2024, culture: 'Blé' },
+const SEGS: AssolementSegment[] = [
+  // Parcelle A — Blé 6 mois + Jachère 5 mois en 2026
+  {
+    id: 'A-2026-MAIN',
+    parcelId: 'A',
+    culture: 'Blé',
+    startDate: '2026-03-01',
+    endDate: '2026-08-31',
+  },
+  {
+    id: 'A-2026-INTER',
+    parcelId: 'A',
+    culture: 'Jachère',
+    startDate: '2026-09-01',
+    endDate: '2026-12-31',
+  },
+  // Parcelle B — Colza chevauchant 2025 et 2026
+  {
+    id: 'B-2026-MAIN',
+    parcelId: 'B',
+    culture: 'Colza',
+    startDate: '2025-08-25',
+    endDate: '2026-07-15',
+  },
 ];
 
-describe('getCurrentAssolement', () => {
-  it("retourne l'assolement de l'année exacte", () => {
-    const a = getCurrentAssolement('A', 2025, SAMPLE);
-    expect(a?.culture).toBe('Colza');
+describe('getSegmentsForParcelYear', () => {
+  it("retourne les segments d'une parcelle qui intersectent l'année", () => {
+    const list = getSegmentsForParcelYear('A', 2026, SEGS);
+    expect(list.map((s) => s.id)).toEqual(['A-2026-MAIN', 'A-2026-INTER']);
   });
 
-  it("fallback vers l'année précédente la plus récente quand non trouvé", () => {
-    // Parcelle B n'a pas de 2025 → fallback sur 2024
-    const a = getCurrentAssolement('B', 2025, SAMPLE);
-    expect(a?.year).toBe(2024);
-    expect(a?.culture).toBe('Blé');
+  it('inclut un segment qui chevauche deux années', () => {
+    const list2025 = getSegmentsForParcelYear('B', 2025, SEGS);
+    const list2026 = getSegmentsForParcelYear('B', 2026, SEGS);
+    expect(list2025).toHaveLength(1);
+    expect(list2026).toHaveLength(1);
+    expect(list2025[0]?.id).toBe('B-2026-MAIN');
   });
 
-  it('renvoie undefined si parcelle inconnue', () => {
-    expect(getCurrentAssolement('XYZ', 2026, SAMPLE)).toBeUndefined();
-  });
-
-  it('renvoie undefined si aucune année antérieure disponible', () => {
-    // Parcelle A : 2024 est sa plus ancienne. Demander 2023 → rien.
-    expect(getCurrentAssolement('A', 2023, SAMPLE)).toBeUndefined();
+  it('retourne tableau vide si aucun segment ne matche', () => {
+    expect(getSegmentsForParcelYear('A', 2099, SEGS)).toEqual([]);
   });
 });
 
-describe('getAssolementsByYear', () => {
-  it('filtre par année exacte', () => {
-    const list = getAssolementsByYear(2026, SAMPLE);
-    expect(list).toHaveLength(2);
-    expect(list.map((a) => a.parcelId).sort()).toEqual(['A', 'B']);
+describe('segmentDaysInYear', () => {
+  it("compte les jours d'occupation dans l'année", () => {
+    // Blé 01/03 → 31/08 = 31+30+31+30+31+31 = 184 jours
+    const ble = SEGS[0]!;
+    expect(segmentDaysInYear(ble, 2026)).toBe(184);
   });
 
-  it('retourne tableau vide si année inconnue', () => {
-    expect(getAssolementsByYear(2099, SAMPLE)).toEqual([]);
+  it("retourne 0 si le segment est entièrement hors de l'année", () => {
+    expect(segmentDaysInYear(SEGS[0]!, 2099)).toBe(0);
+  });
+
+  it("ne compte que la portion intersectant l'année (segment à cheval)", () => {
+    // Colza 25/08/2025 → 15/07/2026 ; portion 2025 = 25/08 → 31/12 = 7+30+31+30+31 = 129
+    expect(segmentDaysInYear(SEGS[2]!, 2025)).toBe(129);
+    // portion 2026 = 01/01 → 15/07 = 31+28+31+30+31+30+15 = 196
+    expect(segmentDaysInYear(SEGS[2]!, 2026)).toBe(196);
+  });
+});
+
+describe('getDominantCulture', () => {
+  it('retourne la culture avec le plus de jours sur la campagne', () => {
+    // Parcelle A en 2026 : Blé 184j vs Jachère 122j → Blé
+    const d = getDominantCulture('A', 2026, SEGS);
+    expect(d?.culture).toBe('Blé');
+    expect(d?.days).toBe(184);
+  });
+
+  it('marche aussi avec des segments à cheval', () => {
+    const d = getDominantCulture('B', 2026, SEGS);
+    expect(d?.culture).toBe('Colza');
+  });
+
+  it("renvoie undefined si aucun segment dans l'année", () => {
+    expect(getDominantCulture('A', 2099, SEGS)).toBeUndefined();
+  });
+});
+
+describe('getActiveSegment', () => {
+  it('retourne le segment qui contient la date donnée', () => {
+    const s = getActiveSegment('A', '2026-05-15', SEGS);
+    expect(s?.culture).toBe('Blé');
+  });
+
+  it("retourne undefined quand aucun segment n'inclut la date", () => {
+    expect(getActiveSegment('A', '2099-01-01', SEGS)).toBeUndefined();
+  });
+
+  it('reconnaît les bornes inclusives', () => {
+    expect(getActiveSegment('A', '2026-03-01', SEGS)?.culture).toBe('Blé');
+    expect(getActiveSegment('A', '2026-08-31', SEGS)?.culture).toBe('Blé');
+    expect(getActiveSegment('A', '2026-09-01', SEGS)?.culture).toBe('Jachère');
   });
 });
 
 describe('getAvailableYears', () => {
-  it('retourne les années uniques, plus récente en premier', () => {
-    expect(getAvailableYears(SAMPLE)).toEqual([2026, 2025, 2024]);
+  it('couvre toutes les années traversées par au moins un segment', () => {
+    expect(getAvailableYears(SEGS)).toEqual([2026, 2025]);
   });
 });
 

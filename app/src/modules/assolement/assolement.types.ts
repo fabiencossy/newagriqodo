@@ -1,18 +1,27 @@
 /**
- * Assolement = campagne agronomique d'une parcelle pour une année donnée.
- * Une parcelle (entité géographique stable) porte un assolement différent
- * par campagne : c'est cette entité qui pilote la culture, la variété,
- * les dates de semis/récolte — et donc la couleur de la parcelle sur la carte.
+ * Un segment d'assolement = une culture sur une période continue.
+ *
+ * Une parcelle (entité géographique stable) porte N segments dans le temps :
+ * - Blé semé 12/03/2026 → récolté 31/07/2026
+ * - Jachère 01/08/2026 → 31/12/2026 (interculture)
+ * - Colza semé 25/08/2026 → récolté 15/07/2027
+ * - ...
+ *
+ * Ce sont les segments qui pilotent la couleur de la parcelle sur la carte
+ * (couleur du segment actif à l'instant T) et l'affichage du Plan d'assolement
+ * (culture dominante en durée pour la campagne sélectionnée, timeline 12 mois).
  */
-export interface Assolement {
-  /** Ex: AS-PF-001-2026 */
+export interface AssolementSegment {
   id: string;
   parcelId: string;
-  year: number;
-  /** Libellé de culture (cohérent avec le catalogue CULTURES). */
+  /** Libellé culture (cohérent avec le catalogue CULTURES). */
   culture: string;
   varietyName?: string;
-  sowingDate?: string;
-  harvestDate?: string;
+  /** YYYY-MM-DD inclus. */
+  startDate: string;
+  /** YYYY-MM-DD inclus. */
+  endDate: string;
   notes?: string;
+  /** Segment futur prévu mais non réalisé. */
+  planned?: boolean;
 }

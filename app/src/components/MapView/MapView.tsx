@@ -54,7 +54,7 @@ export function MapView({
   const mapRef = useRef<MaplibreMap | null>(null);
   const markerRefs = useRef<Map<string, maplibregl.Marker>>(new Map());
   const [mapReady, setMapReady] = useState(false);
-  const [basemap, setBasemap] = useState<Basemap>(basemapProp ?? 'satellite');
+  const [basemap, setBasemap] = useState<Basemap>(basemapProp ?? 'street');
   // Compteur incrémenté à chaque setStyle pour re-déclencher l'init des layers
   const [styleVersion, setStyleVersion] = useState(0);
 

@@ -90,9 +90,10 @@ function SegmentedVariant({
     <div
       role="tablist"
       aria-label={ariaLabel}
-      className={['inline-flex gap-0.5 rounded-(--radius) bg-[#f1f1ee] p-1', className ?? ''].join(
-        ' ',
-      )}
+      className={[
+        'inline-flex gap-0.5 rounded-(--radius) bg-[#f1f1ee] p-0.5',
+        className ?? '',
+      ].join(' ')}
     >
       {views.map((view) => {
         const isActive = view === activeView;
@@ -110,7 +111,7 @@ function SegmentedVariant({
             className={[
               'inline-flex items-center gap-1.5 rounded-(--radius-sm) text-sm transition-colors',
               'disabled:cursor-not-allowed disabled:opacity-50',
-              iconOnly ? 'h-10 w-10 justify-center px-0' : 'h-9 px-3.5',
+              iconOnly ? 'h-9 w-9 justify-center px-0' : 'h-9 px-3.5',
               isActive
                 ? 'bg-(--color-primary) text-white hover:bg-(--color-primary-hover)'
                 : 'text-(--color-text) hover:bg-black/5',

@@ -12,19 +12,24 @@ import type { Basemap } from './MapView.types';
 const BASE_STREETS: StyleSpecification = {
   version: 8,
   sources: {
-    osm: {
+    carto: {
       type: 'raster',
-      tiles: ['https://tile.openstreetmap.org/{z}/{x}/{y}.png'],
+      tiles: [
+        'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+        'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
+      ],
       tileSize: 256,
-      attribution: '© OpenStreetMap contributors',
-      maxzoom: 19,
+      attribution: '© OpenStreetMap contributors, © CARTO',
+      maxzoom: 20,
     },
   },
   layers: [
     {
-      id: 'osm-layer',
+      id: 'carto-layer',
       type: 'raster',
-      source: 'osm',
+      source: 'carto',
       minzoom: 0,
       maxzoom: 22,
     },

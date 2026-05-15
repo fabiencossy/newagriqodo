@@ -178,7 +178,7 @@ export function SearchBar({
         aria-label={ariaLabel}
         onClick={handleBarClick}
         className={[
-          'flex h-9 items-stretch overflow-hidden rounded-(--radius) border transition-colors',
+          'flex h-10 items-stretch overflow-hidden rounded-(--radius) border transition-colors',
           isDark
             ? 'border-[#2d343d] bg-[#1f242b] text-[#e8eaed]'
             : 'border-(--color-border) bg-(--color-surface) text-(--color-text)',

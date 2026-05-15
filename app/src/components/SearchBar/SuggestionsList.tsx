@@ -34,7 +34,7 @@ export function SuggestionsList({
       id={listId}
       role="listbox"
       aria-label={ariaLabel}
-      className="mt-1 max-w-[540px] rounded-(--radius) border border-(--color-border) bg-(--color-surface) py-1 shadow-(--shadow-popup)"
+      className="absolute top-full right-0 left-0 z-40 mt-1 max-w-[540px] rounded-(--radius) border border-(--color-border) bg-(--color-surface) py-1 shadow-(--shadow-popup)"
     >
       <div className="px-3.5 py-1.5 text-[11px] tracking-wider text-(--color-muted) uppercase">
         Rechercher « <strong className="text-(--color-text)">{query}</strong> » dans :

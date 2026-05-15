@@ -91,13 +91,12 @@ export default function ParcellairePage() {
   const [asideMode, setAsideMode] = useState<'view' | 'edit'>('view');
 
   const filtered = useMemo(() => filterParcels(parcels, searchState), [parcels, searchState]);
-
   const selected = useMemo(
     () => (selectedId ? parcels.find((p) => p.id === selectedId) : undefined),
     [parcels, selectedId],
   );
-
   const totalSurface = filtered.reduce((s, p) => s + p.surfaceHa, 0);
+  const summary = `${filtered.length} parcelles · ${totalSurface.toFixed(1)} ha`;
 
   const handleSaveAside = async (next: Record<string, unknown>) => {
     setParcels((curr) =>
@@ -106,25 +105,135 @@ export default function ParcellairePage() {
     setAsideMode('view');
   };
 
+  const viewSwitcher = (
+    <ViewSwitcher
+      views={['map', 'table', 'dashboard']}
+      activeView={view}
+      onChange={setView}
+      layout="segmented"
+    />
+  );
+  const exportBtn = (
+    <ExportButton
+      data={filtered as unknown as ReadonlyArray<Record<string, unknown>>}
+      columns={EXPORT_COLUMNS}
+      filenameBase="parcelles"
+      pdfMeta={{ title: 'Parcelles — Domaine Darval' }}
+    />
+  );
+
+  /* ============================================================
+   * VUE MAP — full-page avec overlays absolus
+   * ============================================================ */
+  if (view === 'map') {
+    return (
+      <div className="flex h-full flex-col overflow-hidden">
+        {/* === TOP BAR === */}
+        {/* Mobile : SearchBar + ViewSwitcher icon-only + Export sur une seule ligne */}
+        <div className="flex items-center gap-2 border-b border-(--color-border) bg-(--color-surface) px-3 py-2 md:hidden">
+          <div className="min-w-0 flex-1">
+            <SearchBar
+              fields={FIELDS}
+              value={searchState}
+              onChange={setSearchState}
+              ariaLabel="Rechercher dans le parcellaire"
+            />
+          </div>
+          <ViewSwitcher
+            views={['map', 'table', 'dashboard']}
+            activeView={view}
+            onChange={setView}
+            layout="segmented"
+            display="icon-only"
+          />
+          {exportBtn}
+        </div>
+
+        {/* Desktop : ligne 1 = titre + actions, ligne 2 = SearchBar */}
+        <div className="hidden border-b border-(--color-border) bg-(--color-surface) px-4 py-2 md:block">
+          <div className="flex items-center gap-3">
+            <div className="flex min-w-0 items-baseline gap-2">
+              <h1 className="m-0 truncate text-base font-semibold">Parcellaire</h1>
+              <span className="truncate text-xs text-(--color-muted)">{summary}</span>
+            </div>
+            <div className="ml-auto flex items-center gap-2">
+              {viewSwitcher}
+              {exportBtn}
+            </div>
+          </div>
+          <div className="mt-2 max-w-[640px]">
+            <SearchBar
+              fields={FIELDS}
+              value={searchState}
+              onChange={setSearchState}
+              ariaLabel="Rechercher dans le parcellaire"
+            />
+          </div>
+        </div>
+
+        {/* === CARTE flex-1 === */}
+        <div className="relative flex-1 overflow-hidden">
+          <MapView
+            parcels={filtered}
+            selectedId={selectedId}
+            onSelectionChange={(ids) => setSelectedId(ids[0])}
+            height="100%"
+            className="!rounded-none !border-0"
+          />
+
+          {/* Aside flottant à droite (desktop) */}
+          {selected && (
+            <div className="absolute top-3 right-3 bottom-3 z-30 hidden w-[360px] max-w-[calc(100%-1.5rem)] rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-popup) lg:flex">
+              <AsideCard
+                title={`${selected.id} — ${selected.name}`}
+                subtitle="Sélection courante"
+                data={selected as unknown as Record<string, unknown>}
+                fields={ASIDE_FIELDS}
+                mode={asideMode}
+                onModeChange={setAsideMode}
+                editable
+                onClose={() => setSelectedId(undefined)}
+                onSave={handleSaveAside}
+                layout="aside"
+                className="!h-full !border-0"
+              />
+            </div>
+          )}
+
+          {/* Bottom sheet mobile sur sélection */}
+          {selected && (
+            <div className="fixed inset-x-0 bottom-0 z-40 lg:hidden">
+              <AsideCard
+                title={`${selected.id} — ${selected.name}`}
+                subtitle="Sélection courante"
+                data={selected as unknown as Record<string, unknown>}
+                fields={ASIDE_FIELDS}
+                mode={asideMode}
+                onModeChange={setAsideMode}
+                editable
+                onClose={() => setSelectedId(undefined)}
+                onSave={handleSaveAside}
+                layout="bottomsheet"
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  /* ============================================================
+   * VUES TABLE / DASHBOARD — layout classique avec PageContainer
+   * ============================================================ */
   return (
     <PageContainer>
       <PageHeader
         title="Parcellaire"
-        subtitle={`${filtered.length} parcelles · ${totalSurface.toFixed(1)} ha`}
+        subtitle={summary}
         actions={
           <>
-            <ViewSwitcher
-              views={['map', 'table', 'dashboard']}
-              activeView={view}
-              onChange={setView}
-              layout="segmented"
-            />
-            <ExportButton
-              data={filtered as unknown as ReadonlyArray<Record<string, unknown>>}
-              columns={EXPORT_COLUMNS}
-              filenameBase="parcelles"
-              pdfMeta={{ title: 'Parcelles — Domaine Darval' }}
-            />
+            {viewSwitcher}
+            {exportBtn}
           </>
         }
       />
@@ -138,24 +247,15 @@ export default function ParcellairePage() {
         />
       </div>
 
-      {/* Layout : contenu principal + aside */}
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
         <div className="min-w-0">
-          {view === 'map' && (
-            <MapView
-              parcels={filtered}
-              selectedId={selectedId}
-              onSelectionChange={(ids) => setSelectedId(ids[0])}
-              height="540px"
-            />
-          )}
-          {view === 'table' && (
+          {view === 'table' ? (
             <ParcellaireTable parcels={filtered} selectedId={selectedId} onSelect={setSelectedId} />
+          ) : (
+            <DashboardView parcels={filtered} />
           )}
-          {view === 'dashboard' && <DashboardView parcels={filtered} />}
         </div>
 
-        {/* Aside (toujours présent en desktop, conditionnel mobile) */}
         <div className="hidden lg:block">
           {selected ? (
             <AsideCard

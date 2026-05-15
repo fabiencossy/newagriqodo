@@ -2,12 +2,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import maplibregl, { type Map as MaplibreMap, type MapMouseEvent } from 'maplibre-gl';
 import 'maplibre-gl/dist/maplibre-gl.css';
 import { MapIcon, type IconName } from './icons';
+import { BASEMAP_LABELS, BASEMAP_STYLES } from './basemaps';
 import {
   MAP_VIEW_DEFAULTS,
   MARKER_COLORS,
   TOOL_LABELS,
   TOOL_SHORTCUTS,
   parcelsToFeatureCollection,
+  type Basemap,
   type MapTool,
   type MapViewProps,
 } from './MapView.types';
@@ -41,8 +43,9 @@ export function MapView({
   center = MAP_VIEW_DEFAULTS.defaultCenter,
   zoom = MAP_VIEW_DEFAULTS.zoom,
   zoomRange = MAP_VIEW_DEFAULTS.zoomRange,
+  basemap: basemapProp,
+  showBasemapToggle = MAP_VIEW_DEFAULTS.showBasemapToggle,
   showLegend = MAP_VIEW_DEFAULTS.showLegend,
-  styleUrl = MAP_VIEW_DEFAULTS.styleUrl,
   height = MAP_VIEW_DEFAULTS.height,
   interactive = MAP_VIEW_DEFAULTS.interactive,
   className,
@@ -51,6 +54,9 @@ export function MapView({
   const mapRef = useRef<MaplibreMap | null>(null);
   const markerRefs = useRef<Map<string, maplibregl.Marker>>(new Map());
   const [mapReady, setMapReady] = useState(false);
+  const [basemap, setBasemap] = useState<Basemap>(basemapProp ?? 'satellite');
+  // Compteur incrémenté à chaque setStyle pour re-déclencher l'init des layers
+  const [styleVersion, setStyleVersion] = useState(0);
 
   const effectiveSelectedIds = useMemo(
     () => [...(selectedIds ?? []), ...(selectedId ? [selectedId] : [])].filter(Boolean),
@@ -62,15 +68,19 @@ export function MapView({
     if (!containerRef.current || mapRef.current) return;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: styleUrl,
+      style: BASEMAP_STYLES[basemap],
       center,
       zoom,
       minZoom: zoomRange[0],
       maxZoom: zoomRange[1],
       interactive,
     });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
     map.on('load', () => setMapReady(true));
+    map.on('styledata', () => {
+      // Re-fire si l'app a déjà mis le map en état ready
+      if (mapRef.current === map) setStyleVersion((v) => v + 1);
+    });
     mapRef.current = map;
 
     return () => {
@@ -78,13 +88,24 @@ export function MapView({
       mapRef.current = null;
       setMapReady(false);
     };
+    // Initialiser uniquement au mount ; les changements de basemap passent par setStyle()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [styleUrl, interactive]);
+  }, [interactive]);
 
-  /* ---------- Layers parcelles ---------- */
+  /* ---------- Switch basemap ---------- */
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
+    map.setStyle(BASEMAP_STYLES[basemap], { diff: false });
+  }, [basemap, mapReady]);
+
+  /* ---------- Layers parcelles ---------- */
+  // styleVersion bump à chaque setStyle → force la ré-injection des sources/layers
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    // Attendre que le style soit chargé après setStyle
+    if (!map.isStyleLoaded()) return;
 
     const data = parcelsToFeatureCollection(parcels);
 
@@ -140,7 +161,7 @@ export function MapView({
         },
       });
     }
-  }, [parcels, mapReady]);
+  }, [parcels, mapReady, styleVersion]);
 
   /* ---------- Feature states (sélection) ---------- */
   useEffect(() => {
@@ -154,7 +175,7 @@ export function MapView({
         // Source pas encore prête : on ignore
       }
     }
-  }, [effectiveSelectedIds, parcels, mapReady]);
+  }, [effectiveSelectedIds, parcels, mapReady, styleVersion]);
 
   /* ---------- Sélection au clic ---------- */
   useEffect(() => {
@@ -332,6 +353,35 @@ export function MapView({
           {markers.some((m) => m.kind === 'note') && (
             <LegendDot color={MARKER_COLORS.note} label="Note" />
           )}
+        </div>
+      )}
+
+      {/* Toggle basemap (haut-droite) */}
+      {showBasemapToggle && (
+        <div
+          role="radiogroup"
+          aria-label="Fond de carte"
+          className="absolute top-3 right-3 z-10 inline-flex overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-card)"
+        >
+          {(['satellite', 'street', 'topo'] as const).map((b) => {
+            const isActive = b === basemap;
+            return (
+              <button
+                key={b}
+                type="button"
+                aria-pressed={isActive}
+                onClick={() => setBasemap(b)}
+                className={[
+                  'h-8 px-3 text-xs font-medium transition-colors',
+                  isActive
+                    ? 'bg-(--color-primary) text-white'
+                    : 'text-(--color-text) hover:bg-[#f5f5f0]',
+                ].join(' ')}
+              >
+                {BASEMAP_LABELS[b]}
+              </button>
+            );
+          })}
         </div>
       )}
 

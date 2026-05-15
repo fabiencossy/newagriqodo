@@ -35,7 +35,7 @@ export function FiltersDropdown({
   return (
     <div
       role="menu"
-      className="mt-1 grid max-w-[720px] grid-cols-1 rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-popup) sm:grid-cols-3"
+      className="absolute top-full right-0 left-0 z-40 mt-1 grid max-w-[720px] grid-cols-1 rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-popup) sm:grid-cols-3"
     >
       <FiltersColumn fields={filterableFields} state={state} onChange={onChange} />
       <GroupByColumn fields={groupableFields} state={state} onChange={onChange} />

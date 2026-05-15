@@ -17,7 +17,7 @@ import {
 } from './assolement.helpers';
 import { ASSOLEMENT_SEGMENTS } from './assolement.mocks';
 import type { AssolementSegment } from './assolement.types';
-import { CULTURES, cultureColor } from './cultures';
+import { cultureColor, cultureGroup, listCultureGroups } from './cultures';
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -29,10 +29,9 @@ const FIELDS: FieldDescriptor[] = [
     id: 'culture',
     label: 'Culture',
     type: 'select',
-    options: CULTURES.filter((c) => c.category !== 'other').map((c) => ({
-      label: c.label,
-      value: c.label,
-    })),
+    // Options = groupes (Blé, Orge, Maïs, ...) ; le détail des variantes
+    // ("Blé d'automne", "Blé de printemps", ...) reste dans le form du segment.
+    options: listCultureGroups().map((g) => ({ label: g, value: g })),
     groupable: true,
   },
 ];
@@ -488,12 +487,15 @@ function facetMatches(
       return facet.values.some((v) => parcel.name.toLowerCase().includes(String(v).toLowerCase()));
     case 'code':
       return facet.values.some((v) => parcel.id.toLowerCase().includes(String(v).toLowerCase()));
-    case 'culture':
+    case 'culture': {
+      // On compare au radical (groupe) — "Blé d'automne" → "Blé".
+      const dominantGroup = dominant ? cultureGroup(dominant.culture) : '';
       return facet.values.some(
         (v) =>
-          dominant?.culture.toLowerCase() === String(v).toLowerCase() ||
-          segments.some((s) => s.culture.toLowerCase() === String(v).toLowerCase()),
+          dominantGroup === String(v) ||
+          segments.some((s) => cultureGroup(s.culture) === String(v)),
       );
+    }
     case 'variety':
       return facet.values.some((v) =>
         segments.some((s) => (s.varietyName ?? '').toLowerCase().includes(String(v).toLowerCase())),

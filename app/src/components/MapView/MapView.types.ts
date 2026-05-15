@@ -107,15 +107,10 @@ export const MAP_VIEW_DEFAULTS = {
   showBasemapToggle: true,
   showLegend: true,
   activeTool: 'select' as MapTool,
-  enabledTools: [
-    'select',
-    'lasso',
-    'draw-parcel',
-    'add-marker',
-    'measure',
-    'group',
-    'layers',
-  ] as MapTool[],
+  // 'group' et 'layers' retirés par défaut :
+  //  - group : la sélection multiple se fait via shift+clic ou lasso
+  //  - layers : doublon avec le bouton Satellite/Topo en haut à droite
+  enabledTools: ['select', 'lasso', 'draw-parcel', 'add-marker', 'measure'] as MapTool[],
   interactive: true,
   height: '480px',
   /** Style raster OSM gratuit (à remplacer par self-hosted Qodo en Phase 1.5). */

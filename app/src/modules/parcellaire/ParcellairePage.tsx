@@ -13,7 +13,7 @@ import { ParcelleSummaryPanel } from './ParcelleSummaryPanel';
 import { filterParcels } from './filtering';
 import { ParcellaireTable } from './ParcellaireTable';
 import { getActiveSegment } from '../assolement/assolement.helpers';
-import { cultureColor } from '../assolement/cultures';
+import { cultureColor, listCultureGroups } from '../assolement/cultures';
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -48,13 +48,9 @@ const FIELDS: FieldDescriptor[] = [
     id: 'culture',
     label: 'Culture',
     type: 'select',
-    options: [
-      { label: 'Blé', value: 'Blé' },
-      { label: 'Maïs', value: 'Maïs' },
-      { label: 'Colza', value: 'Colza' },
-      { label: 'Orge', value: 'Orge' },
-      { label: 'Jachère', value: 'Jachère' },
-    ],
+    // Groupes (Blé, Orge, Maïs, ...). Le détail "Blé d'automne" / "Blé dur" est
+    // disponible dans le form d'édition du segment d'assolement.
+    options: listCultureGroups().map((g) => ({ label: g, value: g })),
     groupable: true,
   },
   {

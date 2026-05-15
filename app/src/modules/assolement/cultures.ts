@@ -123,6 +123,32 @@ export function listCultureLabels(): string[] {
   return CULTURES.filter((c) => c.category !== 'other').map((c) => c.label);
 }
 
+/**
+ * Radicaux des cultures pour le filtrage : on regroupe les variantes
+ * ("Blé d'automne", "Blé de printemps", "Blé dur" → "Blé").
+ * Le filtre SearchBar exploite ces groupes ; le détail des variétés
+ * reste accessible dans le form d'édition d'un segment d'assolement.
+ */
+const GROUP_RADICALS = ['Blé', 'Orge', 'Maïs', 'Colza', 'Betterave', 'Prairie', 'Jachère'];
+
+export function cultureGroup(label: string | undefined): string {
+  if (!label) return '';
+  for (const radical of GROUP_RADICALS) {
+    if (label === radical || label.startsWith(radical + ' ')) return radical;
+  }
+  return label;
+}
+
+/** Groupes uniques (radicaux) — utilisé dans les options des filtres. */
+export function listCultureGroups(): string[] {
+  const groups = new Set<string>();
+  for (const c of CULTURES) {
+    if (c.category === 'other') continue;
+    groups.add(cultureGroup(c.label));
+  }
+  return [...groups];
+}
+
 /** Groupé par catégorie pour les <optgroup> dans les <select>. */
 export const CULTURES_BY_CATEGORY: ReadonlyArray<{
   category: CultureCategory;

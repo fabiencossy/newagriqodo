@@ -296,39 +296,49 @@ function fmtDate(date: string): string {
 function mockStade(
   culture: string | undefined,
 ): { label: string; progress: number; note: string } | null {
-  if (!culture || culture === 'Jachère' || culture === 'Archivé') return null;
+  if (!culture) return null;
+  // On ne montre un stade phéno QUE pour les cultures dont on a un BBCH précis ;
+  // sinon la section est masquée (plutôt qu'un "Suivi standard" générique).
   const map: Record<string, { label: string; progress: number; note: string }> = {
-    Blé: {
+    "Blé d'automne": {
       label: 'Tallage / Montaison',
       progress: 55,
       note: 'BBCH ~31. Surveiller maladies foliaires (septoriose).',
     },
-    Maïs: {
+    'Maïs ensilage': {
       label: 'Levée',
       progress: 15,
       note: 'BBCH ~10. Stade 2-3 feuilles attendu sous 10 jours.',
     },
-    Colza: {
+    "Colza d'automne": {
       label: 'Floraison',
       progress: 75,
       note: 'BBCH ~65. Pleine floraison, attention méligèthes.',
     },
-    Orge: { label: 'Épiaison', progress: 70, note: 'BBCH ~55. Approche de la floraison.' },
+    "Orge d'automne": {
+      label: 'Épiaison',
+      progress: 70,
+      note: 'BBCH ~55. Approche de la floraison.',
+    },
   };
-  return map[culture] ?? { label: 'En croissance', progress: 40, note: 'Suivi standard.' };
+  return map[culture] ?? null;
 }
 
 function mockFumure(
   culture: string | undefined,
 ): Array<{ element: string; applied: number; needed: number; unit: string }> | null {
-  if (!culture || culture === 'Jachère' || culture === 'Archivé') return null;
+  if (!culture) return null;
   const needs: Record<string, [number, number, number]> = {
-    Blé: [180, 60, 90],
-    Maïs: [200, 70, 200],
-    Colza: [220, 60, 110],
-    Orge: [150, 50, 80],
+    "Blé d'automne": [180, 60, 90],
+    'Blé de printemps': [160, 60, 80],
+    'Maïs ensilage': [200, 70, 200],
+    'Maïs grain': [200, 70, 200],
+    "Colza d'automne": [220, 60, 110],
+    "Orge d'automne": [150, 50, 80],
+    'Orge de printemps': [130, 50, 70],
   };
-  const need = needs[culture] ?? [150, 50, 80];
+  const need = needs[culture];
+  if (!need) return null;
   // Apports simulés (faits jusqu'à présent)
   const applied: [number, number, number] = [
     Math.round(need[0] * 0.7),

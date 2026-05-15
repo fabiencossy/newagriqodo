@@ -61,7 +61,11 @@ export interface AsideCardProps<T extends Record<string, unknown> = Record<strin
 export const ASIDE_CARD_DEFAULTS = {
   mode: 'view' as const,
   editable: false,
-  width: '360px',
+  /**
+   * Largeur par défaut : 100% (la prend du parent via grid/flex).
+   * Passer une valeur explicite ('360px') pour forcer une largeur fixe en standalone.
+   */
+  width: '100%',
   animationMs: 250,
   layout: 'auto' as const,
 };

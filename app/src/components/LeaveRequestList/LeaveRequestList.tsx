@@ -64,7 +64,7 @@ export function LeaveRequestList({
         <div
           role="tablist"
           aria-label="Filtrer par statut"
-          className="mb-3 flex gap-0.5 rounded-(--radius) bg-[#f1f1ee] p-1"
+          className="mb-3 flex gap-0.5 overflow-x-auto rounded-(--radius) bg-[#f1f1ee] p-1"
         >
           <FilterTab
             label={`Tous (${requests.length})`}
@@ -132,7 +132,7 @@ function FilterTab({
       aria-pressed={isActive}
       onClick={onClick}
       className={[
-        'h-8 flex-1 rounded-(--radius-sm) px-2.5 text-xs whitespace-nowrap',
+        'h-8 flex-shrink-0 rounded-(--radius-sm) px-3 text-xs whitespace-nowrap sm:flex-1',
         isActive
           ? 'bg-(--color-surface) font-medium shadow-(--shadow-card)'
           : 'text-(--color-text) hover:bg-black/5',
@@ -180,7 +180,7 @@ function StatusBadge({ status }: { status: LeaveStatus }) {
   return (
     <span
       className={[
-        'inline-flex items-center gap-1 self-start rounded-(--radius-pill) px-2 py-0.5 text-[11px] font-semibold tracking-wider uppercase',
+        'inline-flex w-fit items-center gap-1 rounded-(--radius-pill) px-2 py-0.5 text-[11px] font-semibold tracking-wider uppercase',
         styles[status],
       ].join(' ')}
     >

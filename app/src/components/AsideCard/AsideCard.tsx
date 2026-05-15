@@ -101,7 +101,7 @@ export function AsideCard<T extends Record<string, unknown>>({
   };
 
   const containerClasses = [
-    'flex flex-col bg-(--color-surface) border-(--color-border) overflow-hidden',
+    'flex flex-col bg-(--color-surface) border-(--color-border) overflow-hidden min-w-0',
     resolvedLayout === 'aside'
       ? 'h-full border-l'
       : 'fixed inset-x-0 bottom-0 z-50 max-h-[85vh] rounded-t-(--radius-lg) border-t shadow-(--shadow-popup)',

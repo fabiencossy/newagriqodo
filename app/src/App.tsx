@@ -6,6 +6,21 @@ import {
   type SavedFavorite,
   type SearchState,
 } from './components/SearchBar';
+import { ExportButton, type ExportColumn } from './components/ExportButton';
+
+const SAMPLE_PARCELS = [
+  { code: 'PF-001', name: 'Plat de la Cure', surface: 2.5, culture: 'Blé' },
+  { code: 'PF-002', name: 'Champ du Haut', surface: 1.8, culture: 'Blé' },
+  { code: 'PF-003', name: 'Petite Pièce', surface: 0.9, culture: 'Blé' },
+  { code: 'PF-004', name: 'Champ Long', surface: 4.1, culture: 'Maïs' },
+];
+
+const EXPORT_COLUMNS: ExportColumn[] = [
+  { key: 'code', label: 'Code' },
+  { key: 'name', label: 'Nom' },
+  { key: 'surface', label: 'Surface (ha)' },
+  { key: 'culture', label: 'Culture' },
+];
 
 const PARCEL_FIELDS: FieldDescriptor[] = [
   { id: 'name', label: 'Nom', type: 'text' },
@@ -92,6 +107,32 @@ export default function App() {
         <pre className="mt-4 max-h-48 overflow-auto rounded-(--radius-sm) bg-[#f1f1ee] p-3 text-xs">
           {JSON.stringify(searchState, null, 2)}
         </pre>
+      </section>
+
+      <section className="mt-6 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">
+        <h2 className="mb-4 text-xs font-medium tracking-wider text-(--color-muted) uppercase">
+          ExportButton
+        </h2>
+        <div className="flex flex-wrap items-start gap-4">
+          <ExportButton
+            data={SAMPLE_PARCELS}
+            columns={EXPORT_COLUMNS}
+            filenameBase="parcelles"
+            formats={['pdf', 'xlsx', 'csv']}
+            pdfMeta={{ title: 'Parcelles — Domaine Darval' }}
+          />
+          <ExportButton
+            data={SAMPLE_PARCELS}
+            columns={EXPORT_COLUMNS}
+            filenameBase="parcelles"
+            formats={['csv']}
+            variant="primary"
+          />
+        </div>
+        <p className="mt-3 text-xs text-(--color-muted)">
+          {SAMPLE_PARCELS.length} parcelles. CSV fonctionnel (téléchargement réel) ; PDF/Excel stub
+          (libs à brancher Phase 1).
+        </p>
       </section>
 
       <section className="mt-6 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">

@@ -1,0 +1,834 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Agri Qodo — Roadmap interactive</title>
+<style>
+:root{
+  --green:#2E7D32; --green-dark:#1B5E20; --green-light:#E8F5E9;
+  --grey:#595959; --grey-light:#F5F5F5; --grey-mid:#BDBDBD;
+  --blue:#1565C0; --orange:#EF6C00; --red:#C62828;
+  --bg:#FAFAFA; --card:#FFFFFF;
+  --shadow: 0 2px 8px rgba(0,0,0,0.06);
+  --shadow-hover: 0 4px 16px rgba(0,0,0,0.12);
+  --radius:12px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:#212121;line-height:1.5}
+.wrap{max-width:1280px;margin:0 auto;padding:32px 24px 80px}
+header.hero{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;flex-wrap:wrap;gap:16px}
+.brand{display:flex;align-items:center;gap:12px}
+.logo{width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,var(--green) 0%,var(--green-dark) 100%);display:flex;align-items:center;justify-content:center;color:white;font-weight:700;font-size:22px;box-shadow:var(--shadow)}
+h1{font-size:32px;font-weight:700;color:var(--green-dark)}
+h1 .sub{font-size:16px;font-weight:400;color:var(--grey);margin-top:4px;display:block}
+.meta{font-size:14px;color:var(--grey)}
+
+nav.tabs{display:flex;gap:4px;background:white;padding:4px;border-radius:12px;box-shadow:var(--shadow);margin-bottom:32px;overflow-x:auto}
+.tab{padding:10px 20px;border-radius:8px;cursor:pointer;font-size:14px;font-weight:500;color:var(--grey);white-space:nowrap;border:none;background:transparent;transition:all 0.2s}
+.tab.active{background:var(--green);color:white}
+.tab:hover:not(.active){background:var(--grey-light)}
+section.panel{display:none}
+section.panel.active{display:block;animation:fade 0.3s ease}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+.kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:32px}
+.kpi{background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-left:4px solid var(--green)}
+.kpi .v{font-size:28px;font-weight:700;color:var(--green-dark)}
+.kpi .l{font-size:13px;color:var(--grey);margin-top:4px}
+.kpi.blue{border-left-color:var(--blue)} .kpi.blue .v{color:var(--blue)}
+.kpi.orange{border-left-color:var(--orange)} .kpi.orange .v{color:var(--orange)}
+
+.filters{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;align-items:center}
+.filters .label{font-size:13px;color:var(--grey);margin-right:8px}
+.chip{padding:6px 14px;border-radius:20px;background:white;border:1px solid var(--grey-mid);font-size:13px;cursor:pointer;transition:all 0.2s;color:var(--grey)}
+.chip.active{background:var(--green);color:white;border-color:var(--green)}
+.chip:hover:not(.active){background:var(--grey-light)}
+
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+.card{background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);transition:all 0.2s;cursor:pointer;border-top:4px solid var(--green)}
+.card:hover{box-shadow:var(--shadow-hover);transform:translateY(-2px)}
+.card.v2{border-top-color:var(--blue)}
+.card.v3{border-top-color:var(--orange)}
+.card .head{display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;gap:8px}
+.card .id{font-size:11px;font-weight:700;color:var(--green);letter-spacing:0.5px}
+.card.v2 .id{color:var(--blue)} .card.v3 .id{color:var(--orange)}
+.card .name{font-size:17px;font-weight:600;color:#212121;margin-top:2px}
+.card .badge{font-size:11px;padding:3px 8px;border-radius:10px;font-weight:600;background:var(--green-light);color:var(--green-dark);text-transform:uppercase;flex-shrink:0}
+.card.v2 .badge{background:#E3F2FD;color:var(--blue)}
+.card.v3 .badge{background:#FFF3E0;color:var(--orange)}
+.card .desc{font-size:13px;color:var(--grey);margin-bottom:12px;line-height:1.5}
+.card .meta-row{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.card .tag{font-size:11px;padding:3px 8px;border-radius:6px;background:var(--grey-light);color:var(--grey)}
+.card .deps{font-size:11px;color:var(--grey);margin-top:8px;border-top:1px solid #eee;padding-top:8px}
+
+.timeline{position:relative;padding:16px 0}
+.tl-row{display:grid;grid-template-columns:140px 1fr;gap:16px;margin-bottom:12px;align-items:center}
+.tl-label{font-weight:600;color:var(--grey);font-size:13px;text-align:right}
+.tl-bar{position:relative;height:38px;background:var(--grey-light);border-radius:8px;overflow:hidden}
+.tl-segment{position:absolute;height:100%;display:flex;align-items:center;padding:0 12px;font-size:12px;color:white;font-weight:500;white-space:nowrap;overflow:hidden}
+.tl-mvp{background:var(--green)}
+.tl-v2{background:var(--blue)}
+.tl-v3{background:var(--orange)}
+.tl-axis{display:grid;grid-template-columns:140px 1fr;gap:16px;margin-top:8px;font-size:11px;color:var(--grey)}
+.tl-axis-bar{display:flex;justify-content:space-between}
+
+.dep-svg{width:100%;height:auto;background:white;border-radius:var(--radius);box-shadow:var(--shadow);padding:24px}
+
+.pricing-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:24px}
+.tier{background:white;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);position:relative}
+.tier.featured{border:2px solid var(--green)}
+.tier .pname{font-size:14px;color:var(--grey);font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+.tier .pprice{font-size:32px;font-weight:700;color:var(--green-dark);margin:8px 0}
+.tier .pprice .unit{font-size:14px;color:var(--grey);font-weight:400}
+.tier ul{list-style:none;margin-top:16px}
+.tier li{padding:6px 0;font-size:13px;color:#424242;border-bottom:1px solid #f0f0f0;padding-left:24px;position:relative}
+.tier li:before{content:"\2713";position:absolute;left:0;color:var(--green);font-weight:700}
+.tier .featured-flag{position:absolute;top:-10px;right:16px;background:var(--green);color:white;padding:4px 10px;border-radius:8px;font-size:11px;font-weight:600}
+
+table.risks{width:100%;border-collapse:collapse;background:white;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow)}
+table.risks th{background:var(--green);color:white;text-align:left;padding:12px;font-size:13px;font-weight:600}
+table.risks td{padding:12px;border-bottom:1px solid #f0f0f0;font-size:13px;vertical-align:top}
+table.risks tr:last-child td{border-bottom:none}
+.severity{display:inline-block;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;text-transform:uppercase}
+.sev-h{background:#FFEBEE;color:var(--red)}
+.sev-m{background:#FFF3E0;color:var(--orange)}
+.sev-l{background:#E8F5E9;color:var(--green-dark)}
+
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:100;align-items:center;justify-content:center;padding:24px}
+.modal.open{display:flex}
+.modal-content{background:white;border-radius:var(--radius);padding:32px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,0.2);position:relative}
+.modal-content h2{color:var(--green-dark);margin-bottom:16px;margin-top:8px}
+.modal-content .close{position:absolute;top:12px;right:16px;background:none;border:none;font-size:28px;cursor:pointer;color:var(--grey);line-height:1}
+
+footer{margin-top:48px;padding-top:24px;border-top:1px solid #e0e0e0;font-size:12px;color:var(--grey);text-align:center}
+
+@media (max-width:640px){
+  .wrap{padding:16px}
+  h1{font-size:24px}
+  .tl-row, .tl-axis{grid-template-columns:80px 1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="hero">
+    <div class="brand">
+      <div class="logo">AQ</div>
+      <div>
+        <h1>Agri Qodo<span class="sub">Roadmap interactive — application SaaS agricole intégrée à Odoo</span></h1>
+      </div>
+    </div>
+    <div class="meta">
+      <div>Document n° 3 / 3</div>
+      <div>Avril 2026</div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab active" data-target="overview">Vue d'ensemble</button>
+    <button class="tab" data-target="modules">Modules</button>
+    <button class="tab" data-target="timeline">Phasage</button>
+    <button class="tab" data-target="deps">Dépendances</button>
+    <button class="tab" data-target="pricing">Pricing</button>
+    <button class="tab" data-target="risks">Risques</button>
+  </nav>
+
+  <section class="panel active" id="overview">
+    <div class="kpi-row">
+      <div class="kpi"><div class="v">15</div><div class="l">Modules fonctionnels (M9 délégué à Odoo)</div></div>
+      <div class="kpi"><div class="v">8</div><div class="l">Modules au MVP (M1-M6 + M15 + M16)</div></div>
+      <div class="kpi blue"><div class="v">4</div><div class="l">Modules ajoutés en V2</div></div>
+      <div class="kpi orange"><div class="v">3</div><div class="l">Modules en V3</div></div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi"><div class="v">~ 10 500</div><div class="l">Exploitations cibles en Romandie</div></div>
+      <div class="kpi blue"><div class="v">100</div><div class="l">Clients cibles à 12 mois</div></div>
+      <div class="kpi orange"><div class="v">1 000</div><div class="l">Clients cibles à 36 mois</div></div>
+      <div class="kpi"><div class="v">588 CHF</div><div class="l">Prix annuel cible (49 CHF/mois)</div></div>
+    </div>
+
+    <div style="background:white;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:24px">
+      <h2 style="color:var(--green-dark);margin-bottom:12px;font-size:20px">Pitch en une phrase</h2>
+      <p style="font-size:15px;line-height:1.6;color:#424242">Agri Qodo est l'<strong>ERP métier de l'exploitation agricole suisse</strong> : la conformité PER au quotidien, la gestion comptable et commerciale via Odoo, et le pilotage économique de la ferme dans une seule application — pensée d'abord pour la <strong>Romandie</strong>, déployable ensuite en Suisse alémanique et au Tessin.</p>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#E8F5E9 0%,#C8E6C9 100%);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:24px;border-left:4px solid var(--green)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <span style="background:var(--green);color:white;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px">INTÉGRATION CLÉ</span>
+        <h2 style="color:var(--green-dark);font-size:20px">Connexion à digiagrifood.ch / agridata.ch</h2>
+      </div>
+      <p style="font-size:14px;line-height:1.6;color:#1B5E20">Agri Qodo se raccordera au <strong>data space agroalimentaire suisse</strong> (agridata.ch, opérationnel depuis 2023) pour appliquer le principe <strong>once-only</strong> : l'agriculteur saisit une donnée une seule fois, les autres applications autorisées la consomment via agridata.ch sans ressaisie. Module dédié <strong>M14</strong> prévu en V2.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px;margin-bottom:24px">
+      <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:4px solid #7B1FA2">
+        <div style="font-size:11px;color:#7B1FA2;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">SOCLE TECHNIQUE</div>
+        <h3 style="color:#4A148C;margin-bottom:8px;font-size:18px">Odoo Enterprise obligatoire</h3>
+        <p style="font-size:13px;color:#424242;line-height:1.5">Odoo Enterprise (Online ou Odoo.sh) est un prérequis fonctionnel — pas de mode standalone. <strong>Intégration incluse sans surcoût</strong> dans tous les plans. Modules Odoo custom optionnels réservés aux clients Odoo.sh (segment grandes structures).</p>
+      </div>
+      <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:4px solid var(--orange)">
+        <div style="font-size:11px;color:var(--orange);font-weight:700;letter-spacing:0.5px;margin-bottom:6px">LICENCE</div>
+        <h3 style="color:var(--orange);margin-bottom:8px;font-size:18px">100 % open source</h3>
+        <p style="font-size:13px;color:#424242;line-height:1.5">Code source publié (recommandation initiale : AGPL v3). Permet l'audit, la contribution communautaire et l'interopérabilité avec d'autres logiciels agricoles suisses. Cohérent avec la philosophie de digiagrifood.ch.</p>
+      </div>
+      <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:4px solid var(--blue)">
+        <div style="font-size:11px;color:var(--blue);font-weight:700;letter-spacing:0.5px;margin-bottom:6px">DISTRIBUTION</div>
+        <h3 style="color:var(--blue);margin-bottom:8px;font-size:18px">iOS · Android · Web</h3>
+        <p style="font-size:13px;color:#424242;line-height:1.5">Apps natives sur App Store et Play Store + version web responsive (ordinateur et téléphone). Une seule base de code (React Native + Next.js). Souscription sur le web pour éviter la commission Apple/Google.</p>
+      </div>
+      <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:4px solid #00897B">
+        <div style="font-size:11px;color:#00897B;font-weight:700;letter-spacing:0.5px;margin-bottom:6px">FONCTIONNEMENT</div>
+        <h3 style="color:#00695C;margin-bottom:8px;font-size:18px">Hors ligne complet</h3>
+        <p style="font-size:13px;color:#424242;line-height:1.5">Architecture <strong>offline-first</strong> : saisie, calcul du Suisse-Bilanz, consultation, tout fonctionne sans réseau. Synchronisation différentielle au retour en ligne avec <strong>détection des doublons</strong> et résolution explicite des conflits.</p>
+      </div>
+    </div>
+
+    <div style="background:linear-gradient(135deg,#FFF8E1 0%,#FFE0B2 100%);border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:24px;border-left:4px solid var(--orange)">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px;flex-wrap:wrap">
+        <span style="background:var(--orange);color:white;padding:4px 10px;border-radius:6px;font-size:11px;font-weight:700;letter-spacing:0.5px">PROMESSE PRODUIT</span>
+        <h2 style="color:#E65100;font-size:20px">Puissance + simplicité radicale</h2>
+      </div>
+      <p style="font-size:14px;line-height:1.6;color:#5D4037">Un agriculteur de 60 ans qui n'a jamais ouvert un logiciel doit pouvoir, sans formation, sans tutoriel, sans appel au support : créer ses parcelles, saisir une intervention phyto en moins de 30 secondes, émettre un bon de commande, consulter son Suisse-Bilanz. Si l'une de ces 4 actions exige une assistance, le produit a échoué.</p>
+    </div>
+
+    <div style="background:white;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow)">
+      <h2 style="color:var(--green-dark);margin-bottom:12px;font-size:20px">Différenciation par rapport à l'existant</h2>
+      <table style="width:100%;border-collapse:collapse;font-size:13px">
+        <thead>
+          <tr style="background:var(--grey-light)">
+            <th style="text-align:left;padding:10px">Critère</th>
+            <th style="padding:10px">Acorda/GELAN</th>
+            <th style="padding:10px">Barto</th>
+            <th style="padding:10px">AGRO-TECH</th>
+            <th style="padding:10px;background:var(--green-light);color:var(--green-dark)">Agri Qodo</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td style="padding:10px;border-bottom:1px solid #eee">Conformité PER auto</td><td style="text-align:center">&#9650;</td><td style="text-align:center">&#9679;</td><td style="text-align:center">&#9679;</td><td style="text-align:center;background:var(--green-light)">&#9679;</td></tr>
+          <tr><td style="padding:10px;border-bottom:1px solid #eee">Suisse-Bilanz auto</td><td style="text-align:center">&#9675;</td><td style="text-align:center">&#9650;</td><td style="text-align:center">&#9679;</td><td style="text-align:center;background:var(--green-light)">&#9679;</td></tr>
+          <tr><td style="padding:10px;border-bottom:1px solid #eee">Carnet champs mobile</td><td style="text-align:center">&#9675;</td><td style="text-align:center">&#9679;</td><td style="text-align:center">&#9650;</td><td style="text-align:center;background:var(--green-light)">&#9679;</td></tr>
+          <tr><td style="padding:10px;border-bottom:1px solid #eee">ERP comptable (Odoo)</td><td style="text-align:center">&#9675;</td><td style="text-align:center">&#9675;</td><td style="text-align:center">&#9650;</td><td style="text-align:center;background:var(--green-light)">&#9679;</td></tr>
+          <tr><td style="padding:10px;border-bottom:1px solid #eee">Travaux pour tiers</td><td style="text-align:center">&#9675;</td><td style="text-align:center">&#9675;</td><td style="text-align:center">&#9675;</td><td style="text-align:center;background:var(--green-light)">&#9679;</td></tr>
+          <tr><td style="padding:10px;border-bottom:1px solid #eee">Multi-exploitation</td><td style="text-align:center">&#9675;</td><td style="text-align:center">&#9650;</td><td style="text-align:center">&#9675;</td><td style="text-align:center;background:var(--green-light)">&#9679;</td></tr>
+          <tr><td style="padding:10px;border-bottom:1px solid #eee">API ouverte</td><td style="text-align:center">&#9675;</td><td style="text-align:center">&#9650;</td><td style="text-align:center">&#9675;</td><td style="text-align:center;background:var(--green-light)">&#9679;</td></tr>
+        </tbody>
+      </table>
+      <p style="font-size:11px;color:var(--grey);margin-top:8px">&#9679; Couvert &nbsp; &#9650; Partiel &nbsp; &#9675; Absent</p>
+    </div>
+  </section>
+
+  <section class="panel" id="modules">
+    <div class="filters">
+      <span class="label">Phase :</span>
+      <button class="chip active" data-filter="all">Tous</button>
+      <button class="chip" data-filter="mvp">MVP</button>
+      <button class="chip" data-filter="v2">V2</button>
+      <button class="chip" data-filter="v3">V3</button>
+      <span class="label" style="margin-left:24px">Domaine :</span>
+      <button class="chip active" data-domain="all">Tous</button>
+      <button class="chip" data-domain="conformite">Conformité PER</button>
+      <button class="chip" data-domain="erp">ERP / Compta</button>
+      <button class="chip" data-domain="exploitation">Pilotage</button>
+    </div>
+    <div class="grid" id="modules-grid"></div>
+  </section>
+
+  <section class="panel" id="timeline">
+    <div style="background:white;border-radius:var(--radius);padding:32px;box-shadow:var(--shadow);margin-bottom:24px">
+      <h2 style="color:var(--green-dark);margin-bottom:24px;font-size:20px">Phasage sur 24 mois</h2>
+      <div class="timeline" id="timeline-container"></div>
+      <div class="tl-axis">
+        <div></div>
+        <div class="tl-axis-bar">
+          <span>M0</span><span>M6</span><span>M12</span><span>M18</span><span>M24</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))">
+      <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:4px solid var(--green)">
+        <h3 style="color:var(--green-dark);margin-bottom:8px">MVP — 6 mois</h3>
+        <p style="font-size:13px;color:var(--grey);margin-bottom:12px">5 à 10 exploitations pilotes en VD/FR/GE</p>
+        <ul style="list-style:none;font-size:13px">
+          <li style="padding:4px 0">&#9656; M1 Parcellaire et assolement</li>
+          <li style="padding:4px 0">&#9656; M2 Carnet des champs PWA</li>
+          <li style="padding:4px 0">&#9656; M3 Suisse-Bilanz auto</li>
+          <li style="padding:4px 0">&#9656; M4 Animaux + BDTA lecture</li>
+          <li style="padding:4px 0">&#9656; M5 SRPA Journal des sorties</li>
+          <li style="padding:4px 0">&#9656; M6 Bons de commande + facturation groupée mensuelle</li>
+          <li style="padding:4px 0">&#9656; <strong>M15 Documentation et veille réglementaire</strong></li>
+          <li style="padding:4px 0">&#9656; <strong>M16 Lien partenaire entre exploitations (effet viral)</strong></li>
+          <li style="padding:4px 0">&#9656; Auth Agate / CH-Login</li>
+          <li style="padding:4px 0">&#9656; Apps natives iOS + Android + web responsive</li>
+          <li style="padding:4px 0">&#9656; Code source publié (open source AGPL v3)</li>
+        </ul>
+      </div>
+      <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:4px solid var(--blue)">
+        <h3 style="color:var(--blue);margin-bottom:8px">V2 — Mois 7-12</h3>
+        <p style="font-size:13px;color:var(--grey);margin-bottom:12px">Ouverture FR/BE/SO/TI</p>
+        <ul style="list-style:none;font-size:13px">
+          <li style="padding:4px 0">&#9656; M4 Animaux complet (BDTA écriture, robot traite)</li>
+          <li style="padding:4px 0">&#9656; M7 SPB et biodiversité</li>
+          <li style="padding:4px 0">&#9656; M8 Stocks intrants/récoltes</li>
+          <li style="padding:4px 0">&#9656; M10 Compta agricole CH</li>
+          <li style="padding:4px 0">&#9656; <strong>M14 Connecteur agridata.ch / DigiAgriFoodCH</strong></li>
+          <li style="padding:4px 0">&#9656; Connecteurs Acorda + GELAN</li>
+          <li style="padding:4px 0">&#9656; Intégration Odoo POS/eCommerce (vente directe)</li>
+        </ul>
+      </div>
+      <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);border-top:4px solid var(--orange)">
+        <h3 style="color:var(--orange);margin-bottom:8px">V3 — Mois 13-24</h3>
+        <p style="font-size:13px;color:var(--grey);margin-bottom:12px">Suisse alémanique + scale</p>
+        <ul style="list-style:none;font-size:13px">
+          <li style="padding:4px 0">&#9656; M11 Heures et présences (paie reste dans Odoo)</li>
+          <li style="padding:4px 0">&#9656; M12 Pilotage économique + benchmark</li>
+          <li style="padding:4px 0">&#9656; M13 Multi-exploitation / CUMA</li>
+          <li style="padding:4px 0">&#9656; Modules Odoo custom (Odoo.sh) pour grandes structures</li>
+          <li style="padding:4px 0">&#9656; API publique partenaires (open source)</li>
+          <li style="padding:4px 0">&#9656; Cantons ZH/LU/AG/SG</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="deps">
+    <div style="background:white;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:16px">
+      <h2 style="color:var(--green-dark);margin-bottom:8px;font-size:20px">Carte de dépendances entre modules</h2>
+      <p style="font-size:13px;color:var(--grey);margin-bottom:0">M1 Parcellaire est la fondation : tous les modules MVP en dépendent (flèches vertes). M3 Suisse-Bilanz est le module le plus &laquo; tirant &raquo; sur les autres. M10 Comptabilité agricole est le pivot ERP.</p>
+    </div>
+
+    <svg class="dep-svg" viewBox="0 0 1000 660" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#9E9E9E"/>
+        </marker>
+        <marker id="arrG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+          <path d="M0,0 L10,5 L0,10 z" fill="#2E7D32"/>
+        </marker>
+      </defs>
+
+      <!-- Edges -->
+      <!-- M1 -> M2 -->
+      <line x1="280" y1="100" x2="380" y2="170" stroke="#2E7D32" stroke-width="2" marker-end="url(#arrG)"/>
+      <!-- M1 -> M4 -->
+      <line x1="280" y1="100" x2="380" y2="350" stroke="#2E7D32" stroke-width="2" marker-end="url(#arrG)"/>
+      <!-- M1 -> M6 -->
+      <line x1="280" y1="100" x2="640" y2="260" stroke="#2E7D32" stroke-width="2" marker-end="url(#arrG)"/>
+      <!-- M1 -> M9 -->
+      <line x1="160" y1="130" x2="160" y2="320" stroke="#2E7D32" stroke-width="2" marker-end="url(#arrG)"/>
+      <!-- M2 -> M3 -->
+      <line x1="490" y1="200" x2="490" y2="225" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+      <!-- M4 -> M3 -->
+      <line x1="430" y1="350" x2="430" y2="290" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+      <!-- M4 -> M5 -->
+      <line x1="600" y1="380" x2="640" y2="380" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+      <!-- M2 -> M8 -->
+      <line x1="600" y1="170" x2="640" y2="170" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+      <!-- M3 -> M7 -->
+      <line x1="600" y1="240" x2="860" y2="170" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+      <!-- M6 -> M10 -->
+      <line x1="750" y1="290" x2="620" y2="465" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+      <!-- M8 -> M10 -->
+      <line x1="700" y1="200" x2="600" y2="465" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+      <!-- M9 -> M10 -->
+      <line x1="220" y1="380" x2="430" y2="475" stroke="#9E9E9E" stroke-width="2" marker-end="url(#arr)"/>
+      <!-- M10 -> ODOO -->
+      <line x1="700" y1="475" x2="800" y2="100" stroke="#7B1FA2" stroke-width="2" stroke-dasharray="4,4"/>
+
+      <!-- ODOO box -->
+      <rect x="780" y="40" width="160" height="80" rx="8" fill="#7B1FA2"/>
+      <text x="860" y="68" text-anchor="middle" fill="white" font-size="14" font-weight="700">ODOO</text>
+      <text x="860" y="88" text-anchor="middle" fill="white" font-size="10">Compta &middot; Achats &middot; Ventes</text>
+      <text x="860" y="104" text-anchor="middle" fill="white" font-size="10">RH &middot; Stocks &middot; Projets</text>
+
+      <!-- M1 -->
+      <rect x="40" y="40" width="240" height="80" rx="8" fill="#2E7D32"/>
+      <text x="160" y="68" text-anchor="middle" fill="white" font-size="11" font-weight="700">M1 - PARCELLAIRE [MVP]</text>
+      <text x="160" y="86" text-anchor="middle" fill="white" font-size="10">Surfaces &middot; Assolement &middot; GIS cantonal</text>
+      <text x="160" y="104" text-anchor="middle" fill="white" font-size="10">FONDATION DE TOUT LE SYSTEME</text>
+
+      <!-- M2 -->
+      <rect x="380" y="140" width="220" height="60" rx="8" fill="#2E7D32"/>
+      <text x="490" y="165" text-anchor="middle" fill="white" font-size="11" font-weight="700">M2 - CARNET DES CHAMPS [MVP]</text>
+      <text x="490" y="185" text-anchor="middle" fill="white" font-size="10">PWA mobile &middot; Catalogue OFAG</text>
+
+      <!-- M3 -->
+      <rect x="380" y="225" width="220" height="60" rx="8" fill="#2E7D32"/>
+      <text x="490" y="250" text-anchor="middle" fill="white" font-size="11" font-weight="700">M3 - SUISSE-BILANZ [MVP]</text>
+      <text x="490" y="270" text-anchor="middle" fill="white" font-size="10">Calcul auto &middot; Export PDF</text>
+
+      <!-- M4 -->
+      <rect x="380" y="350" width="220" height="60" rx="8" fill="#2E7D32"/>
+      <text x="490" y="375" text-anchor="middle" fill="white" font-size="11" font-weight="700">M4 - ANIMAUX + BDTA [MVP]</text>
+      <text x="490" y="395" text-anchor="middle" fill="white" font-size="10">Registre &middot; UGB &middot; Identitas</text>
+
+      <!-- M5 -->
+      <rect x="640" y="350" width="220" height="60" rx="8" fill="#2E7D32"/>
+      <text x="750" y="375" text-anchor="middle" fill="white" font-size="11" font-weight="700">M5 - SRPA JOURNAL [MVP]</text>
+      <text x="750" y="395" text-anchor="middle" fill="white" font-size="10">Sorties paturage &middot; 5 sec/jour</text>
+
+      <!-- M6 -->
+      <rect x="640" y="225" width="220" height="60" rx="8" fill="#2E7D32"/>
+      <text x="750" y="250" text-anchor="middle" fill="white" font-size="11" font-weight="700">M6 - TRAVAUX TIERS [MVP]</text>
+      <text x="750" y="270" text-anchor="middle" fill="white" font-size="10">Bons travail &middot; Factures Odoo</text>
+
+      <!-- M7 V2 -->
+      <rect x="640" y="140" width="220" height="60" rx="8" fill="#1565C0"/>
+      <text x="750" y="165" text-anchor="middle" fill="white" font-size="11" font-weight="700">M7 - SPB BIODIVERSITE [V2]</text>
+      <text x="750" y="185" text-anchor="middle" fill="white" font-size="10">Seuil 7% &middot; QI/QII &middot; Mise en reseau</text>
+
+      <!-- M8 V2 -->
+      <rect x="40" y="140" width="220" height="60" rx="8" fill="#1565C0"/>
+      <text x="150" y="165" text-anchor="middle" fill="white" font-size="11" font-weight="700">M8 - STOCKS [V2]</text>
+      <text x="150" y="185" text-anchor="middle" fill="white" font-size="10">Intrants &middot; Recoltes &middot; FIFO</text>
+
+      <!-- M9 V2 -->
+      <rect x="40" y="320" width="220" height="60" rx="8" fill="#1565C0"/>
+      <text x="150" y="345" text-anchor="middle" fill="white" font-size="11" font-weight="700">M9 - VENTE DIRECTE [V2]</text>
+      <text x="150" y="365" text-anchor="middle" fill="white" font-size="10">TPE &middot; QR-bill &middot; TWINT</text>
+
+      <!-- M10 V2 -->
+      <rect x="380" y="465" width="480" height="60" rx="8" fill="#1565C0"/>
+      <text x="620" y="490" text-anchor="middle" fill="white" font-size="11" font-weight="700">M10 - COMPTABILITE AGRICOLE CH [V2]</text>
+      <text x="620" y="510" text-anchor="middle" fill="white" font-size="10">Plan PME agricole &middot; TVA 8.1/2.6% &middot; Bouclement</text>
+
+      <!-- M11 V3 -->
+      <rect x="40" y="465" width="260" height="60" rx="8" fill="#EF6C00"/>
+      <text x="170" y="490" text-anchor="middle" fill="white" font-size="11" font-weight="700">M11 - SALAIRES [V3]</text>
+      <text x="170" y="510" text-anchor="middle" fill="white" font-size="10">Swissdec &middot; AVS &middot; Suva</text>
+
+      <!-- M12 V3 -->
+      <rect x="40" y="555" width="380" height="55" rx="8" fill="#EF6C00"/>
+      <text x="230" y="580" text-anchor="middle" fill="white" font-size="11" font-weight="700">M12 - PILOTAGE ECONOMIQUE [V3]</text>
+      <text x="230" y="600" text-anchor="middle" fill="white" font-size="10">Marge brute &middot; Simulateur PD &middot; Benchmark</text>
+
+      <!-- M13 V3 -->
+      <rect x="500" y="555" width="380" height="55" rx="8" fill="#EF6C00"/>
+      <text x="690" y="580" text-anchor="middle" fill="white" font-size="11" font-weight="700">M13 - MULTI-EXPLOITATION [V3]</text>
+      <text x="690" y="600" text-anchor="middle" fill="white" font-size="10">CUMA &middot; Communautes &middot; Refacturation</text>
+
+      <!-- legend -->
+      <g transform="translate(720,30)">
+        <rect x="0" y="0" width="14" height="14" fill="#2E7D32"/><text x="20" y="12" font-size="11" fill="#333">MVP</text>
+        <rect x="60" y="0" width="14" height="14" fill="#1565C0"/><text x="80" y="12" font-size="11" fill="#333">V2</text>
+        <rect x="110" y="0" width="14" height="14" fill="#EF6C00"/><text x="130" y="12" font-size="11" fill="#333">V3</text>
+      </g>
+    </svg>
+
+    <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-top:16px">
+      <h3 style="color:var(--green-dark);margin-bottom:12px;font-size:16px">Lecture rapide</h3>
+      <p style="font-size:13px;color:#424242;line-height:1.6"><strong>M1 Parcellaire</strong> est le module-fondation : tous les modules MVP en dépendent (flèches vertes). À l'onboarding, c'est le premier module à compléter — il doit être ultra-simple à remplir (idéalement par import GIS cantonal). <strong>M3 Suisse-Bilanz</strong> agrège M2 (engrais épandus), M4 (animaux pour le calcul UGB), et plus tard M8 (achats d'engrais). C'est le module le plus &laquo; tirant &raquo; sur les autres.</p>
+    </div>
+  </section>
+
+  <section class="panel" id="pricing">
+    <div style="background:#E8F5E9;border-radius:var(--radius);padding:16px 20px;margin-bottom:16px;border-left:4px solid var(--green);font-size:13px;color:#1B5E20">
+      <strong>Pricing volontairement simple — deux plans seulement.</strong> Gratuit avec 1 module et 1 utilisateur. Plan unique payant dès qu'on prend 2 modules ou plus, peu importe le nombre. Forfait jusqu'à 10 utilisateurs, surfacturation au-delà. Intégration Odoo incluse, mode hors ligne inclus.
+    </div>
+
+    <div style="background:white;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-bottom:24px">
+      <h3 style="color:var(--green-dark);margin-bottom:16px;font-size:18px">Estimateur de prix</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:end">
+        <div>
+          <label style="font-size:13px;color:var(--grey);display:block;margin-bottom:6px">Nombre de modules</label>
+          <input type="range" id="calc-modules" min="1" max="14" value="3" style="width:100%">
+          <div style="font-size:13px;color:var(--green-dark);font-weight:600;margin-top:4px"><span id="calc-modules-val">3</span> module(s)</div>
+        </div>
+        <div>
+          <label style="font-size:13px;color:var(--grey);display:block;margin-bottom:6px">Nombre d'utilisateurs</label>
+          <input type="range" id="calc-users" min="1" max="50" value="3" style="width:100%">
+          <div style="font-size:13px;color:var(--green-dark);font-weight:600;margin-top:4px"><span id="calc-users-val">3</span> utilisateur(s)</div>
+        </div>
+        <div style="background:var(--green-light);padding:14px;border-radius:8px;text-align:center">
+          <div style="font-size:11px;color:var(--green-dark);font-weight:600;letter-spacing:0.5px">VOTRE PLAN</div>
+          <div id="calc-plan" style="font-size:18px;font-weight:700;color:var(--green-dark);margin-top:2px">Plan unique</div>
+          <div id="calc-price" style="font-size:24px;font-weight:700;color:var(--green-dark);margin-top:4px">49 CHF<span style="font-size:13px;font-weight:400;color:var(--grey)">/mois</span></div>
+          <div id="calc-detail" style="font-size:11px;color:var(--grey);margin-top:4px"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="pricing-grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));max-width:780px;margin:0 auto">
+      <div class="tier">
+        <div class="pname">Gratuit</div>
+        <div class="pprice">0 CHF<span class="unit">/mois</span></div>
+        <ul>
+          <li>1 module au choix (parmi 14)</li>
+          <li>1 utilisateur</li>
+          <li>Mode hors ligne complet</li>
+          <li>Intégration Odoo incluse</li>
+          <li>Apps iOS / Android / Web</li>
+          <li>Support communautaire</li>
+        </ul>
+      </div>
+      <div class="tier featured">
+        <div class="featured-flag">PLAN UNIQUE</div>
+        <div class="pname">Plan unique</div>
+        <div class="pprice">49 CHF<span class="unit">/mois</span></div>
+        <div style="font-size:13px;color:var(--grey);margin-top:-4px;margin-bottom:8px">soit 588 CHF/an</div>
+        <ul>
+          <li>De 2 à 14 modules — autant que vous voulez</li>
+          <li>Jusqu'à 10 utilisateurs inclus</li>
+          <li>+8 CHF/utilisateur au-delà de 10</li>
+          <li>Mode hors ligne complet</li>
+          <li>Intégration Odoo Enterprise incluse</li>
+          <li>Connecteurs Acorda/GELAN/agridata.ch</li>
+          <li>Support prioritaire</li>
+        </ul>
+      </div>
+    </div>
+
+    <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-top:24px">
+      <h3 style="color:var(--green-dark);margin-bottom:12px;font-size:16px">Option Enterprise (modules Odoo custom)</h3>
+      <p style="font-size:13px;color:#424242;line-height:1.6">Pour les grandes structures qui ont besoin de modules Odoo personnalisés, un setup additionnel sur Odoo.sh est requis. Tarification : à partir de 2 500 CHF de setup + 50 CHF/mois de maintenance par module custom, en plus du Plan unique. Inclut SLA contractuel, support dédié, onboarding personnalisé et formation sur site.</p>
+    </div>
+
+    <div style="background:white;border-radius:var(--radius);padding:24px;box-shadow:var(--shadow);margin-top:16px">
+      <h3 style="color:var(--green-dark);margin-bottom:8px;font-size:18px">Simulateur de viabilité — combien de clients pour s'en sortir ?</h3>
+      <p style="font-size:13px;color:var(--grey);margin-bottom:16px">À 49 CHF/mois (588 CHF/an), il faut du volume. Joue avec le curseur pour voir le seuil de rentabilité.</p>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;align-items:end">
+        <div style="grid-column:1 / -1">
+          <label style="font-size:13px;color:var(--grey);display:block;margin-bottom:6px">Nombre de clients payants</label>
+          <input type="range" id="biz-clients" min="50" max="3000" step="50" value="500" style="width:100%">
+          <div style="font-size:14px;color:var(--green-dark);font-weight:600;margin-top:4px"><span id="biz-clients-val">500</span> clients</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:20px">
+        <div style="background:var(--green-light);padding:14px;border-radius:8px;text-align:center">
+          <div style="font-size:11px;color:var(--green-dark);font-weight:600">ARR</div>
+          <div id="biz-arr" style="font-size:22px;font-weight:700;color:var(--green-dark);margin-top:4px">294 000 CHF</div>
+        </div>
+        <div style="background:#FFF3E0;padding:14px;border-radius:8px;text-align:center">
+          <div style="font-size:11px;color:var(--orange);font-weight:600">COÛTS VAR. /AN</div>
+          <div id="biz-costs" style="font-size:22px;font-weight:700;color:var(--orange);margin-top:4px">132 000 CHF</div>
+        </div>
+        <div style="background:#E3F2FD;padding:14px;border-radius:8px;text-align:center">
+          <div style="font-size:11px;color:var(--blue);font-weight:600">MARGE BRUTE /AN</div>
+          <div id="biz-margin" style="font-size:22px;font-weight:700;color:var(--blue);margin-top:4px">162 000 CHF</div>
+        </div>
+        <div style="background:#FFF8E1;padding:14px;border-radius:8px;text-align:center">
+          <div style="font-size:11px;color:#F57C00;font-weight:600">FTE SOUTENABLES</div>
+          <div id="biz-fte" style="font-size:22px;font-weight:700;color:#F57C00;margin-top:4px">1,3</div>
+        </div>
+      </div>
+      <div id="biz-verdict" style="margin-top:16px;padding:12px;border-radius:8px;font-size:13px"></div>
+      <div style="margin-top:16px;font-size:11px;color:var(--grey);line-height:1.5">
+        Hypothèses : prix unitaire 588 CHF/an, coûts variables ~22 CHF/client/mois (hébergement, contenu M15, support N1, API tiers), 1 FTE = 120 000 CHF chargé/an. Hors revenus add-ons et services qui peuvent ajouter 20-40% à l'ARPU.
+      </div>
+    </div>
+
+    <script>
+    (function(){
+      const slider = document.getElementById('biz-clients');
+      const valEl = document.getElementById('biz-clients-val');
+      const arrEl = document.getElementById('biz-arr');
+      const costsEl = document.getElementById('biz-costs');
+      const marginEl = document.getElementById('biz-margin');
+      const fteEl = document.getElementById('biz-fte');
+      const verdictEl = document.getElementById('biz-verdict');
+      const PRICE_YEAR = 588;
+      const VAR_COST_MONTH = 22;
+      const FTE_COST = 120000;
+      function fmt(n){ return n.toLocaleString('fr-CH').replace(/,/g,' '); }
+      function biz(){
+        const n = +slider.value;
+        valEl.textContent = fmt(n);
+        const arr = n * PRICE_YEAR;
+        const costs = n * VAR_COST_MONTH * 12;
+        const margin = arr - costs;
+        const fte = (margin / FTE_COST).toFixed(1);
+        arrEl.textContent = fmt(arr) + ' CHF';
+        costsEl.textContent = fmt(costs) + ' CHF';
+        marginEl.textContent = fmt(margin) + ' CHF';
+        fteEl.textContent = fte;
+        let v, color;
+        if (n < 300) { v="Sous-critique. Tu finances par autre chose (consulting, salaire, investisseur)."; color="#FFEBEE;color:#C62828"; }
+        else if (n < 600) { v="Bare minimum — tu peux te payer 1 FTE et soutenir le projet, mais pas grandir."; color="#FFF3E0;color:#E65100"; }
+        else if (n < 1000) { v="Petit team viable (2-3 FTE). Tu commences à pouvoir investir en marketing et dev."; color="#E8F5E9;color:#1B5E20"; }
+        else if (n < 2000) { v="Confortable — équipe 4-5 FTE, croissance soutenable, marge de manoeuvre."; color="#C8E6C9;color:#1B5E20"; }
+        else { v="Excellent — équipe 6+ FTE, expansion alémanique et Tessin financée par les revenus."; color="#A5D6A7;color:#1B5E20"; }
+        verdictEl.style.cssText = 'margin-top:16px;padding:12px;border-radius:8px;font-size:13px;background:' + color;
+        verdictEl.textContent = v;
+      }
+      slider.addEventListener('input', biz);
+      biz();
+    })();
+    </script>
+
+    <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-top:16px">
+      <h3 style="color:var(--green-dark);margin-bottom:12px">Add-ons (en plus du Plan unique)</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div style="padding:12px;background:var(--grey-light);border-radius:8px">
+          <strong style="font-size:14px">Robot de traite</strong><br>
+          <span style="font-size:13px;color:var(--grey)">Lely / DeLaval / GEA</span><br>
+          <span style="color:var(--green-dark);font-weight:600">+ 30 CHF/mois</span>
+        </div>
+        <div style="padding:12px;background:var(--grey-light);border-radius:8px">
+          <strong style="font-size:14px">Onboarding accompagné</strong><br>
+          <span style="font-size:13px;color:var(--grey)">Saisie initiale + paramétrage</span><br>
+          <span style="color:var(--green-dark);font-weight:600">490 CHF unique</span>
+        </div>
+        <div style="padding:12px;background:var(--grey-light);border-radius:8px">
+          <strong style="font-size:14px">Formation sur site</strong><br>
+          <span style="font-size:13px;color:var(--grey)">Groupe possible</span><br>
+          <span style="color:var(--green-dark);font-weight:600">200 CHF/h</span>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    (function(){
+      const modules = document.getElementById('calc-modules');
+      const users = document.getElementById('calc-users');
+      const mVal = document.getElementById('calc-modules-val');
+      const uVal = document.getElementById('calc-users-val');
+      const planEl = document.getElementById('calc-plan');
+      const priceEl = document.getElementById('calc-price');
+      const detailEl = document.getElementById('calc-detail');
+      const BASE = 49;
+      const PER_USER = 8;
+      function calc(){
+        const m = +modules.value;
+        const u = +users.value;
+        mVal.textContent = m;
+        uVal.textContent = u;
+        let plan, total;
+        if (m === 1 && u === 1) {
+          plan='Gratuit';
+          total = 0;
+          detailEl.textContent = '1 module + 1 utilisateur = gratuit à vie';
+        } else if (m === 1 && u > 1) {
+          plan='Plan unique (forcé)';
+          const extra = Math.max(0, u - 10);
+          total = BASE + extra * PER_USER;
+          detailEl.textContent = "1 module mais " + u + " utilisateurs → bascule en Plan unique";
+        } else {
+          plan='Plan unique';
+          const extra = Math.max(0, u - 10);
+          total = BASE + extra * PER_USER;
+          if (extra > 0) {
+            detailEl.textContent = BASE + ' CHF base + ' + extra + ' user × ' + PER_USER + ' CHF';
+          } else {
+            detailEl.textContent = "Forfait jusqu'à 10 utilisateurs";
+          }
+        }
+        planEl.textContent = plan;
+        priceEl.innerHTML = total + ' CHF<span style="font-size:13px;font-weight:400;color:var(--grey)">/mois</span>';
+      }
+      modules.addEventListener('input', calc);
+      users.addEventListener('input', calc);
+      calc();
+    })();
+    </script>
+    <div style="background:white;border-radius:var(--radius);padding:20px;box-shadow:var(--shadow);margin-top:24px">
+      <h3 style="color:var(--green-dark);margin-bottom:12px">Add-ons</h3>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px">
+        <div style="padding:12px;background:var(--grey-light);border-radius:8px">
+          <strong style="font-size:14px">Robot de traite</strong><br>
+          <span style="font-size:13px;color:var(--grey)">Lely / DeLaval / GEA</span><br>
+          <span style="color:var(--green-dark);font-weight:600">+ 30 CHF/mois</span>
+        </div>
+        <div style="padding:12px;background:var(--grey-light);border-radius:8px">
+          <strong style="font-size:14px">M9 Vente directe</strong><br>
+          <span style="font-size:13px;color:var(--grey)">TPE + QR-bill + TWINT</span><br>
+          <span style="color:var(--green-dark);font-weight:600">+ 25 CHF/mois</span>
+        </div>
+        <div style="padding:12px;background:var(--grey-light);border-radius:8px">
+          <strong style="font-size:14px">Onboarding accompagné</strong><br>
+          <span style="font-size:13px;color:var(--grey)">Saisie initiale parcellaire + animaux</span><br>
+          <span style="color:var(--green-dark);font-weight:600">490 CHF unique</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel" id="risks">
+    <table class="risks">
+      <thead><tr><th style="width:30%">Risque</th><th style="width:12%">Impact</th><th style="width:12%">Probabilité</th><th>Mitigation</th></tr></thead>
+      <tbody>
+        <tr><td>Cantons refusent un import via API officiel</td><td><span class="severity sev-h">Élevé</span></td><td><span class="severity sev-m">Moyenne</span></td><td>Négocier MOU avec Agridea, démarrer par exports CSV/PDF reconnus, pousser un standard ouvert</td></tr>
+        <tr><td>Barto baisse les prix ou ouvre un module ERP</td><td><span class="severity sev-h">Élevé</span></td><td><span class="severity sev-m">Moyenne</span></td><td>Différenciation Odoo + travaux pour tiers + romand-first ; partenariat fiduciaires</td></tr>
+        <tr><td>Évolution OPD 2027/2028 invalide une partie des règles codées</td><td><span class="severity sev-m">Moyen</span></td><td><span class="severity sev-h">Élevée</span></td><td>Architecture rules-as-data, mise à jour annuelle planifiée en début d'année civile</td></tr>
+        <tr><td>Dépendance Odoo (changement d'API)</td><td><span class="severity sev-m">Moyen</span></td><td><span class="severity sev-l">Faible</span></td><td>Couche d'abstraction interne, tests de non-régression sur 2 versions Odoo</td></tr>
+        <tr><td>Fuite de données agricoles sensibles</td><td><span class="severity sev-h">Élevé</span></td><td><span class="severity sev-l">Faible</span></td><td>nLPD compliance dès le départ, pen-test annuel, hébergement CH (Infomaniak/Exoscale)</td></tr>
+        <tr><td>Lassitude utilisateur saisie mobile</td><td><span class="severity sev-m">Moyen</span></td><td><span class="severity sev-m">Moyenne</span></td><td>UX terrain testée avec 5 pilotes en saison réelle, voix/scan, sync offline-first</td></tr>
+        <tr><td>Adoption fiduciaires (canal indirect) lente</td><td><span class="severity sev-m">Moyen</span></td><td><span class="severity sev-m">Moyenne</span></td><td>Programme partenaire dédié, formation gratuite, commission de référencement</td></tr>
+        <tr><td>Permis de traiter (OPPh 2026) = friction onboarding</td><td><span class="severity sev-l">Faible</span></td><td><span class="severity sev-h">Élevée</span></td><td>Module dédié dès MVP avec import depuis registre OFAG</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <footer>
+    Agri Qodo &middot; Roadmap interactive v0.1 &middot; Avril 2026 &middot; Préparé pour Fabien Cossy — Hofer Groupe
+  </footer>
+</div>
+
+<div class="modal" id="mod"><div class="modal-content"><button class="close" onclick="closeMod()">&times;</button><div id="mod-body"></div></div></div>
+
+<script>
+const MODULES = [
+  {id:"M1",name:"Parcellaire et assolement",phase:"mvp",domain:"exploitation",
+    desc:"Fondation. Sans parcellaire propre, pas de bilan, pas de carnet, pas de SPB.",
+    feat:"Import GIS cantonal (geo.vd.ch, sitg.ge.ch...), édition manuelle, historique d'assolement multi-année, calcul automatique du respect de l'assolement régulier.",
+    tags:["GIS","Assolement","Surfaces"],deps:[],integ:["Acorda/GELAN","SIG cantonaux"]},
+  {id:"M2",name:"Carnet des champs",phase:"mvp",domain:"conformite",
+    desc:"Coeur opérationnel quotidien. C'est ici que l'agriculteur passe le plus de temps.",
+    feat:"Saisie mobile (PWA offline-first), catalogue produits homologués (sync OFAG), saisie voix, photos, signature électronique, alertes délais d'attente, export PDF officiel.",
+    tags:["PWA","Mobile","OFAG","Voix"],deps:["M1"],integ:["OFAG OPPh","MeteoSwiss","Acorda/GELAN"]},
+  {id:"M3",name:"Suisse-Bilanz",phase:"mvp",domain:"conformite",
+    desc:"Économise 1 à 2 jours de travail comptable par an et sécurise les paiements directs.",
+    feat:"Calcul auto selon Guide 1.18, simulation prévisionnelle, alerte de dépassement en temps réel, export PDF officiel + CSV, archivage 6 ans.",
+    tags:["PER","OPD art.13","Calcul auto"],deps:["M1","M2","M4"],integ:["BDTA","HODUFLU","Achats Odoo"]},
+  {id:"M4",name:"Animaux et BDTA",phase:"mvp",domain:"conformite",
+    desc:"Supprime la double saisie BDTA + carnet écurie + comptabilité.",
+    feat:"Registre individuel (bovins) ou par lot (porcs/ovins), notifications BDTA en un clic, calcul UGB. V2: robot traite, comptes individuels lait, Suissemilk.",
+    tags:["BDTA","UGB","Identitas"],deps:["M1"],integ:["BDTA Identitas","Robot traite (V2)","Suissemilk (V2)"]},
+  {id:"M5",name:"SRPA Journal des sorties",phase:"mvp",domain:"conformite",
+    desc:"Le journal des sorties est l'un des points de contrôle les plus exposés et chronophages.",
+    feat:"Saisie quotidienne en 5 secondes, géo-tag automatique, alertes en cas de défaut, génération du registre annuel pour contrôles.",
+    tags:["SRPA","OPD","Élevage"],deps:["M1","M4"],integ:["Colliers connectés (V2)"]},
+  {id:"M6",name:"Travaux pour tiers (bons de commande + facturation groupée)",phase:"mvp",domain:"erp",
+    desc:"Bon de travail terrain → bon de commande Odoo (sale.order) → accumulation par client sur le mois → facturation groupée mensuelle en un clic. Pas de facture par intervention.",
+    feat:"Saisie mobile (machine, opération, durée, parcelle, client), création sale.order automatique, vue agrégée 'Bons à facturer', facturation groupée par client en fin de mois (sale.advance.payment.inv), TVA auto (2.6% travail du sol, 8.1% autres), QR-bill incluse.",
+    tags:["ETA","Bon de commande","Facturation groupée","TVA","Odoo"],deps:["M1"],integ:["Odoo sale.order","Odoo account.move","QR-bill","Agroscope catalogue coûts"]},
+  {id:"M7",name:"Surfaces de promotion biodiversité",phase:"v2",domain:"conformite",
+    desc:"Garantit le seuil 7%, suit les obligations de fauche/non-fertilisation, capture les contributions QI/QII.",
+    feat:"Calcul auto ratio SPB/SAU, tracking dates de fauche autorisées, alerte si traitement sur SPB, gestion contrats mise en réseau.",
+    tags:["SPB","Biodiversité","QI/QII"],deps:["M1","M3"],integ:["Acorda/GELAN"]},
+  {id:"M8",name:"Stocks intrants et récoltes",phase:"v2",domain:"erp",
+    desc:"Lien physique entre achats Odoo, consommations terrain (M2) et récoltes vendues.",
+    feat:"Stocks par site, FIFO/LIFO, dates péremption phyto, alertes ruptures, rapprochement consommations terrain achats.",
+    tags:["Stocks","FIFO","Odoo"],deps:["M1","M2"],integ:["Odoo stock","Achats fournisseurs"]},
+  {id:"M9",name:"Vente directe — couverte par Odoo POS / eCommerce natif",phase:"v2",domain:"erp",
+    desc:"Module retiré du périmètre Agri Qodo. La vente directe (TPE ferme, marchés, paniers, e-commerce) est couverte nativement par Odoo Enterprise (modules POS, eCommerce, Subscriptions, Loyalty). Agri Qodo se contente de pousser les lots de récolte issus du carnet des champs (M2) dans Odoo Inventory.",
+    feat:"Pas de développement Agri Qodo. Côté Odoo : POS pour TPE/marchés, eCommerce pour vente en ligne, Subscriptions pour AMAP/paniers récurrents, Loyalty pour fidélité. Agri Qodo livre l'intégration de traçabilité (lot récolte → vente).",
+    tags:["Odoo POS","Odoo eCommerce","Traçabilité"],deps:["M1","M2"],integ:["Odoo POS natif","Odoo eCommerce natif","Odoo Inventory"]},
+  {id:"M10",name:"Comptabilité agricole CH",phase:"v2",domain:"erp",
+    desc:"Rapprochement automatique avec Odoo en plan comptable PME/PMI suisse adapté à l'agriculture.",
+    feat:"Plan comptable agricole CH (Agriexpert), TVA agricole, exonération produits propres, génération bouclement annuel pour fiduciaire.",
+    tags:["TVA","Bouclement","Fiduciaire"],deps:["M6","M8"],integ:["Odoo account","Agriexpert"]},
+  {id:"M11",name:"Heures et présences (paie déléguée à Odoo)",phase:"v3",domain:"erp",
+    desc:"Agri Qodo capture les heures travaillées et les présences sur le terrain. Les salaires eux-mêmes (calcul, bulletins, déclarations Swissdec) sont gérés par Odoo HR/Payroll. Frontière nette : Agri Qodo = terrain, Odoo = administratif.",
+    feat:"Pointage mobile géolocalisé, affectation heures par parcelle/opération, calendrier équipe, gestion absences, alertes heures sup selon CCT, validation hebdo par chef d'exploitation, export feuilles de temps validées vers Odoo HR.",
+    tags:["Pointage","Timesheet","Saisonniers","Odoo HR"],deps:["M1","M6"],integ:["Odoo hr","Odoo hr_attendance","Odoo hr_timesheet","Odoo Payroll (Swissdec)"]},
+  {id:"M12",name:"Pilotage économique",phase:"v3",domain:"exploitation",
+    desc:"Comprendre quelle culture, quelle vache, quel client rapporte vraiment.",
+    feat:"Calcul marge brute par parcelle/culture, marge par UGB, simulateur paiements directs, benchmarking anonymisé entre exploitations clientes.",
+    tags:["Marge","Simulateur","Benchmark"],deps:["M3","M4","M10"],integ:["Données internes"]},
+  {id:"M13",name:"Multi-exploitation et coopération",phase:"v3",domain:"exploitation",
+    desc:"Syndicats de battage, CUMA suisses, sociétés de machines, fermes en communauté d'exploitation reconnue.",
+    feat:"Partage matériel et heures, refacturation interne, planning partagé, droits différenciés.",
+    tags:["CUMA","Multi-tenant","Coopération"],deps:["M6","M10"],integ:["Odoo multi-company"]},
+  {id:"M14",name:"Connecteur agridata.ch / DigiAgriFoodCH",phase:"v2",domain:"conformite",
+    desc:"Raccordement officiel au data space agroalimentaire suisse. Principe once-only : saisie unique, partage centralisé avec consentement.",
+    feat:"Client REST + auth token, gestion consentements utilisateur (UI dédiée), import depuis agridata.ch (parcellaire, animaux, interventions tierces), publication vers agridata.ch (Suisse-Bilanz, carnet des champs), alignement aux standards de données DigiAgriFoodCH.",
+    tags:["agridata.ch","Data space","DigiAgriFoodCH","REST API","Once-only"],deps:["M1","M2","M3","M4"],integ:["agridata.ch","digiagrifood.ch","CH-Login (Agate)"]},
+  {id:"M15",name:"Documentation et veille réglementaire",phase:"mvp",domain:"exploitation",
+    desc:"Bibliothèque de liens vers les textes officiels, guides Agridea, glossaire métier et alertes de changement réglementaire. Liens contextuels in-app dans chaque module. Disponible gratuitement (1 module suffit pour le plan Gratuit).",
+    feat:"Bibliothèque OPD/OPPh/OEaux/OPAn etc. avec résumés, guides Agridea (Suisse-Bilanz, PER Romandie, SST/SRPA), glossaire métier (UGB, SPB, SAU...), calendrier réglementaire, alertes push de changement, recherche unifiée, contenu disponible hors ligne.",
+    tags:["Documentation","Veille","Glossaire","Calendrier réglementaire"],deps:[],integ:["OFAG admin.ch","Agridea","Cantons","digiagrifood.ch"]},
+  {id:"M16",name:"Lien partenaire entre exploitations",phase:"mvp",domain:"erp",
+    desc:"L'entrepreneur (ETA ou voisin) saisit ses interventions directement sur les parcelles de son client via un code d'exploitation. Workflow de validation côté propriétaire. Une seule saisie alimente carnet champs client + bon de commande entrepreneur.",
+    feat:"Code d'exploitation unique (AQ-VD-1247-XR3K) partageable par QR ou texte, demande d'autorisation push, autorisations granulaires (parcelles + niveaux : lecture / validation / direct), workflow validation avec photo/géoloc/produit/dose, audit trail nLPD, révocation à tout moment, effet viral d'acquisition.",
+    tags:["B2B","Partenaires","ETA","Validation","Workflow","Effet viral"],deps:["M1","M2","M6"],integ:["Push notifications","QR code"]},
+];
+
+const grid = document.getElementById("modules-grid");
+function renderModules(){
+  const phase = document.querySelector("[data-filter].active")?.dataset.filter || "all";
+  const domain = document.querySelector("[data-domain].active")?.dataset.domain || "all";
+  grid.innerHTML = MODULES
+    .filter(m => phase==="all" || m.phase===phase)
+    .filter(m => domain==="all" || m.domain===domain)
+    .map(m => `
+      <div class="card ${m.phase}" onclick="openMod('${m.id}')">
+        <div class="head">
+          <div>
+            <div class="id">${m.id}</div>
+            <div class="name">${m.name}</div>
+          </div>
+          <span class="badge">${m.phase==='mvp'?'MVP':m.phase.toUpperCase()}</span>
+        </div>
+        <div class="desc">${m.desc}</div>
+        <div class="meta-row">${m.tags.map(t=>`<span class="tag">${t}</span>`).join("")}</div>
+        ${m.deps.length ? `<div class="deps">Dépend de : ${m.deps.join(", ")}</div>` : ''}
+      </div>
+    `).join("");
+}
+renderModules();
+
+document.querySelectorAll("[data-filter]").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("[data-filter]").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    renderModules();
+  };
+});
+document.querySelectorAll("[data-domain]").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll("[data-domain]").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    renderModules();
+  };
+});
+
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".tab").forEach(b=>b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById(btn.dataset.target).classList.add("active");
+  };
+});
+
+function openMod(id){
+  const m = MODULES.find(x=>x.id===id);
+  document.getElementById("mod-body").innerHTML = `
+    <div style="font-size:11px;color:var(--green);font-weight:700;letter-spacing:0.5px">${m.id}</div>
+    <h2>${m.name}</h2>
+    <span class="badge" style="background:var(--green-light);color:var(--green-dark);font-size:11px;padding:3px 8px;border-radius:10px;text-transform:uppercase">${m.phase.toUpperCase()}</span>
+    <p style="margin:16px 0;color:#424242">${m.desc}</p>
+    <h3 style="font-size:14px;margin-top:16px;color:var(--green-dark)">Fonctionnalités</h3>
+    <p style="font-size:13px;color:#424242;margin-top:6px">${m.feat}</p>
+    <h3 style="font-size:14px;margin-top:16px;color:var(--green-dark)">Dépendances</h3>
+    <p style="font-size:13px;color:#424242;margin-top:6px">${m.deps.length?m.deps.join(", "):"Aucune"}</p>
+    <h3 style="font-size:14px;margin-top:16px;color:var(--green-dark)">Intégrations externes</h3>
+    <p style="font-size:13px;color:#424242;margin-top:6px">${m.integ.join(", ")}</p>
+  `;
+  document.getElementById("mod").classList.add("open");
+}
+function closeMod(){ document.getElementById("mod").classList.remove("open"); }
+document.getElementById("mod").onclick = (e) => { if(e.target.id==="mod") closeMod(); };
+
+const TL = [
+  {label:"M1 Parcellaire", segs:[{phase:"mvp",start:0,end:25}]},
+  {label:"M2 Carnet champs", segs:[{phase:"mvp",start:0,end:25}]},
+  {label:"M3 Suisse-Bilanz", segs:[{phase:"mvp",start:5,end:25}]},
+  {label:"M4 Animaux/BDTA", segs:[{phase:"mvp",start:10,end:25},{phase:"v2",start:25,end:50}]},
+  {label:"M5 SRPA", segs:[{phase:"mvp",start:10,end:25}]},
+  {label:"M6 Bons commande", segs:[{phase:"mvp",start:15,end:25}]},
+  {label:"M15 Doc & veille", segs:[{phase:"mvp",start:0,end:25}]},
+  {label:"M16 Lien partenaire", segs:[{phase:"mvp",start:18,end:25}]},
+  {label:"M7 SPB", segs:[{phase:"v2",start:25,end:50}]},
+  {label:"M8 Stocks", segs:[{phase:"v2",start:30,end:50}]},
+  {label:"M10 Compta CH", segs:[{phase:"v2",start:35,end:50}]},
+  {label:"M14 agridata.ch", segs:[{phase:"v2",start:30,end:50}]},
+  {label:"M11 Heures/présences", segs:[{phase:"v3",start:50,end:75}]},
+  {label:"M12 Pilotage", segs:[{phase:"v3",start:55,end:90}]},
+  {label:"M13 Multi-expl", segs:[{phase:"v3",start:75,end:100}]},
+];
+const tlc = document.getElementById("timeline-container");
+tlc.innerHTML = TL.map(r => `
+  <div class="tl-row">
+    <div class="tl-label">${r.label}</div>
+    <div class="tl-bar">
+      ${r.segs.map(s=>`<div class="tl-segment tl-${s.phase}" style="left:${s.start}%;width:${s.end-s.start}%">${s.phase.toUpperCase()}</div>`).join("")}
+    </div>
+  </div>
+`).join("");
+</script>
+
+</body>
+</html>

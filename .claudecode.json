@@ -1,0 +1,94 @@
+{
+  "projectName": "NewagriQodo v2",
+  "description": "Agricultural management app for Swiss farmers - Mobile-first React + Node.js + PostgreSQL",
+
+  "hooks": {
+    "onFilesChanged": {
+      "description": "Auto-format and lint code after Claude modifies files",
+      "tasks": [
+        {
+          "name": "Format code with Prettier",
+          "command": "npx prettier --write .",
+          "continueOnError": false,
+          "ignorePatterns": ["node_modules", ".next", "dist", "build"]
+        },
+        {
+          "name": "Lint with ESLint (frontend)",
+          "command": "npm run lint --fix",
+          "cwd": "frontend",
+          "continueOnError": true
+        },
+        {
+          "name": "Lint with ESLint (backend)",
+          "command": "npm run lint --fix",
+          "cwd": "backend",
+          "continueOnError": true
+        }
+      ]
+    },
+
+    "onTaskCompleted": {
+      "description": "Run tests and build validation after Claude completes a task",
+      "tasks": [
+        {
+          "name": "Frontend unit tests",
+          "command": "npm run test",
+          "cwd": "frontend",
+          "continueOnError": true,
+          "timeout": 120
+        },
+        {
+          "name": "Backend unit tests",
+          "command": "npm run test",
+          "cwd": "backend",
+          "continueOnError": true,
+          "timeout": 120
+        },
+        {
+          "name": "Type checking (TypeScript)",
+          "command": "npm run type-check",
+          "continueOnError": true,
+          "timeout": 60
+        },
+        {
+          "name": "Build frontend",
+          "command": "npm run build",
+          "cwd": "frontend",
+          "continueOnError": true,
+          "timeout": 180
+        }
+      ]
+    }
+  },
+
+  "environment": {
+    "nodeVersion": "18+",
+    "packageManager": "npm",
+    "projectStructure": {
+      "root": "./",
+      "frontend": "./frontend",
+      "backend": "./backend",
+      "database": "./database",
+      "shared": "./shared"
+    }
+  },
+
+  "codeStandards": {
+    "language": "TypeScript",
+    "formatting": "Prettier (2-space indent)",
+    "linting": "ESLint with React plugin",
+    "testing": "Vitest (frontend), Jest (backend)",
+    "database": "Prisma ORM",
+    "framework": "React 18+ (Vite) + Express",
+    "styling": "Tailwind CSS + shadcn/ui"
+  },
+
+  "requirements": {
+    "commits": "No direct push to main. Use feature branches.",
+    "tests": "All tests must pass before merge",
+    "typeChecking": "TypeScript strict mode (noImplicitAny, etc.)",
+    "accessibility": "WCAG AA minimum for all components",
+    "performance": "Lighthouse 90+ before merge",
+    "coverage": "Aim for 80%+ test coverage per module"
+  }
+}

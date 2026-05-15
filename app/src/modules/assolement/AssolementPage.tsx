@@ -15,6 +15,7 @@ import {
   getAvailableYears,
   getDominantCulture,
   getSegmentsForParcelYear,
+  mergeAdjacentSameCulture,
   resolveOverlaps,
 } from './assolement.helpers';
 import { ASSOLEMENT_SEGMENTS } from './assolement.mocks';
@@ -125,12 +126,15 @@ export default function AssolementPage() {
   const saveSegment = (next: AssolementSegment) => {
     // resolveOverlaps découpe les segments existants chevauchés pour qu'il
     // n'y ait jamais deux cultures simultanées sur la même parcelle.
-    setSegments((curr) => resolveOverlaps(next, curr));
+    // mergeAdjacentSameCulture fusionne ensuite les segments adjacents qui
+    // partagent la même culture (ex. Pâturage 01/01-01/12 + Pâturage
+    // 02/12-31/12 → Pâturage 01/01-31/12).
+    setSegments((curr) => mergeAdjacentSameCulture(resolveOverlaps(next, curr)));
     setEditingSegment(null);
   };
 
   const deleteSegment = (id: string) => {
-    setSegments((curr) => curr.filter((s) => s.id !== id));
+    setSegments((curr) => mergeAdjacentSameCulture(curr.filter((s) => s.id !== id)));
     setEditingSegment(null);
   };
 

@@ -79,9 +79,9 @@ export function ParcelleSummaryPanel({
         <AssolementTimeline segments={segments} year={year} variant="detail" today={TODAY} />
       </Section>
 
-      {/* Stade phénologique */}
-      <Section title="Stade phénologique">
-        {stade ? (
+      {/* Stade phénologique — masqué si pas de donnée pour la culture courante */}
+      {stade && (
+        <Section title="Stade phénologique">
           <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-3">
             <div className="flex items-baseline justify-between gap-2">
               <span className="text-sm font-medium">{stade.label}</span>
@@ -98,23 +98,19 @@ export function ParcelleSummaryPanel({
             </div>
             <p className="m-0 mt-2 text-xs text-(--color-muted)">{stade.note}</p>
           </div>
-        ) : (
-          <Empty>Aucune culture en place actuellement.</Empty>
-        )}
-      </Section>
+        </Section>
+      )}
 
-      {/* Bilan de fumure */}
-      <Section title="Bilan de fumure">
-        {fumure ? (
+      {/* Bilan de fumure — masqué si pas de données */}
+      {fumure && (
+        <Section title="Bilan de fumure">
           <div className="grid grid-cols-3 gap-2">
             {fumure.map((f) => (
               <NutrientCard key={f.element} {...f} />
             ))}
           </div>
-        ) : (
-          <Empty>Pas de bilan disponible.</Empty>
-        )}
-      </Section>
+        </Section>
+      )}
 
       {/* Dernières interventions */}
       <Section title="Dernières interventions" actionLabel="Carnet" onAction={onOpenFiche}>

@@ -99,6 +99,44 @@ function addDays(date: string, days: number): string {
 }
 
 /**
+ * Fusionne les segments adjacents ou chevauchants d'une même parcelle
+ * qui partagent la même culture (et la même variété). Ex :
+ *   [Pâturage 01/01 → 01/12, Pâturage 02/12 → 31/12]
+ *   → [Pâturage 01/01 → 31/12]
+ *
+ * À appliquer après chaque modification de la liste de segments.
+ */
+export function mergeAdjacentSameCulture(
+  segments: ReadonlyArray<AssolementSegment>,
+): AssolementSegment[] {
+  const byParcel = new Map<string, AssolementSegment[]>();
+  for (const s of segments) {
+    const list = byParcel.get(s.parcelId);
+    if (list) list.push(s);
+    else byParcel.set(s.parcelId, [s]);
+  }
+  const result: AssolementSegment[] = [];
+  for (const list of byParcel.values()) {
+    list.sort((a, b) => a.startDate.localeCompare(b.startDate));
+    for (const s of list) {
+      const last = result[result.length - 1];
+      const sameParcel = last && last.parcelId === s.parcelId;
+      const sameCulture =
+        sameParcel &&
+        last.culture === s.culture &&
+        (last.varietyName ?? '') === (s.varietyName ?? '');
+      const adjacent = sameParcel && addDays(last.endDate, 1) >= s.startDate;
+      if (sameCulture && adjacent) {
+        if (s.endDate > last.endDate) last.endDate = s.endDate;
+      } else {
+        result.push({ ...s });
+      }
+    }
+  }
+  return result;
+}
+
+/**
  * Découpe les segments existants pour faire de la place au `newSegment`.
  *
  * Règle métier : il ne peut pas y avoir deux cultures simultanées sur une

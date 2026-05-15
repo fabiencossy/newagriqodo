@@ -5,11 +5,7 @@ import { MapView } from '../../components/MapView';
 import { useFabActions, useHideFab } from '../../layouts/useFab';
 import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
 import { AssolementTimeline } from '../assolement/AssolementTimeline';
-import {
-  getActiveSegment,
-  getDominantCulture,
-  getSegmentsForParcelYear,
-} from '../assolement/assolement.helpers';
+import { getActiveSegment, getSegmentsForParcelYear } from '../assolement/assolement.helpers';
 import { cultureColor } from '../assolement/cultures';
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -255,6 +251,9 @@ export default function ParcelleDetailPage() {
         {/* Assolement — timeline + segments de la campagne */}
         <AssolementSection parcelId={draft.id} year={draft.year} />
 
+        {/* Plan de fumure — apports N/P/K + stats */}
+        <FumureSection parcelId={draft.id} surfaceHa={draft.surfaceHa} />
+
         {/* Notes */}
         <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5">
           <h2 className="m-0 mb-4 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
@@ -346,11 +345,133 @@ export default function ParcelleDetailPage() {
   );
 }
 
+/* ============ Plan de fumure ============ */
+
+interface NutrientEntry {
+  element: string;
+  applied: number;
+  needed: number;
+  unit: string;
+}
+
+const FUMURE_NEEDS_KG_HA: Record<string, [number, number, number]> = {
+  "Blé d'automne": [180, 60, 90],
+  'Blé de printemps': [160, 60, 80],
+  'Maïs ensilage': [200, 70, 200],
+  'Maïs grain': [200, 70, 200],
+  "Colza d'automne": [220, 60, 110],
+  "Orge d'automne": [150, 50, 80],
+  'Orge de printemps': [130, 50, 70],
+};
+
+function fumureForCulture(culture: string | undefined): NutrientEntry[] | null {
+  if (!culture) return null;
+  const need = FUMURE_NEEDS_KG_HA[culture];
+  if (!need) return null;
+  return [
+    { element: 'N', applied: Math.round(need[0] * 0.7), needed: need[0], unit: 'kg/ha' },
+    { element: 'P₂O₅', applied: Math.round(need[1] * 0.9), needed: need[1], unit: 'kg/ha' },
+    { element: 'K₂O', applied: Math.round(need[2] * 0.5), needed: need[2], unit: 'kg/ha' },
+  ];
+}
+
+function FumureSection({ parcelId, surfaceHa }: { parcelId: string; surfaceHa: number }) {
+  const active = useMemo(() => getActiveSegment(parcelId, TODAY), [parcelId]);
+  const data = fumureForCulture(active?.culture);
+  if (!data || !active) return null;
+
+  const totalNeeded = data.reduce((s, n) => s + n.needed, 0);
+  const totalApplied = data.reduce((s, n) => s + n.applied, 0);
+  const coverage = totalNeeded > 0 ? Math.round((totalApplied / totalNeeded) * 100) : 0;
+  const remainingPerHa = Math.max(0, totalNeeded - totalApplied);
+  const remainingTotalKg = Math.round(remainingPerHa * surfaceHa);
+  const statusLabel =
+    coverage >= 95 && coverage <= 110
+      ? 'Équilibré'
+      : coverage < 80
+        ? 'Sous-fertilisé'
+        : 'Sur-fertilisé';
+  const statusColor =
+    coverage >= 95 && coverage <= 110 ? '#16a34a' : coverage < 80 ? '#f59e0b' : '#ef4444';
+
+  return (
+    <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-2">
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="m-0 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
+          Plan de fumure
+        </h2>
+        <span className="text-xs text-(--color-muted)">{active.culture}</span>
+      </div>
+      <div className="mb-4 grid grid-cols-3 gap-2">
+        {data.map((n) => (
+          <FumureNutrient key={n.element} {...n} />
+        ))}
+      </div>
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <FumureStat label="Couverture totale" value={`${coverage} %`} color={statusColor} />
+        <FumureStat
+          label="Reste à apporter"
+          value={`${remainingTotalKg} kg`}
+          sub={`(${remainingPerHa} kg/ha × ${surfaceHa.toFixed(2)} ha)`}
+        />
+        <FumureStat label="Bilan" value={statusLabel} color={statusColor} />
+      </div>
+    </section>
+  );
+}
+
+function FumureNutrient({ element, applied, needed, unit }: NutrientEntry) {
+  const ratio = needed > 0 ? Math.min(1.2, applied / needed) : 0;
+  const overshoot = needed > 0 && applied > needed;
+  const color = overshoot ? '#ef4444' : applied < needed * 0.6 ? '#f59e0b' : '#16a34a';
+  return (
+    <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-3">
+      <div className="text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
+        {element}
+      </div>
+      <div className="mt-1 font-mono text-base tabular-nums">
+        {applied}
+        <span className="text-(--color-muted)">/{needed}</span>
+        <span className="ml-1 text-[11px] text-(--color-muted)">{unit}</span>
+      </div>
+      <div className="mt-1.5 h-1.5 overflow-hidden rounded-(--radius-pill) bg-[#f1f1ee]">
+        <div
+          className="h-full"
+          style={{ width: `${Math.min(100, ratio * 100)}%`, background: color }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function FumureStat({
+  label,
+  value,
+  sub,
+  color,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  color?: string;
+}) {
+  return (
+    <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-3">
+      <div className="text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
+        {label}
+      </div>
+      <div className="mt-1 text-base font-semibold" style={{ color }}>
+        {value}
+      </div>
+      {sub && <div className="mt-0.5 text-[11px] text-(--color-muted)">{sub}</div>}
+    </div>
+  );
+}
+
 function AssolementSection({ parcelId, year }: { parcelId: string; year: number }) {
   const navigate = useNavigate();
   const segments = useMemo(() => getSegmentsForParcelYear(parcelId, year), [parcelId, year]);
   const active = useMemo(() => getActiveSegment(parcelId, TODAY), [parcelId]);
-  const dominant = useMemo(() => getDominantCulture(parcelId, year), [parcelId, year]);
 
   return (
     <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-2">
@@ -367,69 +488,36 @@ function AssolementSection({ parcelId, year }: { parcelId: string; year: number 
         </button>
       </div>
 
-      {/* Résumé : segment actif (instant T) + culture dominante de la campagne */}
-      <div className="mb-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
-        <ResumeCard
-          title="Aujourd'hui"
-          culture={active?.culture}
-          variety={active?.varietyName}
-          subtitle={
-            active
-              ? `${fmtDate(active.startDate)} → ${fmtDate(active.endDate)}`
-              : 'Aucun segment actif'
-          }
-        />
-        <ResumeCard
-          title="Dominant"
-          culture={dominant?.culture}
-          variety={dominant?.segment.varietyName}
-          subtitle={
-            dominant ? `${Math.round((dominant.days / 365) * 12)} mois sur la campagne` : '—'
-          }
-        />
+      {/* Culture en place aujourd'hui */}
+      <div className="mb-4 rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-3">
+        <div className="text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
+          Aujourd'hui
+        </div>
+        <div className="mt-1 flex items-center gap-2 text-sm font-medium">
+          {active ? (
+            <>
+              <span
+                aria-hidden="true"
+                className="inline-block h-3 w-3 rounded-(--radius-pill)"
+                style={{ background: cultureColor(active.culture) }}
+              />
+              <span>
+                {active.culture}
+                {active.varietyName ? ` · ${active.varietyName}` : ''}
+              </span>
+              <span className="ml-auto shrink-0 font-mono text-[11px] text-(--color-muted)">
+                {fmtDate(active.startDate)} → {fmtDate(active.endDate)}
+              </span>
+            </>
+          ) : (
+            <span className="text-(--color-muted)">Aucun segment actif</span>
+          )}
+        </div>
       </div>
 
       {/* Timeline */}
       <AssolementTimeline segments={segments} year={year} variant="detail" today={TODAY} />
     </section>
-  );
-}
-
-function ResumeCard({
-  title,
-  culture,
-  variety,
-  subtitle,
-}: {
-  title: string;
-  culture?: string;
-  variety?: string;
-  subtitle: string;
-}) {
-  return (
-    <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-3">
-      <div className="text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
-        {title}
-      </div>
-      <div className="mt-1 flex items-center gap-2 text-sm font-medium">
-        {culture ? (
-          <>
-            <span
-              aria-hidden="true"
-              className="inline-block h-3 w-3 rounded-(--radius-pill)"
-              style={{ background: cultureColor(culture) }}
-            />
-            <span>
-              {culture}
-              {variety ? ` · ${variety}` : ''}
-            </span>
-          </>
-        ) : (
-          <span className="text-(--color-muted)">—</span>
-        )}
-      </div>
-      <div className="mt-0.5 text-[11px] text-(--color-muted)">{subtitle}</div>
-    </div>
   );
 }
 

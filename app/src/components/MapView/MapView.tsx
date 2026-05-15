@@ -225,11 +225,13 @@ export function MapView({
   // sans recréer le layer (qui ferait trembler les labels permanents).
   const selectionRef = useRef<string[]>([]);
   const onSelectionRef = useRef(onSelectionChange);
+  const parcelsRef = useRef(parcels);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability
     selectionRef.current = effectiveSelectedIds;
     // eslint-disable-next-line react-hooks/immutability
     onSelectionRef.current = onSelectionChange;
+    parcelsRef.current = parcels;
   });
 
   /* ---------- Restyle au changement de sélection (sans recréer le layer) ---------- */
@@ -464,7 +466,7 @@ export function MapView({
         if (pts.length >= 3) {
           const lassoLngLat = pts.map((p): [number, number] => [p.lng, p.lat]);
           const selected: string[] = [];
-          for (const p of parcels) {
+          for (const p of parcelsRef.current) {
             const ring =
               p.geometry.type === 'Polygon'
                 ? p.geometry.coordinates[0]!
@@ -499,7 +501,10 @@ export function MapView({
     }
 
     return undefined;
-  }, [activeTool, parcels]);
+    // On ne dépend QUE de activeTool : `parcels` est lu via parcelsRef pour
+    // ne pas remonter l'effet pendant qu'on dessine un polygon (sinon les
+    // sommets en cours seraient effacés à chaque changement de filtre).
+  }, [activeTool]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   /* ---------- Raccourcis clavier outils ---------- */

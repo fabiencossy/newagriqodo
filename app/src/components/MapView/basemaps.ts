@@ -41,17 +41,14 @@ const BASE_SATELLITE: StyleSpecification = {
   sources: {
     sat: {
       type: 'raster',
-      // Google satellite — fonctionne sans API key, multiples sub-domaines
-      // pour le load balancing. À remplacer par self-hosted en Phase 2.5.
+      // ESRI World Imagery — officiel, gratuit, CORS OK, sans API key.
+      // À remplacer par self-hosted en Phase 2.5 si besoin.
       tiles: [
-        'https://mt0.google.com/vt/lyrs=s&hl=fr&x={x}&y={y}&z={z}',
-        'https://mt1.google.com/vt/lyrs=s&hl=fr&x={x}&y={y}&z={z}',
-        'https://mt2.google.com/vt/lyrs=s&hl=fr&x={x}&y={y}&z={z}',
-        'https://mt3.google.com/vt/lyrs=s&hl=fr&x={x}&y={y}&z={z}',
+        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       ],
       tileSize: 256,
-      attribution: '© Google',
-      maxzoom: 20,
+      attribution: 'Tiles © Esri — Source : Esri, Maxar, GeoEye, Earthstar Geographics',
+      maxzoom: 19,
     },
   },
   layers: [

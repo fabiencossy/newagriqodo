@@ -147,55 +147,50 @@ export default function ParcellairePage() {
     />
   );
 
+  // Top bar unique : 1 seule ligne mobile ET desktop avec titre + search + views + export
+  const topBar = (
+    <div className="flex w-full items-center gap-2">
+      {/* Titre — desktop uniquement (mobile : déjà dans AppHeader) */}
+      <div className="hidden shrink-0 items-baseline gap-2 md:flex">
+        <h1 className="m-0 truncate text-base font-semibold">Parcellaire</h1>
+        <span className="truncate text-xs text-(--color-muted)">{summary}</span>
+      </div>
+      {/* SearchBar prend la place disponible, centrée */}
+      <div className="min-w-0 flex-1 md:mx-auto md:max-w-[640px]">
+        <SearchBar
+          fields={FIELDS}
+          value={searchState}
+          onChange={setSearchState}
+          ariaLabel="Rechercher dans le parcellaire"
+        />
+      </div>
+      {/* ViewSwitcher : icônes seules sur mobile, icon+label sur desktop */}
+      <div className="shrink-0 md:hidden">
+        <ViewSwitcher
+          views={['map', 'table', 'dashboard']}
+          activeView={view}
+          onChange={setView}
+          layout="segmented"
+          display="icon-only"
+        />
+      </div>
+      <div className="hidden shrink-0 md:block">{viewSwitcher}</div>
+      <div className="shrink-0">{exportBtn}</div>
+    </div>
+  );
+
   /* ============================================================
-   * Layout unifié pour les 3 vues : top bar identique + contenu adaptatif
+   * Layout unifié : top bar identique + contenu adaptatif
+   * Sur vue map : top bar en overlay au-dessus de la carte
    * ============================================================ */
   return (
     <div className="flex h-full flex-col overflow-hidden">
-      {/* === TOP BAR (identique pour toutes les vues) === */}
-      <div className="flex-shrink-0 border-b border-(--color-border) bg-(--color-surface)">
-        {/* Mobile : SearchBar + ViewSwitcher icon-only + Export — 1 ligne */}
-        <div className="flex items-center gap-2 px-3 py-2 md:hidden">
-          <div className="min-w-0 flex-1">
-            <SearchBar
-              fields={FIELDS}
-              value={searchState}
-              onChange={setSearchState}
-              ariaLabel="Rechercher dans le parcellaire"
-            />
-          </div>
-          <ViewSwitcher
-            views={['map', 'table', 'dashboard']}
-            activeView={view}
-            onChange={setView}
-            layout="segmented"
-            display="icon-only"
-          />
-          {exportBtn}
+      {/* Top bar dans le flow pour table/dashboard, en overlay pour map (rendu plus bas) */}
+      {view !== 'map' && (
+        <div className="flex-shrink-0 border-b border-(--color-border) bg-(--color-surface) px-3 py-2">
+          {topBar}
         </div>
-
-        {/* Desktop : titre + actions, puis SearchBar dessous */}
-        <div className="hidden px-4 py-2 md:block">
-          <div className="flex items-center gap-3">
-            <div className="flex min-w-0 items-baseline gap-2">
-              <h1 className="m-0 truncate text-base font-semibold">Parcellaire</h1>
-              <span className="truncate text-xs text-(--color-muted)">{summary}</span>
-            </div>
-            <div className="ml-auto flex items-center gap-2">
-              {viewSwitcher}
-              {exportBtn}
-            </div>
-          </div>
-          <div className="mt-2 max-w-[640px]">
-            <SearchBar
-              fields={FIELDS}
-              value={searchState}
-              onChange={setSearchState}
-              ariaLabel="Rechercher dans le parcellaire"
-            />
-          </div>
-        </div>
-      </div>
+      )}
 
       {/* === CONTENU flex-1 === */}
       {view === 'map' ? (
@@ -207,6 +202,12 @@ export default function ParcellairePage() {
             height="100%"
             className="!rounded-none !border-0"
           />
+          {/* Top bar en overlay flottant en haut */}
+          <div className="pointer-events-none absolute top-3 right-3 left-3 z-20">
+            <div className="pointer-events-auto rounded-(--radius) border border-(--color-border) bg-(--color-surface)/95 px-3 py-2 shadow-(--shadow-popup) backdrop-blur">
+              {topBar}
+            </div>
+          </div>
           {/* Aside flottant à droite (desktop) */}
           {selected && (
             <div className="absolute top-3 right-3 bottom-3 z-30 hidden w-[360px] max-w-[calc(100%-1.5rem)] rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-popup) lg:flex">

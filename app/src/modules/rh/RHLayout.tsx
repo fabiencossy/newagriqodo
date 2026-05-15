@@ -10,12 +10,11 @@ export default function RHLayout() {
   return (
     <PageContainer>
       {!isSaisir && (
-        <nav
-          aria-label="Sections RH"
-          className="mb-5 flex gap-1 overflow-x-auto rounded-(--radius) bg-[#f1f1ee] p-1"
-        >
-          <SubTab to="/rh/heures" label="Mes heures" />
-          <SubTab to="/rh/conges" label="Mes congés" />
+        <nav aria-label="Sections RH" className="mb-5 flex justify-center">
+          <div className="inline-flex gap-1 rounded-(--radius) bg-[#f1f1ee] p-1">
+            <SubTab to="/rh/heures" label="Mes heures" />
+            <SubTab to="/rh/conges" label="Mes congés" />
+          </div>
         </nav>
       )}
       <Outlet />
@@ -29,7 +28,7 @@ function SubTab({ to, label }: { to: string; label: string }) {
       to={to}
       className={({ isActive }) =>
         [
-          'h-9 flex-shrink-0 rounded-(--radius-sm) px-3 text-sm whitespace-nowrap sm:flex-1',
+          'h-9 flex-shrink-0 rounded-(--radius-sm) px-5 text-sm whitespace-nowrap',
           'inline-flex items-center justify-center transition-colors',
           isActive
             ? 'bg-(--color-surface) font-medium shadow-(--shadow-card)'

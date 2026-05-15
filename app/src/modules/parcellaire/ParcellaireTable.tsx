@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import type { ParcelDetail } from './parcellaire.mocks';
 
 const STATUS_LABELS: Record<NonNullable<ParcelDetail['status']>, string> = {
@@ -14,13 +15,13 @@ const STATUS_STYLES: Record<NonNullable<ParcelDetail['status']>, string> = {
 
 export function ParcellaireTable({
   parcels,
-  selectedId,
-  onSelect,
+  selectedId: _selectedId,
 }: {
   parcels: ReadonlyArray<ParcelDetail>;
   selectedId?: string;
-  onSelect: (id: string) => void;
+  onSelect?: (id: string) => void;
 }) {
+  const navigate = useNavigate();
   if (parcels.length === 0) {
     return (
       <div className="py-10 text-center text-sm text-(--color-muted)">
@@ -59,15 +60,11 @@ export function ParcellaireTable({
         </thead>
         <tbody>
           {parcels.map((p) => {
-            const isSel = p.id === selectedId;
             return (
               <tr
                 key={p.id}
-                onClick={() => onSelect(p.id)}
-                className={[
-                  'cursor-pointer border-b border-(--color-border) last:border-b-0',
-                  isSel ? 'bg-(--color-primary)/8' : 'hover:bg-[#fbfbf9]',
-                ].join(' ')}
+                onClick={() => navigate(`/parcellaire/${p.id}`)}
+                className="cursor-pointer border-b border-(--color-border) last:border-b-0 hover:bg-[#fbfbf9]"
               >
                 <td className="px-3 py-2 font-mono text-xs">{p.id}</td>
                 <td className="px-3 py-2 font-medium">{p.name}</td>

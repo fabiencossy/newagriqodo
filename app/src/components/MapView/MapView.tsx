@@ -83,7 +83,14 @@ export function MapView({
     });
     mapRef.current = map;
 
+    // ResizeObserver : forcer map.resize() à chaque changement de taille du container.
+    // Sans ça la carte reste blanche si le container avait taille 0 au mount initial
+    // (cas typique : view='map' arrive après que d'autres vues aient rendu).
+    const ro = new ResizeObserver(() => map.resize());
+    ro.observe(containerRef.current);
+
     return () => {
+      ro.disconnect();
       map.remove();
       mapRef.current = null;
       setMapReady(false);

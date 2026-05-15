@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
 import ParcellairePage from './modules/parcellaire/ParcellairePage';
+import ParcelleDetailPage from './modules/parcellaire/ParcelleDetailPage';
 import TravauxPage from './modules/travaux/TravauxPage';
 import TroupeauPage from './modules/troupeau/TroupeauPage';
 import RHLayout from './modules/rh/RHLayout';
@@ -14,7 +15,8 @@ export default function App() {
     <Routes>
       <Route element={<AppLayout />}>
         <Route index element={<Navigate to="/parcellaire" replace />} />
-        <Route path="/parcellaire/*" element={<ParcellairePage />} />
+        <Route path="/parcellaire" element={<ParcellairePage />} />
+        <Route path="/parcellaire/:id" element={<ParcelleDetailPage />} />
         <Route path="/travaux" element={<TravauxPage />} />
         <Route path="/troupeau" element={<TroupeauPage />} />
 

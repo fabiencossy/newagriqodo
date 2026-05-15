@@ -2,88 +2,100 @@ import type { StyleSpecification } from 'maplibre-gl';
 import type { Basemap } from './MapView.types';
 
 /**
- * Styles raster simples pour les 3 fonds de carte.
- * Pas de dépendance externe — purement tiles publiques.
+ * Styles raster basés sur Swisstopo (geo.admin.ch).
+ * Service public fédéral suisse — gratuit, sans key, CORS OK,
+ * imagerie officielle haute résolution sur toute la Suisse.
  *
- * À remplacer par les styles vector self-hosted Qodo en Phase 2.5
- * (tile server OpenMapTiles sur VPS).
+ * Documentation : https://www.geo.admin.ch/fr/api-geoservices-geoadmin
  */
 
-const BASE_STREETS: StyleSpecification = {
-  version: 8,
-  sources: {
-    carto: {
-      type: 'raster',
-      tiles: [
-        'https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-        'https://d.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',
-      ],
-      tileSize: 256,
-      attribution: '© OpenStreetMap contributors, © CARTO',
-      maxzoom: 20,
-    },
-  },
-  layers: [
-    {
-      id: 'carto-layer',
-      type: 'raster',
-      source: 'carto',
-      minzoom: 0,
-      maxzoom: 22,
-    },
-  ],
-};
-
+// Couche imagerie aérienne (orthophoto haute résolution)
 const BASE_SATELLITE: StyleSpecification = {
   version: 8,
   sources: {
-    sat: {
+    swissimage: {
       type: 'raster',
-      // Stadia Maps "alidade_satellite" — fonctionne en localhost sans key,
-      // CORS OK, gratuit pour usage de développement.
-      // Pour la prod : créer un compte Stadia (gratuit jusqu'à 200k req/mois)
-      // ou self-hoster les tuiles.
-      tiles: ['https://tiles.stadiamaps.com/tiles/alidade_satellite/{z}/{x}/{y}.jpg'],
+      tiles: [
+        'https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg',
+      ],
       tileSize: 256,
-      attribution: '© Stadia Maps © Stamen Design © OpenMapTiles © OpenStreetMap contributors',
-      maxzoom: 20,
+      attribution: '© <a href="https://www.swisstopo.admin.ch" target="_blank">swisstopo</a>',
+      maxzoom: 19,
     },
   },
   layers: [
     {
-      id: 'satellite-layer',
+      id: 'swissimage-layer',
       type: 'raster',
-      source: 'sat',
+      source: 'swissimage',
       minzoom: 0,
       maxzoom: 22,
     },
   ],
 };
 
+// Carte nationale couleur (équivalent rues + topo de base)
+const BASE_STREETS: StyleSpecification = {
+  version: 8,
+  sources: {
+    pixelkarte: {
+      type: 'raster',
+      tiles: [
+        'https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg',
+      ],
+      tileSize: 256,
+      attribution: '© <a href="https://www.swisstopo.admin.ch" target="_blank">swisstopo</a>',
+      maxzoom: 19,
+    },
+  },
+  layers: [
+    {
+      id: 'pixelkarte-layer',
+      type: 'raster',
+      source: 'pixelkarte',
+      minzoom: 0,
+      maxzoom: 22,
+    },
+  ],
+};
+
+// Carte nationale relief estompé (topo plus marqué)
 const BASE_TOPO: StyleSpecification = {
   version: 8,
   sources: {
-    topo: {
+    relief: {
       type: 'raster',
       tiles: [
-        'https://a.tile.opentopomap.org/{z}/{x}/{y}.png',
-        'https://b.tile.opentopomap.org/{z}/{x}/{y}.png',
-        'https://c.tile.opentopomap.org/{z}/{x}/{y}.png',
+        'https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg',
       ],
       tileSize: 256,
-      attribution: '© OpenTopoMap (CC-BY-SA), © OpenStreetMap contributors',
+      attribution: '© <a href="https://www.swisstopo.admin.ch" target="_blank">swisstopo</a>',
+      maxzoom: 19,
+    },
+    hillshade: {
+      type: 'raster',
+      tiles: [
+        'https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.leichte-basiskarte_reliefschattierung/default/current/3857/{z}/{x}/{y}.png',
+      ],
+      tileSize: 256,
       maxzoom: 17,
     },
   },
   layers: [
     {
-      id: 'topo-layer',
+      id: 'relief-base-layer',
       type: 'raster',
-      source: 'topo',
+      source: 'relief',
       minzoom: 0,
       maxzoom: 22,
+    },
+    {
+      id: 'hillshade-overlay',
+      type: 'raster',
+      source: 'hillshade',
+      minzoom: 0,
+      maxzoom: 22,
+      paint: { 'raster-opacity': 0.4 },
     },
   ],
 };
@@ -95,7 +107,7 @@ export const BASEMAP_STYLES: Record<Basemap, StyleSpecification> = {
 };
 
 export const BASEMAP_LABELS: Record<Basemap, string> = {
-  street: 'Rues',
+  street: 'Carte',
   satellite: 'Satellite',
   topo: 'Topo',
 };

@@ -68,59 +68,66 @@ export function MapView({
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    console.log('[MapView] init', { center, zoom, basemap });
-    const map = new maplibregl.Map({
-      container: containerRef.current,
-      style: BASEMAP_STYLES[basemap],
-      center,
-      zoom,
-      minZoom: zoomRange[0],
-      maxZoom: zoomRange[1],
-      interactive,
-    });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-left');
+    let cancelled = false;
+    let rafId = 0;
+    let map: MaplibreMap | null = null;
+    let ro: ResizeObserver | null = null;
 
-    // Debug : tracer toutes les erreurs de tile et load
+    // Attendre que le container ait une taille non-nulle avant d'instancier
+    // la map. Sans ça, au reload (avant que le layout soit calculé), Maplibre
+    // crée un canvas WebGL 0×0 et ne se réveille jamais correctement.
+    function waitForSize() {
+      if (cancelled) return;
+      const c = containerRef.current;
+      if (!c) return;
+      const w = c.offsetWidth;
+      const h = c.offsetHeight;
+      if (w === 0 || h === 0) {
+        rafId = requestAnimationFrame(waitForSize);
+        return;
+      }
+      initMap(c, w, h);
+    }
 
-    map.on('error', (e) => console.warn('[MapView] error', e));
-
-    map.on('load', () => console.log('[MapView] load OK'));
-
-    map.on('idle', () => console.log('[MapView] idle (tiles loaded)'));
-
-    map.on('styledata', () => {
-      if (mapRef.current === map) setStyleVersion((v) => v + 1);
-    });
-
-    mapRef.current = map;
-    // Set ready immédiatement — la map existe, les effects dépendants peuvent tourner.
-    // Ceux qui ont besoin du style chargé vérifient `map.isStyleLoaded()` ou
-    // s'abonnent à 'idle'/'styledata' en interne.
-    setMapReady(true);
-
-    // ResizeObserver : forcer map.resize() + triggerRepaint à chaque changement.
-    const ro = new ResizeObserver(() => {
-      map.resize();
-      map.triggerRepaint();
-    });
-    ro.observe(containerRef.current);
-
-    // Double rAF + setTimeout : couvre tous les cas où le container a 0 px au mount
-    // (notamment quand on est dans un grid qui n'a pas encore calculé son layout).
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        map.resize();
-        map.triggerRepaint();
+    function initMap(container: HTMLDivElement, w: number, h: number) {
+      console.log('[MapView] init', { center, zoom, basemap, w, h });
+      map = new maplibregl.Map({
+        container,
+        style: BASEMAP_STYLES[basemap],
+        center,
+        zoom,
+        minZoom: zoomRange[0],
+        maxZoom: zoomRange[1],
+        interactive,
       });
-    });
-    setTimeout(() => {
-      map.resize();
-      map.triggerRepaint();
-    }, 200);
+      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-left');
+
+      map.on('error', (e) => console.warn('[MapView] error', e));
+      map.on('load', () => console.log('[MapView] load OK'));
+      map.on('idle', () => console.log('[MapView] idle (tiles loaded)'));
+      map.on('styledata', () => {
+        if (mapRef.current === map) setStyleVersion((v) => v + 1);
+      });
+
+      mapRef.current = map;
+      setMapReady(true);
+
+      ro = new ResizeObserver(() => {
+        if (map) {
+          map.resize();
+          map.triggerRepaint();
+        }
+      });
+      ro.observe(container);
+    }
+
+    waitForSize();
 
     return () => {
-      ro.disconnect();
-      map.remove();
+      cancelled = true;
+      if (rafId) cancelAnimationFrame(rafId);
+      ro?.disconnect();
+      map?.remove();
       mapRef.current = null;
       setMapReady(false);
     };

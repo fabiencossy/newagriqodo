@@ -121,6 +121,11 @@ export interface SearchBarProps {
   debounceMs?: number;
   /** Désactive la barre. */
   disabled?: boolean;
+  /**
+   * Thème visuel. 'dark' = fond sombre (défaut, Odoo-style), 'light' = fond clair.
+   * Le mode 'auto' suit `prefers-color-scheme` ou le contexte parent.
+   */
+  theme?: 'dark' | 'light' | 'auto';
   /** Identifiant ARIA. */
   ariaLabel?: string;
   /** Classe CSS optionnelle. */
@@ -130,6 +135,7 @@ export interface SearchBarProps {
 export const SEARCH_BAR_DEFAULTS = {
   debounceMs: 300,
   placeholder: 'Rechercher…',
+  theme: 'dark' as const,
 } as const;
 
 /** Helpers : combinaisons logiques entre facets. */

@@ -1,113 +1,88 @@
-# FieldPicker — Validation Checklist (nouveau composant)
+# FieldPicker — Validation Checklist (v3 — popup desktop + mobile fullscreen)
 
-**Composant** : 9/9 — **AJOUTÉ Phase 0 (révision)**
-**Statut** : ✅ Esquisse complétée
+**Composant** : 9/9
+**Statut** : ✅ Refonte selon feedback (pas de plein écran sur desktop)
 
-## Pattern adopté
+## Layouts par taille d'écran
 
-Champ-sélecteur qui s'**ouvre en plein écran** (modal desktop / fullscreen mobile) avec :
+| Écran | Layout | Comportement |
+|---|---|---|
+| ≥ 600 px (desktop / tablette) | **Popup attaché** | Dropdown sous le trigger, max-height ~280 px, catégories en onglets horizontaux. |
+| < 600 px (mobile) | **Plein écran** | Modal fullscreen avec barre titre + retour + bouton OK, catégories scrollables, items 44 px. |
 
-```
-┌──────────────────────────────────────────┐
-│ Sélectionner une parcelle           [×]  │
-├──────────────────────────────────────────┤
-│ 🔍 [Rechercher…]                          │
-├──────────────────────────────────────────┤
-│  CATÉGORIES        │  RÉSULTATS           │
-│  ▸ Toutes (42)     │  ☑ Champ du Haut     │
-│  ▸ Actives (28)    │  ☑ Champ du Bas      │
-│  ▸ Jachère  (9)    │  ☐ Champ Long        │
-│  ─────────         │  ☐ Champ Rond        │
-│  Par culture       │  …                   │
-│  ▸ Blé   (12)      │                      │
-│  ▸ Maïs   (8)      │                      │
-│  ▸ Colza  (5)      │                      │
-├──────────────────────────────────────────┤
-│ 2 sélectionnées · [+ Créer] [Annuler] [✓]│
-└──────────────────────────────────────────┘
-```
+Le `layout` est `'auto'` par défaut, peut être forcé via `layout: 'popup' \| 'fullscreen'`.
 
-## Modes
+## Différences desktop vs mobile
 
-| Mode | Comportement |
-|---|---|
-| `single` | Sélection unique (radio implicite). Pas de checkbox visible, surlignage + check. |
-| `multiple` | Sélection multiple (checkbox). Validation explicite via "Valider". |
+| Élément | Desktop (popup) | Mobile (fullscreen) |
+|---|---|---|
+| Header | _Aucun_ (l'input est en haut) | Barre titre + retour + OK |
+| Search | Petit input compact 34 px | Input 40 px style iOS/Android |
+| Catégories | Onglets compacts horizontaux 28 px | Chips pill scrollables 32 px (style segment iOS) |
+| Liste | Hauteur max 280 px, scroll interne | Pleine hauteur disponible |
+| Items | 40 px, padding 8 px | 44 px, padding 12 px |
+| Checkbox | 16 px | 22 px |
+| Footer | Compteur + Créer + Valider | Compteur + Créer (Valider remplacé par OK dans header) |
+| Validation | Bouton "Valider" explicite | Bouton "OK (N)" dans le header en haut à droite |
 
-## Décisions prises
+## Cas couverts (wireframes)
+
+**Desktop :**
+- Multi-select avec 2 items sélectionnés + recherche en cours
+- Single-select (style autocomplete) avec un produit sélectionné
+- État vide avec création inline
+
+**Mobile :**
+- Multi-select fullscreen
+- Single-select fullscreen
+- État vide + création inline
+
+## Décisions prises (v3)
 
 | Question | Réponse |
 |---|---|
-| Layout | Catégories à gauche (panneau 220 px), résultats à droite. Mobile : empilé verticalement, catégories scrollables horizontalement (Phase 1). |
-| Création depuis le picker | Opt-in via `allowCreate`. Bouton "+ Créer" dans le footer + dans l'empty state ("Créer 'xyzzzz'"). |
-| Recherche | Debounce 250 ms. Filter local si `items` fourni, async via `fetchItems` sinon. |
-| Trigger replié — multi | Chips inline (max 3 visibles, "+N autres" au-delà). |
-| Création de nouveaux items | `onCreate(query) → Promise<PickerItem \| null>`. Si retour non null → item ajouté + sélectionné. |
-| Limite de sélection | `maxSelection?: number \| null` (défaut illimité). |
-| Catégories hiérarchiques | Supportées via `parentId` (Phase 1 : rendu indenté). |
-| Categories groupées avec titre | Oui (`PickerCategoryGroup.title`). Permet "Statut" + "Par culture" etc. |
-
-## Cas d'usage prévus
-
-- Sélectionner **une parcelle** (carnet → choix de la parcelle concernée)
-- Sélectionner **un produit phyto** (intervention → produit appliqué)
-- Sélectionner **plusieurs parcelles** (créer un travail à faire sur lot)
-- Sélectionner **un animal** (événement troupeau)
-- Sélectionner **plusieurs employés** (assignation tâche multi-personnes)
-- Sélectionner **un fournisseur** (avec création possible)
+| Desktop : plein écran ? | **Non** — popup attaché au trigger (~480 px de large par défaut, suit la largeur du trigger). |
+| Position du popup | Sous le trigger. Si pas la place en bas, flip au-dessus (Phase 1). |
+| Catégories desktop | **Onglets horizontaux** (`pop-cats`), pas de panneau latéral. Plus compact. |
+| Catégories mobile | **Chips scrollables** style segment iOS (pill 32 px, ronds). |
+| Bouton Valider mobile | Remplacé par "OK (N)" en **haut à droite** du header (pattern iOS/Android). |
+| Bouton retour mobile | Flèche gauche en haut à gauche (pattern iOS/Android). |
+| Création inline | Identique desktop/mobile : bouton "+ Créer" footer + dans empty state. |
 
 ## Design & UX
-- [x] Wireframe : trigger replié (3 variants : vide / single / multi),
-      picker ouvert multi + single, état empty avec création
-- [x] Header sticky + Search sticky
-- [x] Catégories scrollables indépendamment
-- [x] Footer sticky avec compteur + actions
-- [x] Mobile : modal fullscreen, catégories en haut empilées
-- [x] Cibles tactiles 40 px (résultats), 36 px (catégories), 44 px (trigger)
-- [x] Loading skeleton dans la zone résultats (à câbler Phase 1)
+- [x] Wireframe desktop : multi, single, empty
+- [x] Wireframe mobile : multi, single, empty
+- [x] Popup desktop attaché au trigger (pas plein écran)
+- [x] Mobile : header sticky + footer sticky + liste scrollable
+- [x] Cibles tactiles 44 px (mobile), 40 px (desktop)
+- [x] Pas d'emoji — SVG inline uniquement
 
 ## Code
-- [x] `FieldPickerProps<T>` générique (typage data piloté par l'appelant)
-- [x] `PickerCategoryGroup` + `PickerCategory` avec hiérarchie
-- [x] `PickerItem<T>` avec badge, icon, meta, categoryIds, disabled
-- [x] Helpers exportés : `filterItems`, `summarizeSelection`
-- [x] Loader async (`fetchItems`) pour large datasets (m2m Odoo)
-- [x] `allowCreate` + `onCreate` callback pour création inline
-- [x] `maxSelection` pour borner la multi-sélection
-- [x] Pas de `any`
-- [ ] Implémentation React → Phase 1
+- [x] Nouveau prop `layout: 'auto' | 'popup' | 'fullscreen'`
+- [x] Nouveau prop `popupMaxHeight` (CSS valeur)
+- [x] `FIELD_PICKER_DEFAULTS.fullscreenBreakpointPx = 600`
+- [x] Reste inchangé (`PickerMode`, `PickerCategory`, `PickerItem<T>`, helpers)
+- [ ] Implémentation React → Phase 1 (positionnement avec `floating-ui` ou `@radix-ui/popper`)
 
-## Accessibilité (WCAG AA)
+## Accessibilité
+- [x] Desktop popup : `role="listbox"` (ou `role="dialog"` si recherche présente), Esc + clic extérieur ferment
+- [x] Mobile fullscreen : `role="dialog"` + `aria-modal="true"` + focus trap
 - [x] Trigger : `aria-haspopup="dialog"` + `aria-expanded`
-- [x] Modal : `role="dialog"` + `aria-modal="true"` + `aria-label`
-- [x] Résultats : `role="listbox"` + `aria-multiselectable`
-- [x] Items : `role="option"` + `aria-selected`
 - [x] Catégories : `aria-pressed` sur l'actif
-- [x] Focus trap dans le modal, focus retour sur trigger à la fermeture
-- [x] Esc ferme, Enter sélectionne, ↑/↓ parcourt
-- [x] Lecteur d'écran : compteur de sélection annoncé via `aria-live`
+- [x] Items : `role="option"` + `aria-selected`, `aria-multiselectable` selon mode
+- [x] Compteur sélection : `aria-live="polite"`
+- [x] Bouton OK mobile : `disabled` si aucune sélection (single)
 
 ## Edge cases
-- [x] Dataset vide → empty state + bouton "+ Créer" si `allowCreate`
-- [x] Aucun résultat pour la query → empty state ciblé ("Créer 'X'")
-- [x] Item disabled → grisé, non cliquable
-- [x] `maxSelection` atteint → items non sélectionnés grisés + tooltip
-- [x] Large dataset (>500) → utiliser `fetchItems` avec debounce
-- [x] Catégorie hiérarchique → indentation (Phase 1)
-- [x] Création échoue (`onCreate` retourne null) → toast erreur, picker reste ouvert
-- [x] Sélection initiale invalide (id absent) → ignorée silencieusement
-
-## Cohérence avec les autres composants
-- Sélecteurs simples inline → reste dans **AsideCard** (`FieldConfig.type: 'select'`)
-- Filtrage de liste principal → reste dans **SearchBar** (style Odoo)
-- **FieldPicker** est pour les sélections "lourdes" : produit dans un catalogue large, parcelle hors contexte map, etc.
+- [x] Popup desktop : si pas la place en bas → flip top
+- [x] Popup desktop : si trigger très étroit (chip-only) → min-width 360 px
+- [x] Mobile : si beaucoup de catégories → scroll horizontal
+- [x] Création échoue → reste sur le picker + toast
+- [x] Long titre item → truncate + tooltip (Phase 1)
+- [x] `maxSelection` atteint → items non sélectionnés grisés
 
 ## Réutilisation
-Tous les formulaires d'édition avec relations Odoo (`many2one`, `many2many`) lourdes :
-- Carnet : Parcelle, Produit phyto, Engrais, Variété
-- Travaux : Parcelle(s), Employé(s), Matériel
-- Troupeau : Animal, Bâtiment, Lot
-- RH : Type de congé, Approbateur (admin)
+Champs `many2one` / `many2many` Odoo lourds dans tous les modules.
 
 ## Status
 ✅ **Prêt pour Phase 1**

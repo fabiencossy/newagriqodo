@@ -1,98 +1,75 @@
-# SearchBar — Validation Checklist (v2 — pattern Odoo)
+# SearchBar — Validation Checklist (v3 — dark compact)
 
 **Composant** : 1/9
-**Statut** : ✅ Refonte complète (style Odoo SearchPanel)
+**Statut** : ✅ Refonte selon image de référence
 
 ## Pattern adopté
 
-Inspiré du `SearchPanel` Odoo :
+**Une seule ligne** horizontale, fond sombre par défaut :
 
-1. **Une barre unique** contient :
-   - Icône loupe
-   - **Facets** (filtres actifs) en chips bicolores `[champ | valeurs] [×]`
-   - Input texte libre
-   - 3 boutons d'action à droite : **Filtres** · **Regrouper** · **Favoris**
+```
+┌──────────────────────────────────────────────────┐
+│ [🔍] [▼filtre] │ [Mes devis ×]  Rechercher…  │ [▾] │
+└──────────────────────────────────────────────────┘
+```
 
-2. **Saisie texte** → suggestions par champ recherchable :
-   ```
-   Rechercher « darval » dans :
-     • Nom
-     • Code
-     • Notes
-     • Variété
-   ```
-   La sélection d'une suggestion crée une **facet** (le champ devient un filtre).
+Découpée en 3 zones :
 
-3. **Menu Filtres** : liste de filtres rapides + champs avec sous-menus
-   (date, select, many2many → checkboxes multi-sélection).
-
-4. **Menu Regrouper** : choix d'un ou plusieurs champs de regroupement
-   (avec granularité date : jour / semaine / mois / trimestre / année).
-
-5. **Menu Favoris** : recherches sauvegardées (filtres + group by + tri).
-   - Sauvegarder la recherche courante
-   - Définir un favori par défaut
-   - Partager avec d'autres utilisateurs (optionnel)
-
-## Logique des combinaisons
-
-| Cas | Combinaison |
+| Zone | Contenu |
 |---|---|
-| Plusieurs valeurs **dans une même facet** (ex: Culture = Blé OU Maïs) | **OR** |
-| Plusieurs facets différentes (ex: Culture=Blé ET Statut=Actif) | **AND** |
-| Multiple group by | Hiérarchie ordonnée (premier = niveau 1) |
+| **Lead** (gauche) | Icône loupe + icône entonnoir (filtre actif). Cliquables. |
+| **Mid** (centre) | Facets (chips violets `[champ : valeurs ×]`) + input texte inline. |
+| **Tail** (droite) | Chevron qui ouvre le panneau Filtres / Regrouper / Favoris. |
 
-## Décisions prises
+## Décisions prises (v3)
 
 | Question | Réponse |
 |---|---|
-| Pattern | **Odoo SearchPanel** (familier pour les utilisateurs Odoo, robuste). |
-| Multi-valeur sur un champ | Oui, via checkboxes dans le sous-menu (combinées en OR). |
-| Favoris | Oui, sauvegarde côté backend (côté composant : props `favorites` + callbacks). |
-| Suggestions par champ | Oui, basées sur les champs `searchable: true` du `FieldDescriptor`. |
-| Filtre date | Sous-menu avec presets (Aujourd'hui, Cette semaine, Ce mois, …) + custom range. À détailler Phase 1. |
-| Couleur des facets | Aubergine Odoo `#875a7b` (clin d'œil + contraste avec le primary vert). |
-| Mobile | Barre s'étend verticalement, actions empilées en bas (icônes seules). |
-| Sync URL | Sérialisable depuis `SearchState`. À implémenter Phase 1 (history.pushState). |
+| Style visuel | **Dark compact** (fond `#1f242b`, texte clair), variante `light` disponible. |
+| Hauteur | 36 px desktop / 40 px mobile. Cibles tactiles élargies via padding. |
+| Position des facets | **Inline dans la barre**, à gauche de l'input (pas en dessous). |
+| Couleur des facets | Aubergine Odoo `#875a7b`, texte blanc. |
+| Bouton "Filtres" / "Regrouper" / "Favoris" | Regroupés derrière le **chevron unique** (tail). Plus 3 boutons séparés à droite. |
+| Icône filtre dans le lead | Indique au regard si des filtres sont actifs (`aria-pressed`). |
+| Dropdown panneau | Toujours 3 colonnes (Filtres / Regrouper / Favoris), fond clair même quand la barre est dark. |
+| Suggestions | Dropdown attaché sous la barre, fond clair. |
 
 ## Design & UX
-- [x] Wireframe HTML : barre vide, suggestions, facets actives, dropdown 3 colonnes, multi-sélection, mobile
-- [x] Mobile-first (stack vertical < 600 px)
-- [x] Cibles tactiles ≥ 32 px icônes, 44 px barre principale
-- [x] Contraste vérifié (primary 8.9:1, accent 5.5:1 sur #fff)
-- [x] Cohérence visuelle avec ViewSwitcher / AsideCard (border-radius, palette)
+- [x] Wireframe : référence (1 facet), vide, multi-facets, suggestions, dropdown 3 colonnes, variante claire, mobile
+- [x] Mobile-first (taille augmentée à 40 px sur < 600 px)
+- [x] Cibles tactiles ≥ 36 px (barre) avec zone tap élargie pour les boutons internes
+- [x] Contraste vérifié : texte #e8eaed sur #1f242b = 12.7:1 ✓ ; accent sur fond sombre = 4.6:1 ✓
+- [x] Variante claire (`.sb.light`) pour pages au fond clair
 
 ## Code
-- [x] `SearchState` sérialisable (sauvegarde Favoris + URL params)
-- [x] `FieldDescriptor` riche (type, options, searchable, operators)
-- [x] `Facet`, `GroupBy`, `SortBy`, `SavedFavorite` typés
-- [x] Helpers `FACET_LOGIC` documentés (OR intra, AND inter)
-- [x] Loader async (`fetchOptions`) pour many2one / many2many
+- [x] Types `SearchState`, `Facet`, `GroupBy`, `SortBy`, `SavedFavorite` (inchangés v2)
+- [x] Nouveau prop `theme: 'dark' | 'light' | 'auto'` (défaut `dark`)
+- [x] Defaults : `SEARCH_BAR_DEFAULTS.theme = 'dark'`
+- [x] Helpers `FACET_LOGIC` inchangés (OR intra, AND inter)
 - [x] Pas de `any`
 - [ ] Implémentation React → Phase 1
 
 ## Accessibilité (WCAG AA)
 - [x] `role="search"` racine
+- [x] Boutons icône (loupe, filtre, chevron) : `aria-label` explicite
+- [x] Bouton filtre `aria-pressed` reflète si au moins 1 facet active
+- [x] Chevron : `aria-haspopup="menu"` + `aria-expanded`
 - [x] Suggestions : `role="listbox"` + `role="option"` + `aria-selected`
-- [x] Boutons d'action : `aria-expanded`
-- [x] Facets : `aria-label` explicite sur les boutons de retrait
-- [x] Navigation clavier : ↑/↓ suggestions, Enter valide, Backspace efface dernière facet quand input vide
-- [x] Esc ferme les menus
-- [x] Tous les boutons icône-seule ont un `aria-label`
+- [x] Facets : bouton retrait avec `aria-label` explicite
+- [x] Navigation clavier : ↑/↓ suggestions, Enter valide, Backspace efface dernière facet quand input vide, Esc ferme
+- [x] Contraste vérifié dark et light
 
 ## Edge cases
-- [x] Aucun champ searchable → l'input fait fallback en plein-texte
-- [x] Sous-menu liste très longue (>100 options) → autocomplete + virtualisation Phase 1
-- [x] Conflit favoris partagés / perso → priorité au perso
-- [x] Suppression du dernier filtre actif via Backspace
-- [x] Beaucoup de facets → wrap (flex-wrap)
-
-## Dépendances Phase 1
-Aucune externe. Optionnellement `react-virtual` pour listes très longues.
+- [x] 0 facet → input pleine largeur dans la zone mid
+- [x] Beaucoup de facets → overflow horizontal (scroll) ou wrap (Phase 1, à décider)
+- [x] Facet avec valeur très longue → truncate + tooltip (Phase 1)
+- [x] Bouton filtre : pressed quand ≥ 1 facet active
+- [x] Click sur loupe = focus input ; click sur entonnoir = ouvre dropdown direct
+- [x] Theme `auto` → suit `prefers-color-scheme` ou contexte CSS parent
 
 ## Réutilisation
-Toutes les listes : Parcelles, Carnet, Travaux, Animaux, RH (Congés/Heures).
-La forme générique permet à chaque module de fournir son propre `FieldDescriptor[]`.
+Toutes les listes (Parcelles, Carnet, Travaux, Animaux, RH Heures/Congés).
+Le `FieldDescriptor[]` par module reste générique.
 
 ## Status
 ✅ **Prêt pour Phase 1**

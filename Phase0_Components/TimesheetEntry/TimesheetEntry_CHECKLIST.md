@@ -1,91 +1,84 @@
-# TimesheetEntry — Validation Checklist (v2 — modes Total / Présence)
+# TimesheetEntry — Validation Checklist (v3 — toujours présence)
 
 **Composant** : 6/9
-**Statut** : ✅ Refonte avec mode présence
+**Statut** : ✅ Simplification (mode "Total" retiré)
 
-## Modes de saisie
+## Modèle de saisie
 
-### Mode "Total"
-- Volume horaire `HH:MM` ou décimal
-- Adapté aux saisies a posteriori, rapides
-- Helper `parseHoursInput()` accepte `2:30` ou `2.5`
+**Toujours** : Date · Heure de début · Heure de fin · Pauses (0 à N) · Type · Intervention (optionnel).
+Le total effectif est calculé en direct : `plage − pauses = total`.
 
-### Mode "Présence"
-- Heure de début + heure de fin
-- **Pauses** (0 à N), chacune avec début/fin/catégorie optionnelle
-- Calcul auto en live : `plage − pauses = total effectif`
-- Adapté à la saisie temps réel ou pointage journalier
-- Pauses catégorisables : `meal` / `short` / `technical` / `other`
+Pas de mode "Total décimal" — toute saisie est lié à une plage horaire concrète.
+Cela colle directement à la sémantique Odoo `hr.attendance` (`check_in` / `check_out`).
 
-Les deux modes débouchent sur la **même structure** `TimesheetEntryInput` (mode + hoursWorked décimal + champs optionnels), et créent **1 Attendance Odoo** sur submit (Hook 1).
-
-## Décisions prises
+## Décisions prises (v3)
 
 | Question | Réponse |
 |---|---|
-| Mode par défaut | `'total'` (saisie rapide la plus fréquente). Configurable via `defaultMode`. |
-| Verrouillage du mode | Possible via `lockedMode` (ex: bouton pointeuse → toujours présence). |
-| Plage de nuit (chevauchant minuit) | Pas par défaut, opt-in via `allowOvernight`. |
-| Pause minimum | 5 min (sinon rejeté). Pause maximum 480 min (8h). |
-| Pauses qui chevauchent | Détection auto (`findOverlappingBreaks`) + erreur inline. |
-| Calcul auto live | `aria-live="polite"` pour annoncer le total au lecteur d'écran. |
-| Max 16h/jour | Inchangé. Validation côté form + côté Odoo. |
+| Mode "Total" | **Supprimé**. Le composant n'accepte plus de saisie HH:MM globale. |
+| Heures par défaut | Début `08:00`, fin `17:00`. Configurables via props. |
+| Raccourcis horaires | Boutons "07:00", "07:30", "08:00" (début) et "12:00", "17:00", "18:00" (fin), + "Maintenant". Configurables. |
+| Pauses | 0 à N. Validation : min 5 min, max 8 h, pas de chevauchement, contenues dans la plage. |
+| Plage de nuit | Opt-in (`allowOvernight`). |
+| Max 16 h/jour | Inchangé. Validation côté form + côté Odoo. |
 | Dates passées ≤ 90 j, futures bloquées | Inchangé. |
 
 ## Design & UX
-- [x] Toggle Total / Présence (segmented compact)
+- [x] Wireframe : initial avec 2 pauses, état vide, mode linked, fin avant début, pauses chevauchent, succès
 - [x] Calcul auto dans une `calc-box` (Plage − Pauses = Effectif)
-- [x] Pauses : repeater avec bouton "+ Ajouter une pause"
-- [x] Inputs `<input type="time">` natifs (clavier OS / keypad mobile)
-- [x] Validation inline : fin avant début, chevauchement, pause trop courte
-- [x] État vide (0 pause) : message explicite
+- [x] **Raccourcis horaires** (preset buttons) sous les champs début/fin
+- [x] Pauses : repeater avec bouton "+ Ajouter"
+- [x] Validation inline (fin avant début, chevauchement)
 - [x] Mobile-first
 
 ## Code
-- [x] `EntryMode` strict (`'total' | 'presence'`)
-- [x] `BreakPeriod` avec catégorie optionnelle
-- [x] Helpers exportés :
-  - `parseHoursInput`, `formatHoursDecimal`
+- [x] `EntryMode` retiré
+- [x] `TimesheetEntryInput` : `startTime` et `endTime` obligatoires, `breaks: BreakPeriod[]`
+- [x] Helpers exportés inchangés :
+  - `formatHoursDecimal`
   - `timeStringToMinutes`, `durationMinutes`
   - `validateBreak`, `findOverlappingBreaks`
-  - `computePresenceHours` (centralise le calcul)
-- [x] `TIMESHEET_DEFAULTS` documente toutes les limites
+  - `computePresenceHours`
+- [x] **Nouveau** : `isBreakWithinRange()` pour valider qu'une pause est dans la plage
+- [x] `parseHoursInput` / `EntryMode` / `defaultMode` / `lockedMode` / `defaultHours` / `defaultPresence` retirés
+- [x] **Nouveau** : `defaultStartTime`, `defaultEndTime`, `defaultBreaks`, `startTimePresets`, `endTimePresets`
 - [x] Pas de `any`
 - [ ] Implémentation React + Odoo Hook 1 → Phase 1
 
 ## Accessibilité
-- [x] Toggle mode : `role="tablist"` + `aria-pressed`
 - [x] Pauses : `role="group"` + label dédié
 - [x] Calcul auto : `aria-live="polite"`
 - [x] Erreurs : `aria-invalid` + `role="alert"`
 - [x] Boutons add/remove : `aria-label`
-- [x] Cibles tactiles 44 px (inputs principaux), 38 px (pause rows)
+- [x] Raccourcis horaires : groupe avec `aria-label`
+- [x] Cibles tactiles 44 px (inputs principaux), 38 px (inputs pauses), 26 px (preset buttons)
 - [x] Inputs `<input type="time">` natifs → accessibilité OS
 
-## Edge cases couverts
+## Edge cases
 - [x] Fin avant début
-- [x] Plage de nuit (opt-in `allowOvernight`)
+- [x] Plage de nuit (opt-in)
 - [x] Pauses qui chevauchent → détection + alerte
-- [x] Pauses hors plage présence (avant début / après fin) → validation Phase 1
+- [x] Pauses hors plage de présence → détection via `isBreakWithinRange`
+- [x] Pause < 5 min ou > 8 h → rejet
 - [x] Total effectif négatif (pauses > plage) → clampé à 0 + warning
-- [x] Mode présence sans pause → autorisé (renvoie `effectiveHours = rangeMin/60`)
-- [x] Mode présence avec une seule pause de 0 min → rejet (< minBreakMinutes)
-- [x] Changement de mode → conserve la date et le type, recalcule heures
+- [x] Présence sans pause → autorisée (effectif = plage)
 
-## Conformité Hook 1
-- [x] Trigger : création TimesheetEntry (les deux modes)
-- [x] Action : Attendance Odoo auto avec `check_in` + `check_out` (mode présence) ou bornes calculées (mode total : aujourd'hui 08:00 + X heures)
-- [x] Retry si Odoo down → file locale
-- [x] Idempotency : même date + même intervention → merge
+## Conformité Hook 1 (Odoo)
+- [x] Trigger : création TimesheetEntry
+- [x] Action : `hr.attendance` Odoo avec `check_in` = `startTime`, `check_out` = `endTime`
+- [x] Pauses : stockées en `hr.attendance.break` (modèle custom à créer Phase 1) OU encodées en notes
+- [x] Idempotency : même date + même employé → ne pas dupliquer (merge ou erreur)
 
-## Décisions à valider Phase 1
-- **Mode total → Odoo Attendance** : quelles bornes `check_in/check_out` synthétiser ? Proposition : 08:00 + durée. À confirmer avec le métier (norme d'entreprise ?).
-- **Catégories de pauses** : affecter un compte analytique Odoo distinct par catégorie ? (utile pour le suivi des pauses repas vs techniques).
+## Question Phase 1
+- Comment stocker les pauses côté Odoo ? 3 options :
+  1. **Modèle custom** `hr.attendance.break` (one2many, propre, recommandé)
+  2. **Champ JSON** sur `hr.attendance` (simple, mais moins requêtable)
+  3. **Multiples `hr.attendance`** (plage 07:30-10:00, 10:15-12:00, 13:00-17:30) — fidèle au modèle Odoo natif mais complique l'UX
 
 ## Réutilisation
-- Module RH (entry standalone, les deux modes disponibles)
-- Module Travaux (entry "linked" depuis une tâche — mode total recommandé)
-- Future pointeuse mobile (mode `presence` verrouillé)
+- Module RH (entry standalone)
+- Module Travaux (entry "linked" depuis une tâche)
+- Future pointeuse mobile (mêmes données)
 
 ## Status
 ✅ **Prêt pour Phase 1**

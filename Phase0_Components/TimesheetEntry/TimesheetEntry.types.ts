@@ -1,13 +1,10 @@
 /**
- * TimesheetEntry — Form de saisie d'heures travaillées.
+ * TimesheetEntry — Form de saisie d'une présence.
  *
- * Deux modes :
- *  - 'total'    : volume horaire HH:MM ou décimal.
- *  - 'presence' : heure de début + heure de fin + pauses → calcul auto du total effectif.
+ * Modèle unique : toujours heure de début + heure de fin + pauses (0 à N).
+ * Le total effectif (en heures décimales) est calculé : `plage − pauses`.
  *
- * Dans les deux cas, le submit crée :
- *  - 1 Attendance Odoo (hr.attendance) — Hook 1.
- *  - 1 Timesheet entry (account.analytic.line) si lié à une intervention.
+ * Submit → création d'une Attendance Odoo (`hr.attendance`, Hook 1).
  */
 
 export type ProjectType = 'Parcellaire' | 'Travaux' | 'Troupeau' | 'RH';
@@ -19,8 +16,6 @@ export const PROJECT_TYPES: ReadonlyArray<ProjectType> = [
   'RH',
 ];
 
-export type EntryMode = 'total' | 'presence';
-
 /** Une pause au sein d'une présence. */
 export interface BreakPeriod {
   /** ID stable (Phase 1 : `crypto.randomUUID()`). */
@@ -29,25 +24,22 @@ export interface BreakPeriod {
   start: string;
   /** Heure de fin (HH:MM). */
   end: string;
-  /** Catégorie optionnelle (pause repas, café, technique…). */
+  /** Catégorie optionnelle. */
   kind?: 'meal' | 'short' | 'technical' | 'other';
 }
 
-/** Données d'entrée communes (envoyées à `onSubmit`). */
+/** Données envoyées à `onSubmit`. */
 export interface TimesheetEntryInput {
   /** Date du travail (jour, sans heure). */
   date: Date;
-  /** Mode utilisé pour la saisie. */
-  mode: EntryMode;
-  /** Heures effectives en décimal (calculées si mode='presence'). */
+  /** Heure de début (HH:MM). */
+  startTime: string;
+  /** Heure de fin (HH:MM). */
+  endTime: string;
+  /** Pauses (0 à N). */
+  breaks: BreakPeriod[];
+  /** Heures effectives en décimal (calculées : plage − pauses). */
   hoursWorked: number;
-
-  /** Mode 'presence' uniquement : heure de début (HH:MM). */
-  startTime?: string;
-  /** Mode 'presence' uniquement : heure de fin (HH:MM). */
-  endTime?: string;
-  /** Mode 'presence' uniquement : pauses. */
-  breaks?: BreakPeriod[];
 
   /** Catégorie de travail. */
   projectType: ProjectType;
@@ -70,23 +62,17 @@ export interface TimesheetEntryProps {
   /** Callback d'annulation. */
   onCancel?: () => void;
 
-  /** Mode initial. Défaut 'total'. */
-  defaultMode?: EntryMode;
-  /** Verrouille le mode (cache le toggle). */
-  lockedMode?: EntryMode;
-
   /** Mode 'linked' : intervention pré-remplie. */
   intervention?: TimesheetSuggestion;
+
   /** Date initiale. Défaut : aujourd'hui. */
   defaultDate?: Date;
-  /** Heures par défaut (mode total). */
-  defaultHours?: number;
-  /** Présence par défaut (mode présence). */
-  defaultPresence?: {
-    startTime: string;
-    endTime: string;
-    breaks?: BreakPeriod[];
-  };
+  /** Heure de début initiale. Défaut : '08:00'. */
+  defaultStartTime?: string;
+  /** Heure de fin initiale. Défaut : '17:00'. */
+  defaultEndTime?: string;
+  /** Pauses initiales. Défaut : aucune. */
+  defaultBreaks?: BreakPeriod[];
 
   /** Heures maximum par jour. Défaut 16. */
   maxHoursPerDay?: number;
@@ -97,10 +83,14 @@ export interface TimesheetEntryProps {
   /** Plage de nuit (chevauchant minuit) autorisée. Défaut false. */
   allowOvernight?: boolean;
 
-  /** Pause minimum (en minutes) — sous ce seuil, la pause est rejetée. Défaut 5. */
+  /** Pause minimum (en minutes). Défaut 5. */
   minBreakMinutes?: number;
   /** Pause maximum (en minutes). Défaut 480 (8h). */
   maxBreakMinutes?: number;
+
+  /** Raccourcis horaires de début/fin. */
+  startTimePresets?: string[];
+  endTimePresets?: string[];
 
   /** Source pour l'autocomplete intervention (mode standalone). */
   fetchSuggestions?: (query: string) => Promise<TimesheetSuggestion[]>;
@@ -114,36 +104,21 @@ export interface TimesheetEntryProps {
 }
 
 export const TIMESHEET_DEFAULTS = {
-  defaultMode: 'total' as EntryMode,
+  defaultStartTime: '08:00',
+  defaultEndTime: '17:00',
   maxHoursPerDay: 16,
   maxPastDays: 90,
   allowFutureDates: false,
   allowOvernight: false,
   minBreakMinutes: 5,
   maxBreakMinutes: 480,
+  startTimePresets: ['07:00', '07:30', '08:00'],
+  endTimePresets: ['12:00', '17:00', '18:00'],
 } as const;
 
 /* ============================================================
  * Helpers
  * ============================================================ */
-
-/**
- * Parse une saisie HH:MM ou décimal vers un nombre d'heures décimal.
- */
-export function parseHoursInput(input: string): number | null {
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-  const colon = /^(\d{1,2}):([0-5]\d)$/.exec(trimmed);
-  if (colon) {
-    return Number.parseInt(colon[1], 10) + Number.parseInt(colon[2], 10) / 60;
-  }
-  const decimal = /^(\d+)([.,]\d{1,2})?$/.exec(trimmed);
-  if (decimal) {
-    const value = Number.parseFloat(trimmed.replace(',', '.'));
-    return Number.isFinite(value) ? value : null;
-  }
-  return null;
-}
 
 /** Formate un nombre décimal en HH:MM (négatif → préfixe −). */
 export function formatHoursDecimal(decimalHours: number): string {
@@ -174,7 +149,7 @@ export function durationMinutes(
   return allowOvernight ? 24 * 60 - s + e : null;
 }
 
-/** Vérifie qu'une pause est valide (fin > début + min duration). */
+/** Vérifie qu'une pause est valide. */
 export function validateBreak(
   b: BreakPeriod,
   minMinutes: number,
@@ -187,7 +162,7 @@ export function validateBreak(
   return { ok: true };
 }
 
-/** Vérifie que des pauses ne se chevauchent pas entre elles. */
+/** Détecte les pauses qui se chevauchent entre elles. */
 export function findOverlappingBreaks(
   breaks: ReadonlyArray<BreakPeriod>,
 ): Array<[BreakPeriod, BreakPeriod]> {
@@ -207,8 +182,24 @@ export function findOverlappingBreaks(
   return overlaps;
 }
 
+/** Vérifie qu'une pause est bien comprise dans la plage de présence. */
+export function isBreakWithinRange(
+  breakPeriod: BreakPeriod,
+  startTime: string,
+  endTime: string,
+  allowOvernight = false,
+): boolean {
+  const s = timeStringToMinutes(startTime);
+  const e = timeStringToMinutes(endTime);
+  const bS = timeStringToMinutes(breakPeriod.start);
+  const bE = timeStringToMinutes(breakPeriod.end);
+  if (s === null || e === null || bS === null || bE === null) return false;
+  if (allowOvernight) return true; // Logique overnight à raffiner Phase 1
+  return bS >= s && bE <= e;
+}
+
 /**
- * Calcule le total d'heures effectives en mode présence.
+ * Calcule le total d'heures effectives.
  * Retourne null si une donnée est invalide.
  */
 export function computePresenceHours(
@@ -225,10 +216,9 @@ export function computePresenceHours(
     if (d === null || d < 0) return null;
     breaksMin += d;
   }
-  const effectiveMin = rangeMin - breaksMin;
   return {
     rangeMin,
     breaksMin,
-    effectiveHours: Math.max(0, effectiveMin) / 60,
+    effectiveHours: Math.max(0, rangeMin - breaksMin) / 60,
   };
 }

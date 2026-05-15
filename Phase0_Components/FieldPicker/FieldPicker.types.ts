@@ -100,6 +100,17 @@ export interface FieldPickerProps<T = unknown> {
   /** État loading externe (chargement initial). */
   loading?: boolean;
 
+  /**
+   * Comportement responsive du picker.
+   *  - 'auto' (défaut) : popup compact ≥ 600 px, fullscreen < 600 px.
+   *  - 'popup' : toujours popup attaché (déconseillé sur mobile).
+   *  - 'fullscreen' : toujours plein écran (utile pour pickers très larges).
+   */
+  layout?: 'auto' | 'popup' | 'fullscreen';
+
+  /** Hauteur max de la liste (mode popup desktop). Défaut '280px'. */
+  popupMaxHeight?: string;
+
   /** Identifiant ARIA. */
   ariaLabel?: string;
   /** Classe CSS optionnelle. */
@@ -114,6 +125,10 @@ export const FIELD_PICKER_DEFAULTS = {
   placeholder: 'Sélectionner…',
   allowCreate: false,
   createLabel: 'Créer',
+  layout: 'auto' as const,
+  popupMaxHeight: '280px',
+  /** Breakpoint (px) entre popup et fullscreen en mode 'auto'. */
+  fullscreenBreakpointPx: 600,
 } as const;
 
 /* ============================================================

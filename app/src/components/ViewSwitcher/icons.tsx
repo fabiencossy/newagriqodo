@@ -1,12 +1,10 @@
 import type { ViewKey } from './ViewSwitcher.types';
 
 const COMMON_SVG_PROPS = {
-  width: 20,
-  height: 20,
   viewBox: '0 0 24 24',
   fill: 'none',
   stroke: 'currentColor',
-  strokeWidth: 1.5,
+  strokeWidth: 1.75,
   strokeLinecap: 'round' as const,
   strokeLinejoin: 'round' as const,
 };
@@ -48,9 +46,9 @@ const ICONS: Record<ViewKey, React.ReactNode> = {
   ),
 };
 
-export function ViewIcon({ view }: { view: ViewKey }) {
+export function ViewIcon({ view, size = 20 }: { view: ViewKey; size?: number }) {
   return (
-    <svg {...COMMON_SVG_PROPS} aria-hidden="true">
+    <svg {...COMMON_SVG_PROPS} width={size} height={size} aria-hidden="true">
       {ICONS[view]}
     </svg>
   );

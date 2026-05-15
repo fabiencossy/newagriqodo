@@ -108,9 +108,9 @@ function SegmentedVariant({
             onClick={() => onSelect(view)}
             title={iconOnly ? VIEW_LABELS[view] : undefined}
             className={[
-              'inline-flex h-9 items-center gap-1.5 rounded-(--radius-sm) px-3.5 text-sm transition-colors',
+              'inline-flex items-center gap-1.5 rounded-(--radius-sm) text-sm transition-colors',
               'disabled:cursor-not-allowed disabled:opacity-50',
-              iconOnly && 'w-9 justify-center px-0',
+              iconOnly ? 'h-10 w-10 justify-center px-0' : 'h-9 px-3.5',
               isActive
                 ? 'bg-(--color-primary) text-white hover:bg-(--color-primary-hover)'
                 : 'text-(--color-text) hover:bg-black/5',
@@ -118,7 +118,7 @@ function SegmentedVariant({
               .filter(Boolean)
               .join(' ')}
           >
-            {!labelOnly && <ViewIcon view={view} />}
+            {!labelOnly && <ViewIcon view={view} size={iconOnly ? 22 : 20} />}
             {!iconOnly && <span>{VIEW_LABELS[view]}</span>}
           </button>
         );

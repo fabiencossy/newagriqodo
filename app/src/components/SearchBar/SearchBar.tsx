@@ -1,0 +1,286 @@
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ChevronDownIcon, FilterIcon, SearchIcon } from './icons';
+import { Facet } from './Facet';
+import { FiltersDropdown } from './FiltersDropdown';
+import { SuggestionsList, type FieldSuggestion } from './SuggestionsList';
+import { getSuggestableFields } from './searchable';
+import {
+  makeFacetId,
+  SEARCH_BAR_DEFAULTS,
+  type FieldDescriptor,
+  type Facet as FacetT,
+  type SearchBarProps,
+} from './SearchBar.types';
+
+export function SearchBar({
+  fields,
+  value,
+  onChange,
+  favorites = [],
+  onSaveFavorite,
+  onDeleteFavorite,
+  placeholder = SEARCH_BAR_DEFAULTS.placeholder,
+  debounceMs = SEARCH_BAR_DEFAULTS.debounceMs,
+  disabled = false,
+  theme = SEARCH_BAR_DEFAULTS.theme,
+  ariaLabel = 'Rechercher',
+  className,
+}: SearchBarProps) {
+  const fieldsById = useMemo(() => {
+    const m = new Map<string, FieldDescriptor>();
+    for (const f of fields) m.set(f.id, f);
+    return m;
+  }, [fields]);
+
+  const [query, setQuery] = useState(value.query ?? '');
+  const [suggestionsOpen, setSuggestionsOpen] = useState(false);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [focusedSuggestion, setFocusedSuggestion] = useState(0);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Sync interne query → state externe (avec debounce sur query libre)
+  useEffect(() => {
+    const id = setTimeout(() => {
+      if ((value.query ?? '') !== query) {
+        onChange({ ...value, query: query || undefined });
+      }
+    }, debounceMs);
+    return () => clearTimeout(id);
+  }, [query, debounceMs, onChange, value]);
+
+  // Fermer dropdown au clic extérieur + Esc
+  useEffect(() => {
+    function onDocClick(e: MouseEvent) {
+      if (containerRef.current?.contains(e.target as Node)) return;
+      setSuggestionsOpen(false);
+      setDropdownOpen(false);
+    }
+    function onKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setSuggestionsOpen(false);
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', onDocClick);
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('mousedown', onDocClick);
+      document.removeEventListener('keydown', onKey);
+    };
+  }, []);
+
+  /* ---------- Mutations sur l'état ---------- */
+
+  const addFacet = useCallback(
+    (field: FieldDescriptor, rawValues: string | string[]) => {
+      const values = Array.isArray(rawValues) ? rawValues : [rawValues];
+      const newFacet: FacetT = {
+        id: makeFacetId(),
+        fieldId: field.id,
+        operator: field.type === 'text' ? 'contains' : 'eq',
+        values,
+      };
+      onChange({
+        ...value,
+        query: undefined,
+        facets: [...value.facets, newFacet],
+      });
+      setQuery('');
+      setSuggestionsOpen(false);
+      inputRef.current?.focus();
+    },
+    [onChange, value],
+  );
+
+  const removeFacet = useCallback(
+    (facetId: string) => {
+      onChange({ ...value, facets: value.facets.filter((f) => f.id !== facetId) });
+    },
+    [onChange, value],
+  );
+
+  const handleSuggestionSelect = useCallback(
+    (s: FieldSuggestion) => {
+      addFacet(s.field, s.term);
+    },
+    [addFacet],
+  );
+
+  /* ---------- Keyboard sur l'input ---------- */
+
+  const suggestableFields = useMemo(() => getSuggestableFields(fields), [fields]);
+  const suggestionsCount = suggestableFields.length;
+
+  const onInputKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLInputElement>) => {
+      // Backspace sur input vide → retire la dernière facet
+      if (e.key === 'Backspace' && query === '' && value.facets.length > 0) {
+        e.preventDefault();
+        const last = value.facets[value.facets.length - 1];
+        if (last) removeFacet(last.id);
+        return;
+      }
+
+      if (!suggestionsOpen || !query.trim()) return;
+
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setFocusedSuggestion((i) => (i + 1) % Math.max(suggestionsCount, 1));
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setFocusedSuggestion((i) => (i - 1 + suggestionsCount) % Math.max(suggestionsCount, 1));
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        const field = suggestableFields[focusedSuggestion];
+        if (field) addFacet(field, query);
+      }
+    },
+    [
+      addFacet,
+      focusedSuggestion,
+      query,
+      removeFacet,
+      suggestableFields,
+      suggestionsCount,
+      suggestionsOpen,
+      value.facets,
+    ],
+  );
+
+  /* ---------- Render ---------- */
+
+  const isDark = theme === 'dark';
+  const hasFilters = value.facets.length > 0;
+  const showSuggestions = suggestionsOpen && query.trim().length > 0;
+
+  return (
+    <div ref={containerRef} className={['relative', className ?? ''].join(' ')}>
+      <div
+        role="search"
+        aria-label={ariaLabel}
+        className={[
+          'flex h-9 items-stretch overflow-hidden rounded-(--radius) border transition-colors',
+          isDark
+            ? 'border-[#2d343d] bg-[#1f242b] text-[#e8eaed]'
+            : 'border-(--color-border) bg-(--color-surface) text-(--color-text)',
+          disabled ? 'opacity-50' : '',
+          'focus-within:border-(--color-primary) focus-within:ring-2 focus-within:ring-(--color-primary)/15',
+        ].join(' ')}
+      >
+        {/* Lead : loupe + entonnoir */}
+        <div
+          className={[
+            'inline-flex items-center gap-1 border-r px-2',
+            isDark
+              ? 'border-[#3a414b] text-[#8a93a0]'
+              : 'border-(--color-border) text-(--color-muted)',
+          ].join(' ')}
+        >
+          <button
+            type="button"
+            onClick={() => inputRef.current?.focus()}
+            aria-label="Rechercher"
+            disabled={disabled}
+            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-(--radius-sm) hover:bg-black/5 hover:text-(--color-text)"
+          >
+            <SearchIcon />
+          </button>
+          <button
+            type="button"
+            aria-label="Filtres"
+            aria-pressed={hasFilters}
+            disabled={disabled}
+            onClick={() => setDropdownOpen((o) => !o)}
+            className={[
+              'inline-flex h-[26px] w-[26px] items-center justify-center rounded-(--radius-sm)',
+              hasFilters
+                ? 'bg-(--color-accent)/10 text-(--color-accent)'
+                : 'hover:bg-black/5 hover:text-(--color-text)',
+            ].join(' ')}
+          >
+            <FilterIcon />
+          </button>
+        </div>
+
+        {/* Mid : facets + input */}
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 px-2">
+          {value.facets.map((f) => (
+            <Facet
+              key={f.id}
+              facet={f}
+              field={fieldsById.get(f.fieldId)}
+              onRemove={() => removeFacet(f.id)}
+              theme={theme}
+            />
+          ))}
+          <input
+            ref={inputRef}
+            type="text"
+            value={query}
+            disabled={disabled}
+            onChange={(e) => {
+              setQuery(e.target.value);
+              setFocusedSuggestion(0);
+              setSuggestionsOpen(true);
+            }}
+            onFocus={() => query.trim() && setSuggestionsOpen(true)}
+            onKeyDown={onInputKeyDown}
+            placeholder={value.facets.length > 0 ? 'Affiner…' : placeholder}
+            aria-label={ariaLabel}
+            className={[
+              'h-full min-w-[40px] flex-1 bg-transparent px-1 text-sm outline-none',
+              isDark ? 'placeholder:text-[#8a93a0]' : 'placeholder:text-(--color-muted)',
+            ].join(' ')}
+          />
+        </div>
+
+        {/* Tail : chevron */}
+        <button
+          type="button"
+          aria-haspopup="menu"
+          aria-expanded={dropdownOpen}
+          aria-label="Ouvrir filtres et favoris"
+          disabled={disabled}
+          onClick={() => setDropdownOpen((o) => !o)}
+          className={[
+            'inline-flex items-center border-l px-2.5',
+            isDark
+              ? 'border-[#3a414b] text-[#8a93a0]'
+              : 'border-(--color-border) text-(--color-muted)',
+            dropdownOpen
+              ? 'bg-(--color-accent)/6 text-(--color-accent)'
+              : 'hover:bg-(--color-bg) hover:text-(--color-text)',
+          ].join(' ')}
+        >
+          <ChevronDownIcon />
+        </button>
+      </div>
+
+      {/* Suggestions (au-dessus du dropdown si les deux ouverts) */}
+      {showSuggestions && !dropdownOpen && (
+        <SuggestionsList
+          query={query.trim()}
+          fields={fields}
+          focusedIndex={focusedSuggestion}
+          onSelect={handleSuggestionSelect}
+          onFocusedChange={setFocusedSuggestion}
+        />
+      )}
+
+      {/* Dropdown 3 colonnes */}
+      {dropdownOpen && (
+        <FiltersDropdown
+          fields={fields}
+          state={value}
+          onChange={onChange}
+          favorites={favorites}
+          onSaveFavorite={onSaveFavorite}
+          onDeleteFavorite={onDeleteFavorite}
+          onClose={() => setDropdownOpen(false)}
+        />
+      )}
+    </div>
+  );
+}

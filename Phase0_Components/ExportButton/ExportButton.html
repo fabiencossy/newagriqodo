@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ExportButton — Wireframe Phase 0</title>
+<style>
+  :root {
+    --primary: #2d5016; --primary-hover: #1f3a0e;
+    --bg: #fafaf7; --surface: #ffffff;
+    --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .note { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .stage { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 40px; padding: 0 14px; min-width: 44px;
+    border-radius: var(--radius); border: 1px solid var(--border);
+    background: var(--surface); cursor: pointer; font-size: 14px; color: var(--text);
+  }
+  .btn:hover { background: #f8f8f5; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn[disabled] { opacity: 0.5; cursor: not-allowed; }
+  .btn .spinner {
+    display: inline-block; width: 14px; height: 14px;
+    border: 2px solid currentColor; border-right-color: transparent;
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .menu {
+    list-style: none; padding: 4px; margin: 6px 0 0;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    width: 220px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .menu li button {
+    width: 100%; text-align: left; height: 40px; padding: 0 12px;
+    border: 0; background: transparent; cursor: pointer; border-radius: 4px;
+    display: flex; align-items: center; gap: 10px; font-size: 14px;
+  }
+  .menu li button:hover { background: #f8f8f5; }
+  .menu .meta { color: var(--muted); font-size: 12px; }
+
+  .toast {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 10px 14px; border-radius: var(--radius);
+    background: #ecf6e6; color: #1a5e1a; border: 1px solid #c9e3bb;
+    font-size: 13px;
+  }
+
+  .pdf-preview {
+    background: #fff; border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; max-width: 360px;
+  }
+  .pdf-preview header { display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 10px; }
+  .pdf-preview .logo { width: 28px; height: 28px; background: var(--primary); color: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .pdf-preview h3 { margin: 0; font-size: 14px; }
+  .pdf-preview .sub { color: var(--muted); font-size: 11px; }
+  .pdf-preview table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  .pdf-preview th, .pdf-preview td { padding: 4px 6px; border-bottom: 1px solid var(--border); text-align: left; }
+  .pdf-preview footer { margin-top: 8px; color: var(--muted); font-size: 10px; display: flex; justify-content: space-between; }
+</style>
+</head>
+<body>
+  <h1>ExportButton — Wireframe</h1>
+  <div class="note">Export PDF / CSV / Excel. Dropdown si plusieurs formats, bouton simple sinon. Filename auto : <code>&lt;title&gt;_&lt;YYYY-MM-DD&gt;.&lt;ext&gt;</code>. PDF inclut logo Qodo + filtres appliqués + timestamp.</div>
+
+  <h2>1. Multi-format (dropdown)</h2>
+  <div class="stage">
+    <button class="btn" aria-haspopup="menu" aria-expanded="true" aria-controls="exp-menu">
+      <span aria-hidden="true">↓</span> Exporter <span aria-hidden="true">▾</span>
+    </button>
+    <ul class="menu" id="exp-menu" role="menu" aria-label="Format d'export">
+      <li><button role="menuitem"><span aria-hidden="true">📄</span> PDF <span class="meta">— mise en forme</span></button></li>
+      <li><button role="menuitem"><span aria-hidden="true">📊</span> Excel (.xlsx) <span class="meta">— données</span></button></li>
+      <li><button role="menuitem"><span aria-hidden="true">📋</span> CSV <span class="meta">— brut</span></button></li>
+    </ul>
+  </div>
+
+  <h2>2. Format unique (bouton direct)</h2>
+  <div class="stage">
+    <button class="btn btn-primary"><span aria-hidden="true">↓</span> Télécharger PDF</button>
+  </div>
+
+  <h2>3. État loading</h2>
+  <div class="stage">
+    <button class="btn" disabled aria-busy="true">
+      <span class="spinner" aria-hidden="true"></span> Génération en cours…
+    </button>
+  </div>
+
+  <h2>4. État succès (toast)</h2>
+  <div class="stage">
+    <div class="toast" role="status">
+      <span aria-hidden="true">✓</span> Parcelles_2026-05-15.csv téléchargé
+    </div>
+  </div>
+
+  <h2>5. Aperçu PDF (mock)</h2>
+  <div class="stage">
+    <div class="pdf-preview">
+      <header>
+        <div class="logo" aria-label="Qodo">Q</div>
+        <div>
+          <h3>Parcelles — Domaine Darval</h3>
+          <div class="sub">Filtre: culture=Blé · 2026-05-15 14:32</div>
+        </div>
+      </header>
+      <table>
+        <thead><tr><th>Code</th><th>Nom</th><th>Surface</th><th>Culture</th></tr></thead>
+        <tbody>
+          <tr><td>PF-001</td><td>Plat de la Cure</td><td>2.5 ha</td><td>Blé</td></tr>
+          <tr><td>PF-002</td><td>Champ du Haut</td><td>1.8 ha</td><td>Blé</td></tr>
+          <tr><td>PF-003</td><td>Petite Pièce</td><td>0.9 ha</td><td>Blé</td></tr>
+        </tbody>
+      </table>
+      <footer><span>3 parcelles · Total 5.2 ha</span><span>Page 1/1</span></footer>
+    </div>
+  </div>
+
+  <h2>Accessibilité</h2>
+  <ul style="font-size: 13px; color: var(--muted);">
+    <li>Bouton : <code>aria-haspopup="menu"</code> + <code>aria-expanded</code>.</li>
+    <li>Menu items : <code>role="menuitem"</code>.</li>
+    <li>État loading : <code>aria-busy="true"</code> + bouton disabled.</li>
+    <li>Toast succès : <code>role="status"</code> (annoncé par lecteur d'écran).</li>
+    <li>Cibles tactiles ≥ 40 px.</li>
+  </ul>
+</body>
+</html>

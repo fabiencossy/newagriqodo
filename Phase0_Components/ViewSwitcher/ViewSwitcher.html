@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ViewSwitcher — Wireframe Phase 0</title>
+<style>
+  :root {
+    --primary: #2d5016;
+    --primary-hover: #1f3a0e;
+    --bg: #fafaf7;
+    --surface: #ffffff;
+    --text: #1a1a1a;
+    --muted: #6b6b6b;
+    --border: #e5e5e5;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .note { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .stage { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+  .stage-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+
+  /* Segmented control (desktop) */
+  .segmented {
+    display: inline-flex; padding: 4px; gap: 2px;
+    background: #f1f1ee; border-radius: var(--radius);
+  }
+  .segmented button {
+    display: inline-flex; align-items: center; gap: 6px;
+    height: 36px; padding: 0 14px; min-width: 44px;
+    border: 0; background: transparent; cursor: pointer;
+    border-radius: 4px; font-size: 14px; color: var(--text);
+    position: relative;
+  }
+  .segmented button:hover { background: rgba(0,0,0,0.04); }
+  .segmented button[aria-pressed="true"] {
+    background: var(--primary); color: #fff;
+  }
+  .segmented button[disabled] { color: var(--muted); cursor: not-allowed; opacity: 0.5; }
+  .segmented .icon { width: 20px; height: 20px; display: inline-block; }
+
+  /* Tooltip */
+  .tip-host { position: relative; }
+  .tip-host[data-show-tip="true"]::after {
+    content: attr(data-tip);
+    position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
+    background: #1a1a1a; color: #fff; padding: 4px 8px; border-radius: 4px;
+    font-size: 12px; white-space: nowrap; pointer-events: none; z-index: 10;
+  }
+
+  /* Mobile dropdown */
+  .dropdown-trigger {
+    display: inline-flex; align-items: center; gap: 8px;
+    height: 44px; padding: 0 14px; min-width: 44px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); cursor: pointer; font-size: 14px;
+  }
+  .dropdown-trigger:hover { background: #f8f8f5; }
+  .dropdown-menu {
+    list-style: none; padding: 4px; margin: 4px 0 0; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface); width: 200px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .dropdown-menu li button {
+    width: 100%; text-align: left; height: 40px; padding: 0 12px;
+    border: 0; background: transparent; cursor: pointer; border-radius: 4px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dropdown-menu li button[aria-selected="true"] {
+    background: rgba(45,80,22,0.08); color: var(--primary); font-weight: 500;
+  }
+  .dropdown-menu li button:hover { background: #f8f8f5; }
+</style>
+</head>
+<body>
+  <h1>ViewSwitcher — Wireframe</h1>
+  <div class="note">Toggle entre Table / Carte / Dashboard pour une même donnée. Segmented control sur desktop, dropdown sur mobile. Icônes 20 px. Tooltip délai ~400 ms.</div>
+
+  <h2>Desktop — Segmented control</h2>
+  <div class="stage">
+    <div class="stage-label">Vue active : Table</div>
+    <div class="segmented" role="tablist" aria-label="Changer de vue">
+      <span class="tip-host" data-tip="Vue tableau">
+        <button role="tab" aria-pressed="true" aria-label="Vue Table">
+          <span class="icon" aria-hidden="true">▤</span> Table
+        </button>
+      </span>
+      <span class="tip-host" data-tip="Vue carte">
+        <button role="tab" aria-pressed="false" aria-label="Vue Carte">
+          <span class="icon" aria-hidden="true">🗺</span> Carte
+        </button>
+      </span>
+      <span class="tip-host" data-tip="Vue dashboard">
+        <button role="tab" aria-pressed="false" aria-label="Vue Dashboard">
+          <span class="icon" aria-hidden="true">📊</span> Dashboard
+        </button>
+      </span>
+    </div>
+  </div>
+
+  <h2>Desktop — Hover state (tooltip)</h2>
+  <div class="stage">
+    <div class="segmented" role="tablist">
+      <button role="tab" aria-pressed="true">▤ Table</button>
+      <span class="tip-host" data-show-tip="true" data-tip="Vue carte">
+        <button role="tab" aria-pressed="false" style="background: rgba(0,0,0,0.04);">🗺 Carte</button>
+      </span>
+      <button role="tab" aria-pressed="false">📊 Dashboard</button>
+    </div>
+  </div>
+
+  <h2>Desktop — Disabled</h2>
+  <div class="stage">
+    <div class="segmented" role="tablist">
+      <button role="tab" aria-pressed="true">▤ Table</button>
+      <button role="tab" aria-pressed="false" disabled aria-disabled="true">🗺 Carte</button>
+      <button role="tab" aria-pressed="false" disabled aria-disabled="true">📊 Dashboard</button>
+    </div>
+  </div>
+
+  <h2>Mobile (&lt; 768px) — Dropdown</h2>
+  <div class="stage" style="max-width: 360px;">
+    <button class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="true" aria-controls="vs-menu">
+      <span aria-hidden="true">▤</span>
+      <span>Table</span>
+      <span aria-hidden="true" style="margin-left: auto;">▾</span>
+    </button>
+    <ul class="dropdown-menu" id="vs-menu" role="listbox" aria-label="Choisir une vue">
+      <li><button role="option" aria-selected="true"><span aria-hidden="true">▤</span> Table ✓</button></li>
+      <li><button role="option" aria-selected="false"><span aria-hidden="true">🗺</span> Carte</button></li>
+      <li><button role="option" aria-selected="false"><span aria-hidden="true">📊</span> Dashboard</button></li>
+    </ul>
+  </div>
+
+  <h2>Accessibilité</h2>
+  <ul style="font-size: 13px; color: var(--muted);">
+    <li>Segmented : <code>role="tablist"</code> + boutons <code>role="tab"</code> + <code>aria-pressed</code>.</li>
+    <li>Mobile : <code>aria-haspopup="listbox"</code>, options <code>role="option"</code>, <code>aria-selected</code>.</li>
+    <li>Toutes les vues ont un libellé textuel + icône (pas d'icône-seul).</li>
+    <li>Navigation clavier : ←/→ sur segmented, ↑/↓ sur dropdown, Enter pour sélectionner.</li>
+    <li>Cibles tactiles ≥ 44 px (h:36px desktop / h:44px mobile + zone tap).</li>
+  </ul>
+</body>
+</html>

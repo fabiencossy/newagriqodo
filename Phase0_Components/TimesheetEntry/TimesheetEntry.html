@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TimesheetEntry — Wireframe Phase 0</title>
+<style>
+  :root {
+    --primary: #2d5016; --primary-hover: #1f3a0e;
+    --bg: #fafaf7; --surface: #ffffff;
+    --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
+    --radius: 6px;
+    --error: #dc2626; --success: #16a34a;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .note { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  .form-card {
+    max-width: 480px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 20px;
+  }
+  .form-card h3 { margin: 0 0 16px; font-size: 16px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; color: var(--text); margin-bottom: 4px; font-weight: 500; }
+  .field .hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
+  .field input, .field select {
+    width: 100%; height: 44px; padding: 0 12px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    font-size: 15px; background: var(--surface);
+  }
+  .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(45,80,22,0.15); }
+  .field .error { color: var(--error); font-size: 12px; margin-top: 3px; }
+  .field input[aria-invalid="true"] { border-color: var(--error); }
+
+  .input-with-suffix { position: relative; }
+  .input-with-suffix .suffix {
+    position: absolute; right: 12px; top: 50%; transform: translateY(-50%);
+    color: var(--muted); font-size: 13px; pointer-events: none;
+  }
+
+  .row-two { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 480px) { .row-two { grid-template-columns: 1fr 1fr; } }
+
+  .footer { display: flex; gap: 8px; margin-top: 8px; }
+  .btn {
+    height: 44px; padding: 0 16px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 14px; font-weight: 500;
+  }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); flex: 1; }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-primary[disabled] { opacity: 0.5; cursor: not-allowed; }
+  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .toast {
+    margin-top: 12px; padding: 10px 14px; border-radius: var(--radius);
+    font-size: 13px;
+  }
+  .toast.success { background: #ecf6e6; color: #1a5e1a; border: 1px solid #c9e3bb; }
+  .toast.error { background: #fdecec; color: #8a1c1c; border: 1px solid #f4c2c2; }
+</style>
+</head>
+<body>
+  <h1>TimesheetEntry — Wireframe</h1>
+  <div class="note">Form ultra-simple : date + heures (HH:MM auto-converti en décimal) + type de travail + intervention optionnelle. Submit → création auto Attendance Odoo (Hook 1).</div>
+
+  <h2>Standalone — État initial</h2>
+  <form class="form-card" aria-label="Saisir des heures">
+    <h3>Saisir des heures</h3>
+
+    <div class="field">
+      <label for="ts-date">Date</label>
+      <input id="ts-date" type="date" value="2026-05-15" max="2026-05-15">
+      <div class="hint">Aujourd'hui par défaut · passé autorisé jusqu'à 90 jours</div>
+    </div>
+
+    <div class="row-two">
+      <div class="field">
+        <label for="ts-hours">Heures travaillées</label>
+        <div class="input-with-suffix">
+          <input id="ts-hours" type="text" inputmode="decimal" placeholder="2:30 ou 2.5" value="">
+          <span class="suffix">HH:MM</span>
+        </div>
+        <div class="hint">Format <code>2:30</code> ou décimal <code>2.5</code> · max 16 h</div>
+      </div>
+
+      <div class="field">
+        <label for="ts-type">Type de travail</label>
+        <select id="ts-type">
+          <option value="">— Choisir —</option>
+          <option value="Parcellaire">Parcellaire</option>
+          <option value="Travaux">Travaux</option>
+          <option value="Troupeau">Troupeau</option>
+          <option value="RH">RH</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="ts-interv">Intervention liée <span style="color: var(--muted); font-weight: 400;">(optionnel)</span></label>
+      <input id="ts-interv" type="text" placeholder="Rechercher une intervention…">
+      <div class="hint">Autocomplete sur les interventions ouvertes du jour</div>
+    </div>
+
+    <div class="footer">
+      <button type="button" class="btn">Annuler</button>
+      <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+  </form>
+
+  <h2>Validation — Erreur format heures</h2>
+  <div class="form-card">
+    <div class="field">
+      <label for="ts-h-err">Heures travaillées</label>
+      <div class="input-with-suffix">
+        <input id="ts-h-err" type="text" value="25" aria-invalid="true" aria-describedby="h-err">
+        <span class="suffix">HH:MM</span>
+      </div>
+      <div class="error" id="h-err" role="alert">Valeur invalide : maximum 16 h par jour.</div>
+    </div>
+  </div>
+
+  <h2>Loading — Submission en cours</h2>
+  <div class="form-card">
+    <div class="footer">
+      <button type="button" class="btn" disabled>Annuler</button>
+      <button type="button" class="btn btn-primary" disabled aria-busy="true">
+        <span class="spinner" aria-hidden="true"></span> Enregistrement…
+      </button>
+    </div>
+  </div>
+
+  <h2>Succès — Toast confirmation</h2>
+  <div class="form-card">
+    <div class="footer">
+      <button type="button" class="btn">Annuler</button>
+      <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+    <div class="toast success" role="status">✓ Présence créée dans Odoo · 2h30 le 15/05/2026</div>
+  </div>
+
+  <h2>Erreur Odoo — Retry</h2>
+  <div class="form-card">
+    <div class="footer">
+      <button type="button" class="btn">Annuler</button>
+      <button type="submit" class="btn btn-primary">Enregistrer</button>
+    </div>
+    <div class="toast error" role="alert">
+      ⚠ Sync Odoo échouée — entrée mise en file locale.
+      <button class="btn" style="height: 32px; padding: 0 10px; margin-left: 8px; background: #fff;">Réessayer</button>
+    </div>
+  </div>
+
+  <h2>Mode "linked" — Intervention pré-remplie</h2>
+  <div class="form-card">
+    <h3>Saisir des heures · Travaux #T-2026-042</h3>
+    <div class="field">
+      <label>Intervention liée</label>
+      <div style="padding: 8px 12px; background: rgba(45,80,22,0.06); border-radius: var(--radius); color: var(--primary); font-size: 14px; font-weight: 500;">
+        🔗 T-2026-042 — Fauchage parcelle PF-002
+      </div>
+    </div>
+    <div class="field">
+      <label for="ts-d2">Date</label>
+      <input id="ts-d2" type="date" value="2026-05-15">
+    </div>
+    <div class="field">
+      <label for="ts-h2">Heures</label>
+      <div class="input-with-suffix"><input id="ts-h2" type="text" value="3:45"><span class="suffix">HH:MM</span></div>
+    </div>
+    <div class="footer">
+      <button class="btn">Annuler</button>
+      <button class="btn btn-primary">Enregistrer</button>
+    </div>
+  </div>
+
+  <h2>Accessibilité</h2>
+  <ul style="font-size: 13px; color: var(--muted);">
+    <li><code>&lt;form&gt;</code> avec <code>aria-label</code>.</li>
+    <li>Chaque input a un <code>&lt;label for&gt;</code>.</li>
+    <li>Erreurs : <code>aria-invalid="true"</code> + <code>aria-describedby</code> pointant vers le message d'erreur.</li>
+    <li>Toast succès : <code>role="status"</code>. Toast erreur : <code>role="alert"</code>.</li>
+    <li>Submit en cours : <code>aria-busy="true"</code>.</li>
+    <li>Cibles tactiles 44 px (inputs + boutons).</li>
+    <li>Date input natif → support clavier + accessibilité OS.</li>
+  </ul>
+</body>
+</html>

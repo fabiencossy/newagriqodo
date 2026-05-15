@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MapView — Wireframe Phase 0</title>
+<style>
+  :root {
+    --primary: #2d5016; --primary-hover: #1f3a0e;
+    --bg: #fafaf7; --surface: #ffffff;
+    --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .note { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+  .stage { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 0; margin-bottom: 16px; overflow: hidden; }
+  .stage-pad { padding: 16px; }
+
+  /* Map canvas mock — gradient pour évoquer satellite */
+  .map-canvas {
+    position: relative; min-height: 380px;
+    background:
+      radial-gradient(circle at 30% 40%, #3d5a2a 0%, transparent 40%),
+      radial-gradient(circle at 70% 60%, #4a6b35 0%, transparent 50%),
+      radial-gradient(circle at 50% 80%, #2d3e1a 0%, transparent 40%),
+      linear-gradient(135deg, #2a3a1a, #3a4a2a);
+  }
+  .map-canvas svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+  .parcel { fill: rgba(244,162,97,0.45); stroke: #f4a261; stroke-width: 2; cursor: pointer; }
+  .parcel:hover { fill: rgba(244,162,97,0.65); }
+  .parcel.selected { fill: rgba(255,200,80,0.7); stroke: #fff; stroke-width: 3; }
+  .parcel-label { font: 600 11px system-ui; fill: #fff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); pointer-events: none; }
+
+  /* Controls */
+  .map-controls { position: absolute; top: 12px; right: 12px; display: flex; flex-direction: column; gap: 4px; }
+  .map-ctrl {
+    width: 36px; height: 36px; min-width: 36px; min-height: 36px;
+    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius);
+    cursor: pointer; font-size: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  }
+  .map-ctrl:hover { background: #f8f8f5; }
+
+  .basemap-toggle { position: absolute; top: 12px; left: 12px; display: flex; gap: 0; background: var(--surface); border-radius: var(--radius); padding: 2px; box-shadow: 0 1px 3px rgba(0,0,0,0.15); }
+  .basemap-toggle button { border: 0; background: transparent; padding: 6px 10px; font-size: 12px; cursor: pointer; border-radius: 4px; min-height: 32px; }
+  .basemap-toggle button[aria-pressed="true"] { background: var(--primary); color: #fff; }
+
+  .map-attrib { position: absolute; bottom: 6px; right: 8px; font-size: 10px; color: #fff; opacity: 0.7; background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 3px; }
+
+  /* FAB */
+  .fab {
+    position: absolute; bottom: 16px; right: 16px;
+    width: 56px; height: 56px; border-radius: 50%;
+    background: var(--primary); color: #fff; border: 0; cursor: pointer;
+    font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+  }
+  .fab:hover { background: var(--primary-hover); }
+
+  /* Desktop layout : map + aside */
+  .desktop-layout { display: grid; grid-template-columns: 1fr; min-height: 420px; }
+  @media (min-width: 768px) {
+    .desktop-layout { grid-template-columns: 1fr 320px; }
+  }
+  .aside {
+    background: var(--surface); border-left: 1px solid var(--border);
+    padding: 16px; font-size: 13px;
+  }
+  .aside h3 { margin: 0 0 8px; font-size: 15px; }
+  .aside .meta { color: var(--muted); font-size: 12px; margin-bottom: 12px; }
+  .aside dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 4px 12px; }
+  .aside dt { color: var(--muted); font-size: 12px; }
+  .aside dd { margin: 0; font-size: 13px; }
+
+  /* Mobile bottom sheet */
+  .bottomsheet {
+    border-top-left-radius: 16px; border-top-right-radius: 16px;
+    background: var(--surface); padding: 12px 16px 16px;
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
+  }
+  .bottomsheet .handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 0 auto 12px; }
+</style>
+</head>
+<body>
+  <h1>MapView — Wireframe</h1>
+  <div class="note">Carte Maplibre GL, parcelles en polygones, basemap satellite par défaut. Desktop : map + aside 320 px. Mobile : map plein écran + bottom sheet. Drawing opt-in via prop.</div>
+
+  <h2>Desktop — Map + aside</h2>
+  <div class="stage">
+    <div class="desktop-layout">
+      <div class="map-canvas" role="application" aria-label="Carte des parcelles">
+        <svg viewBox="0 0 600 420" preserveAspectRatio="none">
+          <polygon class="parcel" points="80,90 200,70 240,180 100,210" />
+          <text class="parcel-label" x="155" y="145">PF-001 · 2.5 ha</text>
+
+          <polygon class="parcel selected" points="270,110 410,90 430,230 290,250" />
+          <text class="parcel-label" x="345" y="180">PF-002 · 1.8 ha</text>
+
+          <polygon class="parcel" points="120,260 280,270 260,360 110,350" />
+          <text class="parcel-label" x="190" y="320">PF-003 · 0.9 ha</text>
+
+          <polygon class="parcel" points="340,290 500,280 510,380 360,390" />
+          <text class="parcel-label" x="420" y="345">PF-004 · 1.4 ha</text>
+        </svg>
+
+        <div class="basemap-toggle" role="radiogroup" aria-label="Fond de carte">
+          <button aria-pressed="true">Satellite</button>
+          <button aria-pressed="false">Rues</button>
+        </div>
+        <div class="map-controls">
+          <button class="map-ctrl" aria-label="Zoom avant">+</button>
+          <button class="map-ctrl" aria-label="Zoom arrière">−</button>
+          <button class="map-ctrl" aria-label="Centrer sur mon emplacement" title="Ma position">⊕</button>
+          <button class="map-ctrl" aria-label="Plein écran" title="Plein écran">⛶</button>
+        </div>
+        <div class="map-attrib">© MapTiler · OpenStreetMap</div>
+      </div>
+      <div class="aside" role="complementary" aria-label="Détails parcelle">
+        <h3>PF-002 — Champ du Haut</h3>
+        <div class="meta">Sélection courante</div>
+        <dl>
+          <dt>Surface</dt><dd>1.8 ha</dd>
+          <dt>Culture</dt><dd>Blé d'automne</dd>
+          <dt>Variété</dt><dd>Arnold</dd>
+          <dt>Semis</dt><dd>2026-03-12</dd>
+          <dt>Statut</dt><dd>Actif</dd>
+        </dl>
+        <div style="margin-top: 12px; display: flex; gap: 8px;">
+          <button style="height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--primary); background: var(--primary); color: #fff; cursor: pointer;">Ouvrir</button>
+          <button style="height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); cursor: pointer;">Centrer</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Mobile — Plein écran + bottom sheet</h2>
+  <div class="stage" style="max-width: 360px;">
+    <div class="map-canvas" style="min-height: 360px;" role="application" aria-label="Carte des parcelles">
+      <svg viewBox="0 0 360 360" preserveAspectRatio="none">
+        <polygon class="parcel" points="40,60 160,50 180,150 50,170" />
+        <polygon class="parcel selected" points="180,100 320,90 330,220 195,240" />
+        <polygon class="parcel" points="60,200 220,210 200,310 50,300" />
+      </svg>
+      <div class="map-controls">
+        <button class="map-ctrl" aria-label="Zoom avant">+</button>
+        <button class="map-ctrl" aria-label="Zoom arrière">−</button>
+      </div>
+      <button class="fab" aria-label="Créer une nouvelle parcelle">+</button>
+      <div class="map-attrib">© MapTiler</div>
+    </div>
+    <div class="bottomsheet">
+      <div class="handle" aria-hidden="true"></div>
+      <h3 style="margin: 0 0 4px;">PF-002 — Champ du Haut</h3>
+      <div style="color: var(--muted); font-size: 12px; margin-bottom: 8px;">1.8 ha · Blé d'automne · Semé 2026-03-12</div>
+      <div style="display: flex; gap: 8px;">
+        <button style="flex:1; height: 44px; border: 0; border-radius: 6px; background: var(--primary); color: #fff;">Ouvrir</button>
+        <button style="flex:0 0 44px; height: 44px; border: 1px solid var(--border); background: var(--surface); border-radius: 6px;" aria-label="Centrer">⊕</button>
+      </div>
+    </div>
+  </div>
+
+  <h2>Mode dessin (opt-in)</h2>
+  <div class="stage">
+    <div class="stage-pad">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <button style="height: 36px; padding: 0 14px; border-radius: 6px; background: var(--primary); color: #fff; border: 0;" aria-pressed="true">✏ Dessiner</button>
+        <span style="color: var(--muted); font-size: 13px;">Cliquez pour ajouter des points · Double-clic pour fermer</span>
+      </div>
+    </div>
+  </div>
+
+  <h2>Accessibilité</h2>
+  <ul style="font-size: 13px; color: var(--muted); padding: 0 24px;">
+    <li>Canvas carte : <code>role="application"</code> + <code>aria-label</code>.</li>
+    <li>Boutons de contrôle : <code>aria-label</code> explicite (zoom, position, plein écran).</li>
+    <li>Toggle basemap : <code>role="radiogroup"</code> + <code>aria-pressed</code>.</li>
+    <li>Aside : <code>role="complementary"</code>.</li>
+    <li>Mobile bottom sheet : focus trap quand ouvert, dismissable swipe-down ou Esc.</li>
+    <li>Navigation clavier prévue : Tab pour controls, +/- pour zoom, flèches pour pan, Enter pour sélection.</li>
+    <li>Cibles tactiles ≥ 36 px (contrôles), 44 px (FAB, boutons sheet).</li>
+  </ul>
+</body>
+</html>

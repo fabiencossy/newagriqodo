@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HoursTableMonth — Wireframe Phase 0</title>
+<style>
+  :root {
+    --primary: #2d5016; --bg: #fafaf7; --surface: #ffffff;
+    --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
+    --radius: 6px;
+    --pos: #16a34a; --neg: #dc2626; --neutral: #6b6b6b;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .note { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px; margin-bottom: 16px;
+  }
+  .card header {
+    display: flex; align-items: center; gap: 12px;
+    margin-bottom: 12px;
+  }
+  .card header h3 { margin: 0; font-size: 16px; flex: 1; }
+  .year-picker {
+    display: inline-flex; align-items: center; gap: 6px;
+    border: 1px solid var(--border); border-radius: var(--radius); padding: 4px;
+  }
+  .year-picker button {
+    width: 28px; height: 28px; min-width: 28px;
+    border: 0; background: transparent; cursor: pointer; border-radius: 4px;
+  }
+  .year-picker button:hover { background: #f1f1ee; }
+  .year-picker .year { font-weight: 600; min-width: 50px; text-align: center; }
+
+  /* Desktop table */
+  table.hours { width: 100%; border-collapse: collapse; font-size: 14px; }
+  table.hours th, table.hours td { padding: 10px 12px; text-align: left; }
+  table.hours thead th {
+    font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em;
+    border-bottom: 1px solid var(--border); cursor: pointer; user-select: none;
+  }
+  table.hours thead th[aria-sort]:hover { background: #f8f8f5; }
+  table.hours thead th .sort-icon { color: var(--muted); margin-left: 4px; font-size: 11px; }
+  table.hours thead th[aria-sort="ascending"] .sort-icon::after { content: " ↑"; color: var(--primary); }
+  table.hours thead th[aria-sort="descending"] .sort-icon::after { content: " ↓"; color: var(--primary); }
+  table.hours tbody tr:not(.ytd) { border-bottom: 1px solid var(--border); }
+  table.hours tbody tr:hover:not(.ytd) { background: #fbfbf9; }
+  table.hours .num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.hours .balance { font-weight: 600; }
+  table.hours .pos { color: var(--pos); }
+  table.hours .neg { color: var(--neg); }
+  table.hours .zero { color: var(--neutral); }
+  table.hours .ytd {
+    background: rgba(45,80,22,0.05); font-weight: 600;
+  }
+  table.hours .ytd td { padding-top: 12px; padding-bottom: 12px; border-top: 2px solid var(--primary); }
+
+  /* Mobile cards */
+  .mobile-list { display: none; }
+  @media (max-width: 600px) {
+    .desktop-table { display: none; }
+    .mobile-list { display: block; }
+  }
+  .month-card {
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 12px; margin-bottom: 8px; background: var(--surface);
+  }
+  .month-card .row { display: flex; justify-content: space-between; font-size: 13px; }
+  .month-card .month-name { font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+  .month-card.ytd-card { background: rgba(45,80,22,0.05); border-color: var(--primary); }
+
+  .legend { font-size: 12px; color: var(--muted); margin-top: 8px; display: flex; gap: 16px; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 4px; }
+  .legend .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+</style>
+</head>
+<body>
+  <h1>HoursTableMonth — Wireframe</h1>
+  <div class="note">Bilan heures travaillées vs heures dues par mois, avec solde cumulé. Colonnes triables (mois / solde). Ligne YTD total en bas. Color coding +/-/0.</div>
+
+  <h2>Desktop</h2>
+  <div class="card">
+    <header>
+      <h3>Bilan heures</h3>
+      <div class="year-picker">
+        <button aria-label="Année précédente">‹</button>
+        <span class="year">2026</span>
+        <button aria-label="Année suivante">›</button>
+      </div>
+    </header>
+
+    <div class="desktop-table">
+      <table class="hours" aria-label="Bilan heures par mois 2026">
+        <thead>
+          <tr>
+            <th scope="col" aria-sort="ascending">Mois <span class="sort-icon"></span></th>
+            <th scope="col" class="num">Travaillées <span class="sort-icon">⇅</span></th>
+            <th scope="col" class="num">Dues <span class="sort-icon">⇅</span></th>
+            <th scope="col" class="num">Solde <span class="sort-icon">⇅</span></th>
+            <th scope="col" class="num">Congés pris</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>Janvier</td><td class="num">150:00</td><td class="num">145:00</td><td class="num balance pos">+5:00</td><td class="num">2 j</td></tr>
+          <tr><td>Février</td><td class="num">142:00</td><td class="num">140:00</td><td class="num balance pos">+2:00</td><td class="num">0 j</td></tr>
+          <tr><td>Mars</td><td class="num">145:00</td><td class="num">145:00</td><td class="num balance zero">0:00</td><td class="num">0 j</td></tr>
+          <tr><td>Avril</td><td class="num">148:00</td><td class="num">145:00</td><td class="num balance pos">+3:00</td><td class="num">1 j</td></tr>
+          <tr><td>Mai</td><td class="num">152:00</td><td class="num">147:00</td><td class="num balance pos">+5:00</td><td class="num">0 j</td></tr>
+          <tr><td>Juin</td><td class="num">95:00</td><td class="num">100:00</td><td class="num balance neg">−5:00</td><td class="num">5 j</td></tr>
+          <tr class="ytd">
+            <td>YTD TOTAL</td>
+            <td class="num">832:00</td>
+            <td class="num">822:00</td>
+            <td class="num balance pos">+10:00</td>
+            <td class="num">8 j</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="legend">
+      <span><span class="dot" style="background: var(--pos);"></span>Solde positif (heures supplémentaires)</span>
+      <span><span class="dot" style="background: var(--neg);"></span>Solde négatif (heures manquantes)</span>
+      <span><span class="dot" style="background: var(--neutral);"></span>Solde équilibré</span>
+    </div>
+  </div>
+
+  <h2>Mobile (&lt; 600px) — Card view</h2>
+  <div class="card" style="max-width: 360px;">
+    <header>
+      <h3>Bilan heures</h3>
+      <div class="year-picker"><button>‹</button><span class="year">2026</span><button>›</button></div>
+    </header>
+
+    <div>
+      <div class="month-card">
+        <div class="month-name">Janvier</div>
+        <div class="row"><span>Travaillées</span><span>150:00</span></div>
+        <div class="row"><span>Dues</span><span>145:00</span></div>
+        <div class="row"><span>Solde</span><span class="balance pos" style="font-weight: 600; color: var(--pos);">+5:00</span></div>
+      </div>
+      <div class="month-card">
+        <div class="month-name">Février</div>
+        <div class="row"><span>Travaillées</span><span>142:00</span></div>
+        <div class="row"><span>Dues</span><span>140:00</span></div>
+        <div class="row"><span>Solde</span><span style="font-weight: 600; color: var(--pos);">+2:00</span></div>
+      </div>
+      <div class="month-card">
+        <div class="month-name">Juin</div>
+        <div class="row"><span>Travaillées</span><span>95:00</span></div>
+        <div class="row"><span>Dues</span><span>100:00</span></div>
+        <div class="row"><span>Solde</span><span style="font-weight: 600; color: var(--neg);">−5:00</span></div>
+      </div>
+      <div class="month-card ytd-card">
+        <div class="month-name">YTD TOTAL 2026</div>
+        <div class="row"><span>Travaillées</span><span>832:00</span></div>
+        <div class="row"><span>Dues</span><span>822:00</span></div>
+        <div class="row"><span>Solde</span><span style="font-weight: 700; color: var(--pos);">+10:00</span></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>État vide</h2>
+  <div class="card">
+    <header><h3>Bilan heures</h3><div class="year-picker"><button>‹</button><span class="year">2024</span><button>›</button></div></header>
+    <div style="padding: 32px; text-align: center; color: var(--muted);">
+      <div style="font-size: 32px; margin-bottom: 8px;">📊</div>
+      <p>Aucune saisie pour 2024.</p>
+    </div>
+  </div>
+
+  <h2>État loading (skeleton)</h2>
+  <div class="card">
+    <header><h3>Bilan heures</h3></header>
+    <div aria-busy="true">
+      <div style="height: 30px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; margin-bottom: 4px;"></div>
+      <div style="height: 30px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; margin-bottom: 4px;"></div>
+      <div style="height: 30px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px;"></div>
+    </div>
+  </div>
+
+  <h2>Accessibilité</h2>
+  <ul style="font-size: 13px; color: var(--muted);">
+    <li><code>&lt;table&gt;</code> avec <code>aria-label</code>.</li>
+    <li><code>scope="col"</code> sur tous les <code>&lt;th&gt;</code>.</li>
+    <li>Tri : <code>aria-sort="ascending|descending|none"</code> sur les colonnes triables.</li>
+    <li>Color coding accompagné d'un signe (+/−/0) pour les daltoniens.</li>
+    <li>Légende textuelle explique les couleurs.</li>
+    <li>Mobile : cards avec hiérarchie visuelle claire, rôle implicite acceptable.</li>
+    <li>Year picker : boutons avec <code>aria-label</code>.</li>
+  </ul>
+  <style>@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }</style>
+</body>
+</html>

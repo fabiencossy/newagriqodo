@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LeaveRequestList — Wireframe Phase 0</title>
+<style>
+  :root {
+    --primary: #2d5016; --bg: #fafaf7; --surface: #ffffff;
+    --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
+    --radius: 6px;
+    --pending: #f59e0b; --approved: #16a34a; --rejected: #dc2626;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .note { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px 20px; margin-bottom: 16px;
+  }
+  .card header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 12px; margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .card header h3 { margin: 0; font-size: 16px; }
+  .balance-pill {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 6px 12px; border-radius: 999px;
+    background: rgba(45,80,22,0.08); color: var(--primary);
+    font-size: 13px; font-weight: 500;
+  }
+
+  .filters {
+    display: flex; gap: 4px; padding: 4px; background: #f1f1ee; border-radius: var(--radius);
+    margin-bottom: 12px; flex-wrap: wrap;
+  }
+  .filters button {
+    height: 32px; padding: 0 12px; border: 0; background: transparent; cursor: pointer;
+    border-radius: 4px; font-size: 13px; color: var(--text);
+  }
+  .filters button[aria-pressed="true"] { background: var(--surface); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
+
+  .leave-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px; border: 1px solid var(--border); border-radius: var(--radius);
+    margin-bottom: 8px; background: var(--surface);
+  }
+  .leave-item:hover { background: #fbfbf9; }
+  .leave-item .dates { flex: 1; min-width: 0; }
+  .leave-item .dates .range { font-weight: 600; font-size: 14px; }
+  .leave-item .dates .reason { color: var(--muted); font-size: 13px; margin-top: 2px; }
+  .leave-item .days {
+    font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 8px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .badge.pending { background: rgba(245,158,11,0.12); color: #92400e; }
+  .badge.approved { background: rgba(22,163,74,0.12); color: #166534; }
+  .badge.rejected { background: rgba(220,38,38,0.12); color: #991b1b; }
+
+  /* Mobile cards layout (already vertical) */
+  @media (max-width: 540px) {
+    .leave-item { flex-direction: column; align-items: stretch; }
+    .leave-item .days { margin-top: 4px; }
+  }
+</style>
+</head>
+<body>
+  <h1>LeaveRequestList — Wireframe</h1>
+  <div class="note">Liste des congés synchronisés depuis Odoo (read-only). Filtre par statut. Solde annuel en haut. Manager comments masqués (vue employé).</div>
+
+  <h2>Desktop / Tablet</h2>
+  <div class="card">
+    <header>
+      <h3>Mes congés</h3>
+      <span class="balance-pill">🏖 12 j restants en 2026</span>
+    </header>
+
+    <div class="filters" role="tablist" aria-label="Filtrer par statut">
+      <button role="tab" aria-pressed="true">Tous (6)</button>
+      <button role="tab" aria-pressed="false">En attente (1)</button>
+      <button role="tab" aria-pressed="false">Approuvés (3)</button>
+      <button role="tab" aria-pressed="false">Refusés (1)</button>
+    </div>
+
+    <ul style="list-style: none; padding: 0; margin: 0;">
+      <li class="leave-item">
+        <div class="dates">
+          <div class="range">15 → 30 mai 2026</div>
+          <div class="reason">Vacances d'été</div>
+        </div>
+        <div class="days">12 j</div>
+        <span class="badge approved">Approuvé</span>
+      </li>
+      <li class="leave-item">
+        <div class="dates">
+          <div class="range">01 → 07 juin 2026</div>
+          <div class="reason">Conférence métier</div>
+        </div>
+        <div class="days">5 j</div>
+        <span class="badge pending">En attente</span>
+      </li>
+      <li class="leave-item">
+        <div class="dates">
+          <div class="range">12 → 14 août 2026</div>
+          <div class="reason">Raisons personnelles</div>
+        </div>
+        <div class="days">3 j</div>
+        <span class="badge rejected">Refusé</span>
+      </li>
+      <li class="leave-item">
+        <div class="dates">
+          <div class="range">23 → 26 décembre 2025</div>
+          <div class="reason">Fêtes de fin d'année</div>
+        </div>
+        <div class="days">4 j</div>
+        <span class="badge approved">Approuvé</span>
+      </li>
+    </ul>
+  </div>
+
+  <h2>Mobile (&lt; 540px)</h2>
+  <div class="card" style="max-width: 360px;">
+    <header>
+      <h3>Mes congés</h3>
+      <span class="balance-pill">🏖 12 j</span>
+    </header>
+    <div class="filters">
+      <button aria-pressed="true">Tous</button>
+      <button aria-pressed="false">En attente</button>
+      <button aria-pressed="false">Approuvés</button>
+    </div>
+    <ul style="list-style: none; padding: 0; margin: 0;">
+      <li class="leave-item">
+        <div class="dates">
+          <div class="range">15 → 30 mai 2026</div>
+          <div class="reason">Vacances d'été</div>
+        </div>
+        <div class="days">12 j</div>
+        <span class="badge approved" style="align-self: flex-start;">Approuvé</span>
+      </li>
+      <li class="leave-item">
+        <div class="dates">
+          <div class="range">01 → 07 juin 2026</div>
+          <div class="reason">Conférence métier</div>
+        </div>
+        <div class="days">5 j</div>
+        <span class="badge pending" style="align-self: flex-start;">En attente</span>
+      </li>
+    </ul>
+  </div>
+
+  <h2>État vide</h2>
+  <div class="card">
+    <header><h3>Mes congés</h3><span class="balance-pill">🏖 25 j restants</span></header>
+    <div style="padding: 32px; text-align: center; color: var(--muted);">
+      <div style="font-size: 32px; margin-bottom: 8px;">🌴</div>
+      <p style="margin: 0 0 4px; font-weight: 500; color: var(--text);">Aucune demande pour le moment</p>
+      <p style="margin: 0; font-size: 13px;">Les demandes se font dans Odoo. Elles apparaîtront ici une fois soumises.</p>
+    </div>
+  </div>
+
+  <h2>État loading</h2>
+  <div class="card" aria-busy="true">
+    <header><h3>Mes congés</h3></header>
+    <div style="height: 60px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; margin-bottom: 8px;"></div>
+    <div style="height: 60px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; margin-bottom: 8px;"></div>
+    <div style="height: 60px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px;"></div>
+  </div>
+
+  <h2>Sync Odoo indisponible</h2>
+  <div class="card">
+    <header><h3>Mes congés</h3></header>
+    <div style="padding: 20px; text-align: center; background: #fef3c7; border-radius: var(--radius); color: #78350f;">
+      <div style="font-size: 24px;">⚠</div>
+      <p style="margin: 4px 0 0; font-size: 14px;">Sync RH temporairement indisponible. Données du <strong>14/05/2026 à 18:00</strong>.</p>
+    </div>
+  </div>
+
+  <h2>Accessibilité</h2>
+  <ul style="font-size: 13px; color: var(--muted);">
+    <li>Liste : <code>&lt;ul&gt;</code> sémantique.</li>
+    <li>Filtres : <code>role="tablist"</code> + <code>aria-pressed</code>.</li>
+    <li>Badges statut : texte explicite (pas couleur seule).</li>
+    <li>Solde annuel mis en évidence (pill).</li>
+    <li>État loading : <code>aria-busy</code>.</li>
+    <li>Manager comments : <strong>masqués</strong> (décision : vue employé seulement).</li>
+    <li>Read-only : aucun bouton "modifier" / "annuler" (sync depuis Odoo).</li>
+  </ul>
+  <style>@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }</style>
+</body>
+</html>

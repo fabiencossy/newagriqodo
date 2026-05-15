@@ -66,6 +66,8 @@ export function MapView({
   /* ---------- Init carte ---------- */
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
+
+    console.log('[MapView] init', { center, zoom, basemap });
     const map = new maplibregl.Map({
       container: containerRef.current,
       style: BASEMAP_STYLES[basemap],
@@ -76,20 +78,33 @@ export function MapView({
       interactive,
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-    // mapReady : on déclenche au premier styledata (style appliqué, sans attendre
-    // qu'une tuile soit chargée — sinon écran "Chargement..." bloque indéfiniment
-    // si les tuiles sont lentes ou échouent).
-    map.once('styledata', () => setMapReady(true));
+
+    // Debug : tracer toutes les erreurs de tile et load
+
+    map.on('error', (e) => console.warn('[MapView] error', e));
+
+    map.on('load', () => console.log('[MapView] load OK'));
+
+    map.on('idle', () => console.log('[MapView] idle (tiles loaded)'));
+
     map.on('styledata', () => {
       if (mapRef.current === map) setStyleVersion((v) => v + 1);
     });
+
     mapRef.current = map;
+    // Set ready immédiatement — la map existe, les effects dépendants peuvent tourner.
+    // Ceux qui ont besoin du style chargé vérifient `map.isStyleLoaded()` ou
+    // s'abonnent à 'idle'/'styledata' en interne.
+    setMapReady(true);
 
     // ResizeObserver : forcer map.resize() à chaque changement de taille du container.
-    // Sans ça la carte reste blanche si le container avait taille 0 au mount initial
-    // (cas typique : view='map' arrive après que d'autres vues aient rendu).
-    const ro = new ResizeObserver(() => map.resize());
+    const ro = new ResizeObserver(() => {
+      map.resize();
+    });
     ro.observe(containerRef.current);
+
+    // Resize initial juste après mount (au cas où le container a 0 px à la création)
+    requestAnimationFrame(() => map.resize());
 
     return () => {
       ro.disconnect();
@@ -289,7 +304,7 @@ export function MapView({
       ].join(' ')}
       style={{ height }}
     >
-      <div ref={containerRef} className="absolute inset-0" />
+      <div ref={containerRef} className="absolute inset-0 bg-[#e5e3df]" />
 
       {/* Toolbar latérale gauche (cachée si aucun outil enabled) */}
       {enabledTools.length > 0 && (
@@ -369,16 +384,6 @@ export function MapView({
 
       {/* Toggle basemap (haut-droite) — bouton unique avec dropdown Satellite/Topo */}
       {showBasemapToggle && <BasemapPicker basemap={basemap} onChange={setBasemap} />}
-
-      {/* État loading : spinner subtil en haut au lieu d'un overlay bloquant */}
-      {!mapReady && (
-        <div className="pointer-events-none absolute top-1/2 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
-          <span
-            aria-label="Chargement de la carte"
-            className="inline-block h-6 w-6 animate-spin rounded-(--radius-pill) border-2 border-(--color-primary) border-r-transparent"
-          />
-        </div>
-      )}
     </div>
   );
 }

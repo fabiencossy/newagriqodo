@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { ChevronDownIcon, FilterIcon, SearchIcon } from './icons';
+import { ChevronDownIcon, SearchIcon } from './icons';
 import { Facet } from './Facet';
 import { FiltersDropdown } from './FiltersDropdown';
 import { SuggestionsList, type FieldSuggestion } from './SuggestionsList';
@@ -153,59 +153,52 @@ export function SearchBar({
 
   const isDark = theme === 'dark';
   const hasFilters = value.facets.length > 0;
-  const showSuggestions = suggestionsOpen && query.trim().length > 0;
+  // Logique : query non vide → suggestions ; query vide → dropdown 3 colonnes
+  const trimmedQuery = query.trim();
+  const showSuggestions = suggestionsOpen && trimmedQuery.length > 0;
+  const showDropdown = dropdownOpen && trimmedQuery.length === 0;
+
+  /* Clic n'importe où dans la barre (hors actions internes) : focus input + ouvre dropdown. */
+  const handleBarClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (disabled) return;
+      const target = e.target as HTMLElement;
+      // Ignorer les clics sur les actions internes (boutons facet remove, chevron)
+      if (target.closest('[data-sb-action]')) return;
+      inputRef.current?.focus();
+      setDropdownOpen(true);
+    },
+    [disabled],
+  );
 
   return (
-    <div ref={containerRef} className={['relative', className ?? ''].join(' ')}>
+    <div ref={containerRef} className={['relative w-full', className ?? ''].join(' ')}>
       <div
         role="search"
         aria-label={ariaLabel}
+        onClick={handleBarClick}
         className={[
           'flex h-9 items-stretch overflow-hidden rounded-(--radius) border transition-colors',
           isDark
             ? 'border-[#2d343d] bg-[#1f242b] text-[#e8eaed]'
             : 'border-(--color-border) bg-(--color-surface) text-(--color-text)',
-          disabled ? 'opacity-50' : '',
+          disabled ? 'opacity-50' : 'cursor-text',
+          hasFilters ? (isDark ? 'border-(--color-accent)/60' : 'border-(--color-accent)/40') : '',
           'focus-within:border-(--color-primary) focus-within:ring-2 focus-within:ring-(--color-primary)/15',
         ].join(' ')}
       >
-        {/* Lead : loupe + entonnoir */}
+        {/* Lead : icône loupe (décorative) */}
         <div
           className={[
-            'inline-flex items-center gap-1 border-r px-2',
-            isDark
-              ? 'border-[#3a414b] text-[#8a93a0]'
-              : 'border-(--color-border) text-(--color-muted)',
+            'inline-flex items-center px-2.5',
+            isDark ? 'text-[#8a93a0]' : 'text-(--color-muted)',
           ].join(' ')}
         >
-          <button
-            type="button"
-            onClick={() => inputRef.current?.focus()}
-            aria-label="Rechercher"
-            disabled={disabled}
-            className="inline-flex h-[26px] w-[26px] items-center justify-center rounded-(--radius-sm) hover:bg-black/5 hover:text-(--color-text)"
-          >
-            <SearchIcon />
-          </button>
-          <button
-            type="button"
-            aria-label="Filtres"
-            aria-pressed={hasFilters}
-            disabled={disabled}
-            onClick={() => setDropdownOpen((o) => !o)}
-            className={[
-              'inline-flex h-[26px] w-[26px] items-center justify-center rounded-(--radius-sm)',
-              hasFilters
-                ? 'bg-(--color-accent)/10 text-(--color-accent)'
-                : 'hover:bg-black/5 hover:text-(--color-text)',
-            ].join(' ')}
-          >
-            <FilterIcon />
-          </button>
+          <SearchIcon size={16} />
         </div>
 
         {/* Mid : facets + input */}
-        <div className="flex min-w-0 flex-1 items-center gap-1.5 px-2">
+        <div className="flex min-w-0 flex-1 items-center gap-1.5 pr-2">
           {value.facets.map((f) => (
             <Facet
               key={f.id}
@@ -239,11 +232,15 @@ export function SearchBar({
         {/* Tail : chevron */}
         <button
           type="button"
+          data-sb-action="toggle-dropdown"
           aria-haspopup="menu"
           aria-expanded={dropdownOpen}
           aria-label="Ouvrir filtres et favoris"
           disabled={disabled}
-          onClick={() => setDropdownOpen((o) => !o)}
+          onClick={(e) => {
+            e.stopPropagation();
+            setDropdownOpen((o) => !o);
+          }}
           className={[
             'inline-flex items-center border-l px-2.5',
             isDark
@@ -258,10 +255,10 @@ export function SearchBar({
         </button>
       </div>
 
-      {/* Suggestions (au-dessus du dropdown si les deux ouverts) */}
-      {showSuggestions && !dropdownOpen && (
+      {/* Suggestions (priorité quand l'utilisateur saisit du texte) */}
+      {showSuggestions && (
         <SuggestionsList
-          query={query.trim()}
+          query={trimmedQuery}
           fields={fields}
           focusedIndex={focusedSuggestion}
           onSelect={handleSuggestionSelect}
@@ -269,8 +266,8 @@ export function SearchBar({
         />
       )}
 
-      {/* Dropdown 3 colonnes */}
-      {dropdownOpen && (
+      {/* Dropdown 3 colonnes (visible quand pas de query active) */}
+      {showDropdown && (
         <FiltersDropdown
           fields={fields}
           state={value}

@@ -96,21 +96,6 @@ export default function App() {
 
       <section className="mt-6 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">
         <h2 className="mb-4 text-xs font-medium tracking-wider text-(--color-muted) uppercase">
-          SearchBar (variante dark)
-        </h2>
-        <div className="rounded-(--radius) bg-[#2a3038] p-4">
-          <SearchBar
-            fields={PARCEL_FIELDS}
-            value={searchState}
-            onChange={setSearchState}
-            theme="dark"
-            ariaLabel="Rechercher (dark)"
-          />
-        </div>
-      </section>
-
-      <section className="mt-6 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">
-        <h2 className="mb-4 text-xs font-medium tracking-wider text-(--color-muted) uppercase">
           ViewSwitcher (auto)
         </h2>
         <ViewSwitcher views={['table', 'map', 'dashboard']} activeView={view} onChange={setView} />

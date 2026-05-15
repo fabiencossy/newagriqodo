@@ -21,6 +21,7 @@ export function Facet({ facet, field, onRemove, theme }: FacetProps) {
       <span>{label}</span>
       <button
         type="button"
+        data-sb-action="remove-facet"
         onClick={onRemove}
         aria-label={`Retirer ${label}`}
         className="inline-flex h-[18px] w-[18px] items-center justify-center rounded-(--radius-sm) text-white hover:bg-black/20"

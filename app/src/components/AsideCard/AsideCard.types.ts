@@ -49,6 +49,11 @@ export interface AsideCardProps<T extends Record<string, unknown> = Record<strin
   onClose: () => void;
   onSave?: (data: T) => Promise<void> | void;
   onModeChange?: (mode: 'view' | 'edit') => void;
+  /**
+   * Si fourni, le bouton "crayon" ne passe plus en édition inline mais déclenche
+   * ce callback (typiquement pour ouvrir une page de détail complète).
+   */
+  onEdit?: () => void;
   actions?: AsideCardAction[];
   loading?: boolean;
   width?: string;

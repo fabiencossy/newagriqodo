@@ -44,9 +44,9 @@ export function AppLayout() {
         {/* Sidebar desktop (toujours visible) */}
         {isDesktop && <Sidebar />}
 
-        {/* Drawer mobile (overlay) */}
+        {/* Drawer mobile (overlay) — z-[1100] pour passer au-dessus de Leaflet (panes ~700). */}
         {!isDesktop && drawerOpen && (
-          <div className="fixed inset-0 z-40 flex">
+          <div className="fixed inset-0 z-[1100] flex">
             <div
               className="absolute inset-0 bg-black/40"
               onClick={() => setDrawerOpen(false)}

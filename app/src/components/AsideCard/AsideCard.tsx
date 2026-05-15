@@ -28,6 +28,28 @@ function EditIcon() {
   );
 }
 
+function ExpandIcon() {
+  return (
+    <svg {...BASE} width={16} height={16} aria-hidden="true">
+      <path d="M3 9V3h6" />
+      <path d="M21 9V3h-6" />
+      <path d="M3 15v6h6" />
+      <path d="M21 15v6h-6" />
+    </svg>
+  );
+}
+
+function CollapseIcon() {
+  return (
+    <svg {...BASE} width={16} height={16} aria-hidden="true">
+      <path d="M9 3v6H3" />
+      <path d="M15 3v6h6" />
+      <path d="M9 21v-6H3" />
+      <path d="M15 21v-6h6" />
+    </svg>
+  );
+}
+
 export function AsideCard<T extends Record<string, unknown>>({
   title,
   subtitle,
@@ -38,6 +60,7 @@ export function AsideCard<T extends Record<string, unknown>>({
   onClose,
   onSave,
   onModeChange,
+  onEdit,
   actions = [],
   loading = false,
   width = ASIDE_CARD_DEFAULTS.width,
@@ -59,6 +82,8 @@ export function AsideCard<T extends Record<string, unknown>>({
   // Draft d'édition : null en mode view, snapshot de `data` en mode edit
   const [draft, setDraft] = useState<T | null>(null);
   const [saving, setSaving] = useState(false);
+  // Plein écran sur bottomsheet (mobile)
+  const [expanded, setExpanded] = useState(false);
 
   // Esc pour fermer
   useEffect(() => {
@@ -69,8 +94,13 @@ export function AsideCard<T extends Record<string, unknown>>({
     return () => document.removeEventListener('keydown', onKey);
   }, [onClose]);
 
-  // Entrée en mode édition → snapshot data dans le draft
+  // Entrée en mode édition → snapshot data dans le draft.
+  // Si onEdit est fourni, on délègue à l'appelant (ex. navigation vers page de détail).
   const handleEnterEdit = () => {
+    if (onEdit) {
+      onEdit();
+      return;
+    }
     setDraft(data);
     onModeChange?.('edit');
   };
@@ -104,7 +134,9 @@ export function AsideCard<T extends Record<string, unknown>>({
     'flex flex-col bg-(--color-surface) border-(--color-border) overflow-hidden min-w-0',
     resolvedLayout === 'aside'
       ? 'h-full border-l'
-      : 'fixed inset-x-0 bottom-0 z-50 max-h-[85vh] rounded-t-(--radius-lg) border-t shadow-(--shadow-popup)',
+      : expanded
+        ? 'fixed inset-0 z-[1100] rounded-none border-0 shadow-(--shadow-popup)'
+        : 'fixed inset-x-0 bottom-0 z-[1000] max-h-[85vh] rounded-t-(--radius-lg) border-t shadow-(--shadow-popup)',
   ].join(' ');
 
   const containerStyle: React.CSSProperties = {
@@ -121,11 +153,16 @@ export function AsideCard<T extends Record<string, unknown>>({
       style={containerStyle}
       className={[containerClasses, className ?? ''].join(' ')}
     >
-      {/* Handle bottom sheet */}
+      {/* Handle bottom sheet — drag pour expand/collapse */}
       {resolvedLayout === 'bottomsheet' && (
-        <div className="flex justify-center pt-2 pb-1">
+        <button
+          type="button"
+          onClick={() => setExpanded((e) => !e)}
+          aria-label={expanded ? 'Réduire' : 'Agrandir'}
+          className="flex w-full justify-center pt-2 pb-1"
+        >
           <span className="block h-1 w-9 rounded-(--radius-pill) bg-(--color-border)" />
-        </div>
+        </button>
       )}
 
       {/* Header */}
@@ -142,6 +179,16 @@ export function AsideCard<T extends Record<string, unknown>>({
             className="inline-flex h-9 w-9 items-center justify-center rounded-(--radius-sm) text-(--color-text) hover:bg-[#f1f1ee]"
           >
             <EditIcon />
+          </button>
+        )}
+        {resolvedLayout === 'bottomsheet' && (
+          <button
+            type="button"
+            onClick={() => setExpanded((e) => !e)}
+            aria-label={expanded ? 'Réduire' : 'Agrandir'}
+            className="inline-flex h-9 w-9 items-center justify-center rounded-(--radius-sm) text-(--color-text) hover:bg-[#f1f1ee]"
+          >
+            {expanded ? <CollapseIcon /> : <ExpandIcon />}
           </button>
         )}
         <button

@@ -8,7 +8,7 @@ import { useFab } from './useFab';
  * Si aucune action : caché.
  */
 export function Fab() {
-  const { actions } = useFab();
+  const { actions, hidden } = useFab();
   const [open, setOpen] = useState(false);
 
   // Esc pour fermer
@@ -21,7 +21,15 @@ export function Fab() {
     return () => document.removeEventListener('keydown', onKey);
   }, [open]);
 
-  if (actions.length === 0) return null;
+  // Si la page masque le FAB (ex. bottom sheet ouverte), on dérive `open` à false
+  // sans setState dans un effet (et on reset l'intent au moment du flip).
+  const [prevHidden, setPrevHidden] = useState(hidden);
+  if (hidden !== prevHidden) {
+    setPrevHidden(hidden);
+    if (hidden && open) setOpen(false);
+  }
+
+  if (actions.length === 0 || hidden) return null;
 
   return (
     <>
@@ -33,7 +41,7 @@ export function Fab() {
         aria-label={open ? 'Fermer le menu' : 'Ouvrir le menu des actions'}
         onClick={() => setOpen((o) => !o)}
         className={[
-          'fixed right-5 bottom-5 z-30 inline-flex h-14 w-14 items-center justify-center',
+          'fixed right-5 bottom-5 z-[1050] inline-flex h-14 w-14 items-center justify-center',
           'rounded-(--radius-pill) border border-(--color-primary) bg-(--color-primary) text-white',
           'shadow-(--shadow-fab) transition-all hover:scale-105',
           open ? 'rotate-45' : '',
@@ -48,7 +56,7 @@ export function Fab() {
         <>
           {/* Backdrop */}
           <div
-            className="fixed inset-0 z-40 animate-[fadeIn_180ms_ease-out] bg-black/40 backdrop-blur-sm"
+            className="fixed inset-0 z-[1100] animate-[fadeIn_180ms_ease-out] bg-black/40 backdrop-blur-sm"
             onClick={() => setOpen(false)}
             aria-hidden="true"
           />
@@ -59,7 +67,7 @@ export function Fab() {
             aria-modal="true"
             aria-label="Actions rapides"
             className={[
-              'fixed inset-x-0 bottom-0 z-50',
+              'fixed inset-x-0 bottom-0 z-[1110]',
               'mx-auto max-w-2xl',
               'rounded-t-(--radius-lg) border-t border-(--color-border)',
               'bg-(--color-surface) shadow-(--shadow-popup)',

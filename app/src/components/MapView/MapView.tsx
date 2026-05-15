@@ -133,7 +133,9 @@ export function MapView({
     tileLayerRef.current = newLayer;
   }, [basemap]);
 
-  /* ---------- Layer parcelles (GeoJSON) ---------- */
+  /* ---------- Layer parcelles (GeoJSON) — créé une seule fois par jeu de parcelles
+       pour éviter de détruire/reconstruire (et faire trembler les labels) à chaque
+       changement de sélection. La sélection est ré-appliquée dans un effet séparé. ---------- */
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -150,50 +152,100 @@ export function MapView({
       type: 'FeatureCollection',
       features: parcels.map((p) => ({
         type: 'Feature',
-        properties: { id: p.id, name: p.name, surface: p.surfaceHa },
+        properties: { id: p.id, name: p.name, surface: p.surfaceHa, color: p.color },
         geometry: p.geometry,
       })),
     };
 
     const layer = L.geoJSON(featureCollection, {
       style: (feature) => {
-        const id = feature?.properties?.id as string;
-        const isSelected = effectiveSelectedIds.includes(id);
-        const parcel = parcels.find((p) => p.id === id);
+        const baseColor = (feature?.properties?.color as string | undefined) ?? '#f4a261';
         return {
-          color: isSelected ? '#2d5016' : '#1a1a1a',
-          weight: isSelected ? 3 : 1.5,
-          fillColor: isSelected ? '#2d5016' : (parcel?.color ?? '#f4a261'),
-          fillOpacity: isSelected ? 0.55 : 0.35,
+          color: baseColor,
+          weight: 3,
+          opacity: 1,
+          fillColor: baseColor,
+          fillOpacity: 0.6,
         };
       },
       onEachFeature: (feature, layerInstance) => {
         const id = feature.properties?.id as string;
         const name = feature.properties?.name as string;
-        // Label au centre
         layerInstance.bindTooltip(name, {
           permanent: true,
           direction: 'center',
           className: 'qodo-parcel-label',
         });
-        // Clic = sélection
         layerInstance.on('click', (e) => {
           const orig = e.originalEvent as MouseEvent;
           const multi = orig.shiftKey || orig.metaKey;
+          const ref = selectionRef.current;
           if (multi) {
-            const next = effectiveSelectedIds.includes(id)
-              ? effectiveSelectedIds.filter((s) => s !== id)
-              : [...effectiveSelectedIds, id];
-            onSelectionChange(next);
+            const next = ref.includes(id) ? ref.filter((s) => s !== id) : [...ref, id];
+            onSelectionRef.current(next);
           } else {
-            onSelectionChange([id]);
+            onSelectionRef.current([id]);
           }
         });
       },
     });
     layer.addTo(map);
     parcelLayerRef.current = layer;
-  }, [parcels, effectiveSelectedIds, onSelectionChange]);
+  }, [parcels]);
+
+  /* ---------- Refs : selection courante + callback (évite recréer le layer) ---------- */
+  // Refs synchronisées via effet pour donner aux handlers Leaflet (closures
+  // attachées une seule fois au layer GeoJSON) l'accès aux valeurs fraîches,
+  // sans recréer le layer (qui ferait trembler les labels permanents).
+  const selectionRef = useRef<string[]>([]);
+  const onSelectionRef = useRef(onSelectionChange);
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/immutability
+    selectionRef.current = effectiveSelectedIds;
+    // eslint-disable-next-line react-hooks/immutability
+    onSelectionRef.current = onSelectionChange;
+  });
+
+  /* ---------- Restyle au changement de sélection (sans recréer le layer) ---------- */
+  useEffect(() => {
+    const layer = parcelLayerRef.current;
+    if (!layer) return;
+    layer.eachLayer((sub) => {
+      const feature = (sub as L.GeoJSON & { feature?: GeoJSON.Feature }).feature;
+      if (!feature) return;
+      const id = feature.properties?.id as string;
+      const baseColor = (feature.properties?.color as string | undefined) ?? '#f4a261';
+      const isSelected = effectiveSelectedIds.includes(id);
+      (sub as L.Path).setStyle({
+        color: isSelected ? '#ffffff' : baseColor,
+        weight: isSelected ? 4 : 3,
+        opacity: 1,
+        fillColor: isSelected ? '#2d5016' : baseColor,
+        fillOpacity: isSelected ? 0.7 : 0.6,
+      });
+    });
+  }, [effectiveSelectedIds]);
+
+  /* ---------- Labels : font-size selon zoom, masqués si dézoomé trop fort ---------- */
+  useEffect(() => {
+    const map = mapRef.current;
+    const container = containerRef.current;
+    if (!map || !container) return;
+
+    const HIDE_BELOW_ZOOM = 15;
+    const update = () => {
+      const z = map.getZoom();
+      // 14 → 0px (masqué), 15 → 11px, 16 → 13px, 17 → 15px, 18 → 17px, 19 → 19px, 20+ → 21px
+      const size = z < HIDE_BELOW_ZOOM ? 0 : Math.min(21, 9 + (z - HIDE_BELOW_ZOOM) * 2);
+      container.style.setProperty('--qodo-label-size', `${size}px`);
+      container.classList.toggle('qodo-labels-hidden', z < HIDE_BELOW_ZOOM);
+    };
+    update();
+    map.on('zoomend', update);
+    return () => {
+      map.off('zoomend', update);
+    };
+  }, [parcels]);
 
   /* ---------- Auto-fit aux parcelles (une seule fois) ---------- */
   useEffect(() => {

@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
-import { useFabActions } from '../../layouts/useFab';
+import { useNavigate } from 'react-router-dom';
+import { useFabActions, useHideFab } from '../../layouts/useFab';
+import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { SearchBar, type FieldDescriptor, type SearchState } from '../../components/SearchBar';
 import { ViewSwitcher, type ViewKey } from '../../components/ViewSwitcher';
 import { ExportButton, type ExportColumn } from '../../components/ExportButton';
@@ -78,16 +80,21 @@ const ASIDE_FIELDS: FieldConfig[] = [
     ],
   },
   { key: 'varietyName', label: 'Variété', type: 'text' },
-  { key: 'sowingDate', label: 'Date semis', type: 'date' },
   { key: 'notes', label: 'Notes', type: 'textarea' },
 ];
 
 export default function ParcellairePage() {
+  const navigate = useNavigate();
+  const isDesktop = useIsDesktop();
   const [view, setView] = useState<ViewKey>('map');
   const [searchState, setSearchState] = useState<SearchState>({ facets: [], groupBy: [] });
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const [parcels, setParcels] = useState<ParcelDetail[]>(PARCELLES);
   const [asideMode, setAsideMode] = useState<'view' | 'edit'>('view');
+
+  // Masque le FAB sur mobile quand le bottom sheet de sélection est ouvert
+  // (sinon le `+` chevauche le bouton Enregistrer du sheet).
+  useHideFab(!isDesktop && Boolean(selectedId));
 
   const filtered = useMemo(() => filterParcels(parcels, searchState), [parcels, searchState]);
   const selected = useMemo(
@@ -104,30 +111,59 @@ export default function ParcellairePage() {
     setAsideMode('view');
   };
 
-  // FAB contextuel — actions principales de la page Parcellaire
+  // FAB contextuel : actions changent selon qu'une parcelle est sélectionnée ou non
   useFabActions(
-    useMemo(
-      () => [
+    useMemo(() => {
+      if (selectedId) {
+        // Actions contextuelles à la parcelle sélectionnée
+        return [
+          {
+            id: 'open-fiche',
+            label: 'Ouvrir la fiche',
+            onClick: () => navigate(`/parcellaire/${selectedId}`),
+          },
+          {
+            id: 'add-intervention',
+            label: 'Ajouter une intervention',
+            onClick: () => {
+              alert(`Ajouter une intervention sur ${selectedId} (Carnet des champs — Phase 2.5).`);
+            },
+          },
+          {
+            id: 'view-carnet',
+            label: 'Voir le Carnet des champs',
+            onClick: () => {
+              alert(`Carnet des champs pour ${selectedId} (Phase 2.5).`);
+            },
+          },
+          {
+            id: 'add-observation',
+            label: 'Ajouter une observation',
+            onClick: () => {
+              alert(`Marker observation sur ${selectedId} (Phase 2.5).`);
+            },
+          },
+        ];
+      }
+      // Pas de sélection : actions de création
+      return [
         {
           id: 'nouvelle-parcelle',
-          label: 'Nouvelle parcelle',
+          label: 'Nouvelle parcelle (dessin)',
           onClick: () => {
             setView('map');
-            // En Phase suivante : activer l'outil draw-parcel sur la map
-
             alert("Active l'outil de dessin sur la carte (à brancher Phase 2.5).");
           },
         },
         {
-          id: 'ajouter-intervention',
-          label: 'Ajouter une intervention',
+          id: 'import-geojson',
+          label: 'Importer (GeoJSON / Shapefile)',
           onClick: () => {
-            alert("Création d'une intervention (à brancher Phase 2.5).");
+            alert('Import GELAN / Acorda (à brancher Phase 2.5 avec shpjs).');
           },
         },
-      ],
-      [],
-    ),
+      ];
+    }, [selectedId, navigate]),
   );
 
   const viewSwitcher = (
@@ -210,6 +246,7 @@ export default function ParcellairePage() {
                 mode={asideMode}
                 onModeChange={setAsideMode}
                 editable
+                onEdit={() => navigate(`/parcellaire/${selected.id}`)}
                 onClose={() => setSelectedId(undefined)}
                 onSave={handleSaveAside}
                 layout="aside"
@@ -218,7 +255,7 @@ export default function ParcellairePage() {
             </div>
           )}
           {selected && (
-            <div className="fixed inset-x-0 bottom-0 z-40 lg:hidden">
+            <div className="fixed inset-x-0 bottom-0 z-[1000] lg:hidden">
               <AsideCard
                 title={`${selected.id} — ${selected.name}`}
                 subtitle="Sélection courante"
@@ -227,6 +264,7 @@ export default function ParcellairePage() {
                 mode={asideMode}
                 onModeChange={setAsideMode}
                 editable
+                onEdit={() => navigate(`/parcellaire/${selected.id}`)}
                 onClose={() => setSelectedId(undefined)}
                 onSave={handleSaveAside}
                 layout="bottomsheet"

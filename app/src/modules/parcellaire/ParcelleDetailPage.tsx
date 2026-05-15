@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageContainer } from '../_shared/PageContainer';
 import { MapView } from '../../components/MapView';
-import { useFabActions } from '../../layouts/useFab';
+import { useFabActions, useHideFab } from '../../layouts/useFab';
 import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
 
 /** URL Google Maps en mode itinéraire vers le centroïde de la parcelle. */
@@ -52,33 +52,34 @@ export default function ParcelleDetailPage() {
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
 
-  // FAB contextuel : actions disponibles sur la fiche parcelle
-  useFabActions(
-    useMemo(() => {
-      if (!draft) return [];
-      return [
-        {
-          id: 'gmaps',
-          label: 'Itinéraire (Google Maps)',
-          onClick: () => window.open(googleMapsDirUrl(draft), '_blank', 'noopener'),
+  // FAB contextuel : actions disponibles sur la fiche parcelle.
+  // (Affichées dans le header `PageContainer` via `actions` ci-dessous pour ne pas
+  // chevaucher le bouton Enregistrer du footer sticky.)
+  useFabActions(useMemo(() => [], []));
+  // Masque le FAB sur cette page : le footer sticky d'enregistrement prime.
+  useHideFab(true);
+
+  const headerActions = useMemo(() => {
+    if (!draft) return undefined;
+    return [
+      {
+        label: 'Itinéraire',
+        onClick: () => window.open(googleMapsDirUrl(draft), '_blank', 'noopener'),
+      },
+      {
+        label: 'Intervention',
+        onClick: () => {
+          alert("Création d'une intervention (à brancher Phase 2.5 avec le Carnet).");
         },
-        {
-          id: 'add-intervention',
-          label: 'Ajouter une intervention',
-          onClick: () => {
-            alert("Création d'une intervention (à brancher Phase 2.5 avec le Carnet).");
-          },
+      },
+      {
+        label: 'Dupliquer',
+        onClick: () => {
+          alert('Duplication de parcelle (à brancher Phase 2.5).');
         },
-        {
-          id: 'duplicate',
-          label: 'Dupliquer la parcelle',
-          onClick: () => {
-            alert('Duplication de parcelle (à brancher Phase 2.5).');
-          },
-        },
-      ];
-    }, [draft]),
-  );
+      },
+    ];
+  }, [draft]);
 
   if (!initial || !draft) {
     return (
@@ -142,6 +143,20 @@ export default function ParcelleDetailPage() {
           >
             {STATUS_LABELS[draft.status]}
           </span>
+        )}
+        {headerActions && headerActions.length > 0 && (
+          <div className="flex w-full flex-wrap gap-2 sm:ml-auto sm:w-auto">
+            {headerActions.map((a) => (
+              <button
+                key={a.label}
+                type="button"
+                onClick={a.onClick}
+                className="inline-flex h-9 items-center rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium hover:bg-[#f8f8f5]"
+              >
+                {a.label}
+              </button>
+            ))}
+          </div>
         )}
       </header>
 
@@ -237,16 +252,12 @@ export default function ParcelleDetailPage() {
                 className={inputClass}
               />
             </Field>
-            <Field label="Date de semis" htmlFor="f-sow">
-              <input
-                id="f-sow"
-                type="date"
-                value={draft.sowingDate ?? ''}
-                onChange={(e) => setField('sowingDate', e.target.value)}
-                className={inputClass}
-              />
-            </Field>
           </div>
+          <p className="mt-3 text-xs text-(--color-muted)">
+            La date de semis et l'historique de culture seront gérés depuis le module
+            <span className="font-medium"> Plan d'assolement</span> (à venir). Les couleurs des
+            parcelles sur la carte refléteront l'assolement courant (instant T).
+          </p>
         </section>
 
         {/* Notes */}

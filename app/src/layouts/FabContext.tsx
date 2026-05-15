@@ -15,6 +15,8 @@ export interface FabAction {
 export interface FabContextValue {
   actions: FabAction[];
   setActions: (actions: FabAction[]) => void;
+  hidden: boolean;
+  setHidden: (hidden: boolean) => void;
 }
 
 // eslint-disable-next-line react-refresh/only-export-components
@@ -22,7 +24,12 @@ export const FabContext = createContext<FabContextValue | null>(null);
 
 export function FabProvider({ children }: { children: React.ReactNode }) {
   const [actions, setActionsState] = useState<FabAction[]>([]);
+  const [hidden, setHiddenState] = useState(false);
   const setActions = useCallback((next: FabAction[]) => setActionsState(next), []);
-  const value = useMemo(() => ({ actions, setActions }), [actions, setActions]);
+  const setHidden = useCallback((next: boolean) => setHiddenState(next), []);
+  const value = useMemo(
+    () => ({ actions, setActions, hidden, setHidden }),
+    [actions, setActions, hidden, setHidden],
+  );
   return <FabContext.Provider value={value}>{children}</FabContext.Provider>;
 }

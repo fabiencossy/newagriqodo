@@ -21,3 +21,15 @@ export function useFabActions(actions: FabAction[]): void {
     return () => setActions([]);
   }, [actions, setActions]);
 }
+
+/**
+ * Masque le FAB tant que la page le veut (ex. quand un bottom sheet
+ * couvre la zone du FAB).
+ */
+export function useHideFab(shouldHide: boolean): void {
+  const { setHidden } = useFab();
+  useEffect(() => {
+    setHidden(shouldHide);
+    return () => setHidden(false);
+  }, [shouldHide, setHidden]);
+}

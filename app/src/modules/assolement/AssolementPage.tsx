@@ -144,31 +144,31 @@ export default function AssolementPage() {
 
   /* ============ Rendu ============ */
 
+  // Sélecteur année compact (juste l'année, label "Campagne" en aria).
   const yearSelect = (
-    <label className="inline-flex items-center gap-2 text-xs text-(--color-muted)">
-      Campagne
-      <select
-        value={year}
-        onChange={(e) => setYear(Number(e.target.value))}
-        className="rounded-(--radius-sm) border border-(--color-border) bg-(--color-surface) px-2 py-1 text-sm text-(--color-text)"
-      >
-        {years.map((y) => (
-          <option key={y} value={y}>
-            {y}
-          </option>
-        ))}
-      </select>
-    </label>
+    <select
+      aria-label="Campagne"
+      title="Campagne"
+      value={year}
+      onChange={(e) => setYear(Number(e.target.value))}
+      className="h-9 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-2 text-sm font-medium text-(--color-text) hover:bg-[#f8f8f5]"
+    >
+      {years.map((y) => (
+        <option key={y} value={y}>
+          {y}
+        </option>
+      ))}
+    </select>
   );
 
-  // Topbar identique en structure à ParcellairePage
+  // Topbar : SearchBar prend toute la place ; vues regroupées en dropdown.
   const topBar = (
     <div className="flex w-full items-center gap-2">
       <div className="hidden shrink-0 items-baseline gap-2 md:flex">
         <h1 className="m-0 truncate text-base font-semibold">Plan d'assolement</h1>
         <span className="truncate text-xs text-(--color-muted)">{summary}</span>
       </div>
-      <div className="min-w-0 flex-1 md:mx-auto md:max-w-[640px]">
+      <div className="min-w-0 flex-1">
         <SearchBar
           fields={FIELDS}
           value={searchState}
@@ -177,6 +177,7 @@ export default function AssolementPage() {
         />
       </div>
       <div className="shrink-0">{yearSelect}</div>
+      {/* Vues : segmented icônes seules sur mobile, icon+label sur desktop. */}
       <div className="shrink-0 md:hidden">
         <ViewSwitcher
           views={['map', 'timeline', 'table']}

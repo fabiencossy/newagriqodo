@@ -245,14 +245,6 @@ export default function ParcellairePage() {
     }, [selectedId, navigate]),
   );
 
-  const viewSwitcher = (
-    <ViewSwitcher
-      views={['map', 'table', 'dashboard']}
-      activeView={view}
-      onChange={setView}
-      layout="segmented"
-    />
-  );
   const exportBtn = (
     <ExportButton
       data={filtered as unknown as ReadonlyArray<Record<string, unknown>>}
@@ -282,8 +274,8 @@ export default function ParcellairePage() {
         <h1 className="m-0 truncate text-base font-semibold">Parcellaire</h1>
         <span className="truncate text-xs text-(--color-muted)">{summary}</span>
       </div>
-      {/* SearchBar prend la place disponible, centrée */}
-      <div className="min-w-0 flex-1 md:mx-auto md:max-w-[640px]">
+      {/* SearchBar prend toute la place restante */}
+      <div className="min-w-0 flex-1">
         <SearchBar
           fields={FIELDS}
           value={searchState}
@@ -291,7 +283,7 @@ export default function ParcellairePage() {
           ariaLabel="Rechercher dans le parcellaire"
         />
       </div>
-      {/* ViewSwitcher : icônes seules sur mobile, icon+label sur desktop */}
+      {/* Vues : segmented icônes seules sur mobile, icon+label sur desktop. */}
       <div className="shrink-0 md:hidden">
         <ViewSwitcher
           views={['map', 'table', 'dashboard']}
@@ -301,7 +293,14 @@ export default function ParcellairePage() {
           display="icon-only"
         />
       </div>
-      <div className="hidden shrink-0 md:block">{viewSwitcher}</div>
+      <div className="hidden shrink-0 md:block">
+        <ViewSwitcher
+          views={['map', 'table', 'dashboard']}
+          activeView={view}
+          onChange={setView}
+          layout="segmented"
+        />
+      </div>
       <div className="shrink-0">{exportBtn}</div>
     </div>
   );

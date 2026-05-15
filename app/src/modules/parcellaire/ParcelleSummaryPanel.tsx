@@ -2,11 +2,7 @@ import { useMemo } from 'react';
 import { DetailPanel } from '../../components/DetailPanel';
 import type { ParcelDetail } from './parcellaire.mocks';
 import { AssolementTimeline } from '../assolement/AssolementTimeline';
-import {
-  getActiveSegment,
-  getDominantCulture,
-  getSegmentsForParcelYear,
-} from '../assolement/assolement.helpers';
+import { getActiveSegment, getSegmentsForParcelYear } from '../assolement/assolement.helpers';
 import { cultureColor } from '../assolement/cultures';
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -35,7 +31,6 @@ export function ParcelleSummaryPanel({
   const year = parcel.year;
   const segments = useMemo(() => getSegmentsForParcelYear(parcel.id, year), [parcel.id, year]);
   const active = useMemo(() => getActiveSegment(parcel.id, TODAY), [parcel.id]);
-  const dominant = useMemo(() => getDominantCulture(parcel.id, year), [parcel.id, year]);
 
   // Mocks Phase 2.5
   const stade = mockStade(active?.culture);
@@ -60,21 +55,26 @@ export function ParcelleSummaryPanel({
     >
       {/* Assolement */}
       <Section title="Plan d'assolement" actionLabel="Voir le plan" onAction={onOpenAssolement}>
-        <div className="mb-3 grid grid-cols-2 gap-2">
-          <Mini
-            label="Aujourd'hui"
-            culture={active?.culture}
-            variety={active?.varietyName}
-            extra={
-              active ? `${fmtDate(active.startDate)} → ${fmtDate(active.endDate)}` : 'Aucun segment'
-            }
-          />
-          <Mini
-            label="Dominant"
-            culture={dominant?.culture}
-            variety={dominant?.segment.varietyName}
-            extra={dominant ? `${Math.round((dominant.days / 365) * 12)} mois` : '—'}
-          />
+        {/* Culture EN PLACE aujourd'hui — pas de "dominant" inutile. */}
+        <div className="mb-3 rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-2.5">
+          {active ? (
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <span
+                aria-hidden="true"
+                className="inline-block h-3 w-3 shrink-0 rounded-(--radius-pill)"
+                style={{ background: cultureColor(active.culture) }}
+              />
+              <span className="truncate">
+                {active.culture}
+                {active.varietyName ? ` · ${active.varietyName}` : ''}
+              </span>
+              <span className="ml-auto shrink-0 font-mono text-[11px] text-(--color-muted)">
+                {fmtDate(active.startDate)} → {fmtDate(active.endDate)}
+              </span>
+            </div>
+          ) : (
+            <p className="m-0 text-sm text-(--color-muted)">Aucune culture en place aujourd'hui.</p>
+          )}
         </div>
         <AssolementTimeline segments={segments} year={year} variant="detail" today={TODAY} />
       </Section>
@@ -192,44 +192,6 @@ function Section({
       </div>
       {children}
     </section>
-  );
-}
-
-function Mini({
-  label,
-  culture,
-  variety,
-  extra,
-}: {
-  label: string;
-  culture?: string;
-  variety?: string;
-  extra: string;
-}) {
-  return (
-    <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-2.5">
-      <div className="text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
-        {label}
-      </div>
-      <div className="mt-1 flex items-center gap-1.5 text-sm font-medium">
-        {culture ? (
-          <>
-            <span
-              aria-hidden="true"
-              className="inline-block h-2.5 w-2.5 rounded-(--radius-pill)"
-              style={{ background: cultureColor(culture) }}
-            />
-            <span className="truncate">
-              {culture}
-              {variety ? ` · ${variety}` : ''}
-            </span>
-          </>
-        ) : (
-          <span className="text-(--color-muted)">—</span>
-        )}
-      </div>
-      <div className="mt-0.5 truncate text-[11px] text-(--color-muted)">{extra}</div>
-    </div>
   );
 }
 

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { CheckIcon, ChevronRightIcon, FilterIcon, GroupIcon, StarIcon } from './icons';
 import {
   makeFacetId,
@@ -58,6 +59,7 @@ interface FiltersColumnProps {
 }
 
 function FiltersColumn({ fields, state, onChange }: FiltersColumnProps) {
+  const isDesktop = useIsDesktop();
   return (
     <div className="border-b border-(--color-border) py-1.5 sm:border-r sm:border-b-0">
       <ColumnHeader icon={<FilterIcon />} label="Filtres" />
@@ -65,7 +67,13 @@ function FiltersColumn({ fields, state, onChange }: FiltersColumnProps) {
         <p className="px-3.5 py-2 text-xs text-(--color-muted)">Aucun filtre disponible.</p>
       ) : (
         fields.map((field) => (
-          <FieldFilterItem key={field.id} field={field} state={state} onChange={onChange} />
+          <FieldFilterItem
+            key={field.id}
+            field={field}
+            state={state}
+            onChange={onChange}
+            defaultExpanded={isDesktop}
+          />
         ))
       )}
     </div>
@@ -76,10 +84,11 @@ interface FieldFilterItemProps {
   field: FieldDescriptor;
   state: SearchState;
   onChange: (state: SearchState) => void;
+  defaultExpanded: boolean;
 }
 
-function FieldFilterItem({ field, state, onChange }: FieldFilterItemProps) {
-  const [expanded, setExpanded] = useState(false);
+function FieldFilterItem({ field, state, onChange, defaultExpanded }: FieldFilterItemProps) {
+  const [expanded, setExpanded] = useState(defaultExpanded);
   const facetForField = state.facets.find((f) => f.fieldId === field.id);
 
   const toggleValue = (option: FilterOption) => {

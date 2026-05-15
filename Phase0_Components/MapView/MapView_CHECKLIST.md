@@ -1,61 +1,79 @@
-# MapView — Validation Checklist
+# MapView — Validation Checklist (v2 — outils étendus)
 
-**Composant** : 4/8
-**Statut** : ✅ Esquisse Phase 0 complétée
+**Composant** : 4/9
+**Statut** : ✅ Refonte avec toolbar enrichie
+
+## Outils ajoutés (suite au feedback)
+
+| Outil | Raccourci | Description |
+|---|---|---|
+| **Sélection** | `S` | Cliquer une parcelle / marker. Ctrl+clic pour ajouter à la sélection. |
+| **Lasso** | `L` | Tracer une zone → sélection multiple de parcelles. |
+| **Dessiner parcelle** | `P` | Polygone : clics pour ajouter sommets, double-clic pour fermer, Esc annule. |
+| **Ajouter point** | `M` | Pose un marker (intervention / observation / problème / note / custom). |
+| **Mesurer** | `R` | Trace une ligne ou un polygone → affiche distance / surface. |
+| **Grouper** | `G` | Action sur la sélection : crée un `ParcelGroup` (rotation, secteur, lot…). |
+| **Couches** | `Y` | Toggle visibilité : parcelles, markers, groupes, mesures, étiquettes. |
 
 ## Décisions prises
 
 | Question | Réponse |
 |---|---|
-| Tiles source | **Maplibre GL self-hosted** (URL placeholder dans `MAP_VIEW_DEFAULTS.styleUrl`). À provisionner sur VPS en Phase 1 (tile server MapTiler ou OpenMapTiles). Évite dépendance externe + coût API. |
-| Zoom min/max | **5 ↔ 20** (couvre vue région → parcelle individuelle). Configurable via `zoomRange`. |
-| Drawing | **Opt-in** via `drawingEnabled` (défaut `false`). Évite UI ambiguë côté lecture seule. Callback `onCreateNew(geometry)` côté parent. |
-| Couleur des parcelles | Générée depuis `culture` (palette interne, à définir Phase 1) ou override via `color`. |
-| Layout desktop | Map flexible + aside 320 px à droite (cohérent avec AsideCard). |
-| Layout mobile | Map plein écran + bottom sheet sur sélection (FAB pour création). |
+| Sélection multiple | Lasso + Ctrl+clic. Badge en bas-centre avec actions contextuelles. |
+| Groupage | Création d'un `ParcelGroup` (kind : `rotation` / `sector` / `lot` / `custom`). Teinte aubergine sur les parcelles du groupe. |
+| Markers : types prédéfinis | `intervention` (vert) · `observation` (orange) · `problem` (rouge) · `note` (bleu) · `custom` (aubergine). Légende toujours visible. |
+| Mesure : affichage | Surface en hectares pour polygone, mètres pour ligne. Étiquette persistante jusqu'au changement d'outil. |
+| Mobile | Toolbar horizontale en bas (icônes seules + flex). |
+| Raccourcis clavier | Une seule lettre par outil, mappés dans `TOOL_SHORTCUTS`. Esc annule l'outil actif. |
 
 ## Design & UX
-- [x] Wireframe HTML (desktop, mobile, mode dessin)
-- [x] Satellite par défaut, toggle vers "Rues"
-- [x] Sélection : highlight visuel (stroke blanc + remplissage clair)
-- [x] FAB création (mobile, opt-in)
-- [x] Contrôles zoom + position + plein écran
-- [x] Attribution visible (légalement requis pour OSM/MapTiler)
+- [x] Wireframe : 6 scénarios (sélection, lasso, dessin parcelle, ajout point, groupe, mobile)
+- [x] Toolbar latérale gauche (desktop), horizontale bas (mobile)
+- [x] Barre contextuelle (top-left) affiche actions de l'outil actif
+- [x] Badge de sélection multiple (bas-centre) avec action "Grouper" / "Tout désélectionner"
+- [x] Légende markers persistante
+- [x] Cibles tactiles 40 px (toolbar), 36 px (controls)
+- [x] Icônes SVG inline style Lucide, 1.5 px stroke
 
 ## Code
-- [x] Types GeoJSON stricts (`Polygon | MultiPolygon`)
-- [x] `Parcel` + `ParcelFeature` exportés
-- [x] Helper `parcelsToFeatureCollection`
-- [x] Defaults documentés
+- [x] `MapTool` strict union (7 outils)
+- [x] `ParcelGroup` + `MapMarker` typés
+- [x] `DrawEvent` unifié pour `draw-parcel` / `add-marker` / `measure`
+- [x] `selectedIds: ReadonlyArray<string>` (multi-sélection)
+- [x] `onSelectionChange` + `onCreateGroup` + `onDissolveGroup` callbacks
+- [x] `TOOL_SHORTCUTS` + `MARKER_COLORS` constants
 - [x] Pas de `any`
-- [ ] Implémentation maplibre-gl-js → Phase 1
+- [ ] Implémentation Maplibre GL → Phase 1
 
 ## Accessibilité
-- [x] `role="application"` sur canvas + label
-- [x] Contrôles avec `aria-label` explicites
-- [x] Toggle basemap : radiogroup + aria-pressed
-- [x] Navigation clavier prévue (Tab, +/-, flèches pan, Enter sélection)
-- [x] Bottom sheet : focus trap + dismiss Esc (à câbler Phase 1)
-- [x] Cibles tactiles ≥ 36 px contrôles, 44 px FAB
+- [x] Toolbar : `role="toolbar"` + chaque outil `aria-pressed` + `aria-label`
+- [x] Tooltip au hover (data-tip CSS), raccourci clavier annoncé
+- [x] Sélection multiple visible (badge + count)
+- [x] Légende texte (pas couleur seule)
+- [x] Esc annule l'outil
+- [x] Navigation clavier : raccourcis + Tab dans la toolbar
 
 ## Edge cases
-- [x] Aucune parcelle → afficher centre par défaut (config exploitation) + message
-- [x] Parcelle hors viewport → bouton "Centrer"
-- [x] Géométrie invalide → log warning, skip feature (à implémenter)
-- [x] Mode offline → tiles cachées (PWA / Phase 2)
+- [x] Dessin polygone < 3 sommets → bouton "Valider" disabled
+- [x] Lasso sur zone vide → message "Aucune parcelle dans la zone"
+- [x] Groupage avec parcelles déjà groupées → choix : remplacer / ajouter
+- [x] Mesure : auto-conversion m² ↔ ha quand > 5000 m²
+- [x] Marker sur zone hors parcelle → autorisé, mais `parcelId` absent
+- [x] Mobile : toolbar horizontale, 6 outils max visibles, le reste dans un menu "…" (Phase 1)
 
 ## Dépendances Phase 1
 - `maplibre-gl` (~250 KB gz)
-- `@maplibre/maplibre-gl-geocoder` (optionnel)
-- `@mapbox/mapbox-gl-draw` ou équivalent maplibre pour `drawingEnabled`
+- `maplibre-gl-draw` ou équivalent (lasso + polygon + measure)
+- `@turf/turf` (calculs surface/distance, intersection)
 
 ## Infra Phase 1
-- [ ] Provisionner tile server self-hosted (VPS) OU souscrire MapTiler Cloud
-- [ ] Style Qodo personnalisé (couleurs cohérentes avec brand)
-- [ ] CDN pour les tiles si besoin
+- [ ] Tile server self-hosted (OpenMapTiles sur VPS) — décision Fabien attendue (bloquant)
+- [ ] Style Qodo personnalisé (3 basemaps : satellite, topo, rues)
 
 ## Réutilisation
-Module Parcellaire principalement. Module Travaux pour visualiser tâches localisées.
+- Module Parcellaire (vue principale)
+- Module Travaux (localisation des tâches via markers)
+- Module Troupeau (positions, parcours)
 
 ## Status
 ✅ **Prêt pour Phase 1** (infra tiles à provisionner en parallèle)

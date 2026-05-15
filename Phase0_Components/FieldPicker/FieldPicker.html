@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FieldPicker — Wireframe Phase 0 (sélecteur plein écran)</title>
+<style>
+  :root {
+    --primary: #2d5016; --primary-hover: #1f3a0e;
+    --bg: #fafaf7; --surface: #ffffff;
+    --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
+    --accent: #875a7b;
+    --radius: 6px;
+  }
+  * { box-sizing: border-box; }
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
+  h1 { font-size: 20px; margin: 0 0 6px; }
+  h2 { font-size: 14px; color: var(--muted); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .note { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+
+  .icon { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .icon-sm { width: 14px; height: 14px; }
+  .icon-lg { width: 20px; height: 20px; }
+
+  /* === État replié : champ trigger === */
+  .trigger {
+    width: 100%; max-width: 480px;
+    display: flex; align-items: center; gap: 8px;
+    min-height: 44px; padding: 6px 10px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface); cursor: pointer;
+    font-size: 14px; flex-wrap: wrap;
+  }
+  .trigger:hover { background: #fbfbf9; }
+  .trigger:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(45,80,22,0.15); }
+  .trigger .placeholder { color: var(--muted); }
+  .trigger .chevron { margin-left: auto; color: var(--muted); }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px;
+    background: rgba(45,80,22,0.08); color: var(--primary);
+    padding: 3px 6px 3px 8px; border-radius: 4px;
+    font-size: 12px; font-weight: 500;
+  }
+  .chip button {
+    background: transparent; border: 0; cursor: pointer; color: inherit;
+    padding: 0 2px; font-size: 14px; line-height: 1; min-width: 20px; min-height: 20px;
+  }
+
+  /* === Modal plein écran === */
+  .picker-stage {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    overflow: hidden;
+    max-width: 900px; margin-bottom: 16px;
+  }
+  .picker {
+    display: grid; grid-template-rows: auto 1fr auto;
+    height: 600px;
+  }
+  .picker-header {
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .picker-header h3 { margin: 0; font-size: 16px; flex: 1; }
+  .picker-header .close {
+    width: 36px; height: 36px;
+    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius);
+    cursor: pointer; display: inline-flex; align-items: center; justify-content: center;
+    color: var(--muted);
+  }
+  .picker-header .close:hover { background: #f5f5f0; color: var(--text); }
+
+  /* Search bar dans le picker */
+  .picker-search {
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .picker-search .input-wrap {
+    flex: 1; display: flex; align-items: center; gap: 6px;
+    height: 40px; padding: 0 12px;
+    border: 1px solid var(--border); border-radius: var(--radius);
+    background: var(--surface);
+  }
+  .picker-search .input-wrap:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(45,80,22,0.15); }
+  .picker-search .input-wrap input {
+    flex: 1; border: 0; outline: 0; font-size: 14px; background: transparent;
+  }
+
+  /* Layout body */
+  .picker-body {
+    display: grid; grid-template-columns: 1fr;
+    overflow: hidden;
+  }
+  @media (min-width: 720px) {
+    .picker-body { grid-template-columns: 220px 1fr; }
+  }
+  .categories {
+    border-bottom: 1px solid var(--border);
+    overflow-y: auto;
+    background: #fbfbf9;
+  }
+  @media (min-width: 720px) {
+    .categories { border-right: 1px solid var(--border); border-bottom: 0; }
+  }
+  .categories h4 {
+    margin: 0; padding: 12px 16px 8px;
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .cat-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 8px 16px;
+    cursor: pointer; font-size: 13px;
+    border-left: 3px solid transparent;
+  }
+  .cat-item:hover { background: #f3f3ee; }
+  .cat-item[aria-pressed="true"] {
+    background: var(--surface);
+    border-left-color: var(--primary);
+    font-weight: 500; color: var(--primary);
+  }
+  .cat-item .count {
+    margin-left: auto; font-size: 11px; color: var(--muted);
+    background: #ececea; padding: 1px 6px; border-radius: 10px;
+  }
+  .cat-item[aria-pressed="true"] .count { background: rgba(45,80,22,0.12); color: var(--primary); }
+
+  .results {
+    overflow-y: auto;
+    padding: 4px 0;
+  }
+  .result-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 10px 16px;
+    cursor: pointer;
+    font-size: 14px;
+    border-bottom: 1px solid transparent;
+  }
+  .result-item:hover { background: #f8f8f5; }
+  .result-item.selected { background: rgba(45,80,22,0.05); }
+  .result-item .meta { font-size: 12px; color: var(--muted); margin-top: 1px; }
+  .result-item .content { flex: 1; min-width: 0; }
+  .result-item .content .title { line-height: 1.3; }
+  .result-item .badge {
+    display: inline-block; padding: 1px 6px; border-radius: 3px;
+    font-size: 11px; font-weight: 500;
+    background: rgba(135,90,123,0.1); color: var(--accent);
+    margin-left: 6px; vertical-align: 2px;
+  }
+
+  /* Checkbox visuelle */
+  .checkbox {
+    width: 18px; height: 18px;
+    border: 1.5px solid var(--border); border-radius: 4px;
+    display: inline-flex; align-items: center; justify-content: center;
+    flex-shrink: 0; background: var(--surface);
+    color: transparent;
+  }
+  .result-item.selected .checkbox {
+    background: var(--primary); border-color: var(--primary); color: #fff;
+  }
+
+  .picker-footer {
+    padding: 10px 16px;
+    border-top: 1px solid var(--border);
+    display: flex; align-items: center; gap: 12px;
+  }
+  .picker-footer .count-info { font-size: 13px; color: var(--muted); flex: 1; }
+  .picker-footer .count-info strong { color: var(--text); }
+
+  .btn {
+    height: 38px; padding: 0 14px; border-radius: var(--radius);
+    border: 1px solid var(--border); background: var(--surface); cursor: pointer;
+    font-size: 13px; font-weight: 500;
+  }
+  .btn:hover { background: #f5f5f0; }
+  .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .btn-primary:hover { background: var(--primary-hover); }
+  .btn-primary[disabled] { opacity: 0.5; cursor: not-allowed; }
+  .btn-create {
+    color: var(--accent); border-color: var(--accent);
+    background: transparent;
+  }
+  .btn-create:hover { background: rgba(135,90,123,0.05); }
+
+  /* Empty state */
+  .empty {
+    padding: 48px 24px; text-align: center; color: var(--muted);
+  }
+  .empty .em {
+    width: 48px; height: 48px;
+    background: #f1f1ee; border-radius: 50%;
+    display: inline-flex; align-items: center; justify-content: center;
+    color: var(--muted); margin-bottom: 8px;
+  }
+
+  /* Mobile : modal full-screen */
+  @media (max-width: 600px) {
+    .picker { height: 100vh; max-height: 100vh; border-radius: 0; }
+    .picker-stage { max-width: 100%; }
+  }
+</style>
+</head>
+<body>
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-package" viewBox="0 0 24 24"><path d="m21 16-9 5-9-5V8l9-5 9 5z"/><path d="m3 8 9 5 9-5M12 13v8"/></symbol>
+    <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20 12 12 20l-9-9V3h8z"/><circle cx="7.5" cy="7.5" r="1.5"/></symbol>
+    <symbol id="i-leaf" viewBox="0 0 24 24"><path d="M11 20a8 8 0 0 0 8-8c0-5-4-9-9-9C5 3 3 6 3 10c0 6 5 10 8 10z"/><path d="M3 21c3-6 7-9 12-10"/></symbol>
+  </svg>
+
+  <h1>FieldPicker — Wireframe (sélecteur plein écran)</h1>
+  <div class="note">
+    Champ qui s'ouvre en plein écran (modal desktop, fullscreen mobile) avec barre de recherche, catégories à gauche,
+    résultats à droite. Mode <strong>simple</strong> (radio) ou <strong>multiple</strong> (checkbox). Bouton "+ Créer" optionnel.
+  </div>
+
+  <h2>1. État replié — champ vide (single)</h2>
+  <button class="trigger" aria-haspopup="dialog" aria-expanded="false">
+    <span class="placeholder">Sélectionner une parcelle…</span>
+    <svg class="icon chevron"><use href="#i-chevron-down"/></svg>
+  </button>
+
+  <h2>2. État replié — valeur unique sélectionnée</h2>
+  <button class="trigger" aria-haspopup="dialog" aria-expanded="false">
+    <span>Champ du Haut — PF-002</span>
+    <svg class="icon chevron"><use href="#i-chevron-down"/></svg>
+  </button>
+
+  <h2>3. État replié — multi-sélection (chips)</h2>
+  <button class="trigger" aria-haspopup="dialog" aria-expanded="false">
+    <span class="chip">Champ du Haut <button aria-label="Retirer">×</button></span>
+    <span class="chip">Plat de la Cure <button aria-label="Retirer">×</button></span>
+    <span class="chip">Petite Pièce <button aria-label="Retirer">×</button></span>
+    <span class="chip" style="background:#f1f1ee;color:var(--muted);">+2 autres</span>
+    <svg class="icon chevron"><use href="#i-chevron-down"/></svg>
+  </button>
+
+  <h2>4. Picker ouvert — multi-sélection avec catégories</h2>
+  <div class="picker-stage">
+    <div class="picker" role="dialog" aria-modal="true" aria-label="Sélectionner des parcelles">
+      <header class="picker-header">
+        <h3>Sélectionner des parcelles</h3>
+        <button class="close" aria-label="Fermer"><svg class="icon"><use href="#i-x"/></svg></button>
+      </header>
+
+      <div class="picker-search">
+        <div class="input-wrap">
+          <svg class="icon" style="color: var(--muted);"><use href="#i-search"/></svg>
+          <input type="text" placeholder="Rechercher une parcelle…" value="champ" aria-label="Rechercher">
+        </div>
+      </div>
+
+      <div class="picker-body">
+        <nav class="categories" aria-label="Filtrer par catégorie">
+          <h4>Catégories</h4>
+          <div class="cat-item" aria-pressed="true">
+            <svg class="icon"><use href="#i-package"/></svg>
+            <span>Toutes</span>
+            <span class="count">42</span>
+          </div>
+          <div class="cat-item" aria-pressed="false">
+            <svg class="icon"><use href="#i-leaf"/></svg>
+            <span>Actives</span>
+            <span class="count">28</span>
+          </div>
+          <div class="cat-item" aria-pressed="false">
+            <span style="width: 18px;"></span>
+            <span>Jachère</span>
+            <span class="count">9</span>
+          </div>
+          <div class="cat-item" aria-pressed="false">
+            <span style="width: 18px;"></span>
+            <span>Archivées</span>
+            <span class="count">5</span>
+          </div>
+
+          <h4>Par culture</h4>
+          <div class="cat-item" aria-pressed="false">
+            <svg class="icon" style="color:#f4a261;"><use href="#i-tag"/></svg>
+            <span>Blé</span>
+            <span class="count">12</span>
+          </div>
+          <div class="cat-item" aria-pressed="false">
+            <svg class="icon" style="color:#f59e0b;"><use href="#i-tag"/></svg>
+            <span>Maïs</span>
+            <span class="count">8</span>
+          </div>
+          <div class="cat-item" aria-pressed="false">
+            <svg class="icon" style="color:#16a34a;"><use href="#i-tag"/></svg>
+            <span>Colza</span>
+            <span class="count">5</span>
+          </div>
+          <div class="cat-item" aria-pressed="false">
+            <svg class="icon" style="color:#875a7b;"><use href="#i-tag"/></svg>
+            <span>Orge</span>
+            <span class="count">3</span>
+          </div>
+        </nav>
+
+        <div class="results" role="listbox" aria-multiselectable="true" aria-label="Parcelles">
+          <div class="result-item selected" role="option" aria-selected="true">
+            <span class="checkbox"><svg class="icon icon-sm"><use href="#i-check"/></svg></span>
+            <div class="content">
+              <div class="title">Champ du Haut <span class="badge">Blé</span></div>
+              <div class="meta">PF-002 · 1.8 ha · Semis 12/03/2026</div>
+            </div>
+          </div>
+          <div class="result-item selected" role="option" aria-selected="true">
+            <span class="checkbox"><svg class="icon icon-sm"><use href="#i-check"/></svg></span>
+            <div class="content">
+              <div class="title">Champ du Bas <span class="badge">Blé</span></div>
+              <div class="meta">PF-005 · 2.3 ha · Semis 14/03/2026</div>
+            </div>
+          </div>
+          <div class="result-item" role="option" aria-selected="false">
+            <span class="checkbox"><svg class="icon icon-sm"><use href="#i-check"/></svg></span>
+            <div class="content">
+              <div class="title">Champ Long</div>
+              <div class="meta">PF-014 · 4.1 ha · Jachère</div>
+            </div>
+          </div>
+          <div class="result-item" role="option" aria-selected="false">
+            <span class="checkbox"><svg class="icon icon-sm"><use href="#i-check"/></svg></span>
+            <div class="content">
+              <div class="title">Champ Rond</div>
+              <div class="meta">PF-021 · 0.6 ha · Maïs</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <footer class="picker-footer">
+        <div class="count-info"><strong>2</strong> sélectionnée(s) sur 4</div>
+        <button class="btn btn-create">
+          <svg class="icon icon-sm" style="vertical-align:-2px;"><use href="#i-plus"/></svg> Créer
+        </button>
+        <button class="btn">Annuler</button>
+        <button class="btn btn-primary">Valider</button>
+      </footer>
+    </div>
+  </div>
+
+  <h2>5. Picker ouvert — single-select (radio implicite)</h2>
+  <div class="picker-stage">
+    <div class="picker" role="dialog" aria-modal="true" style="height: 480px;">
+      <header class="picker-header">
+        <h3>Sélectionner un produit phyto</h3>
+        <button class="close" aria-label="Fermer"><svg class="icon"><use href="#i-x"/></svg></button>
+      </header>
+      <div class="picker-search">
+        <div class="input-wrap"><svg class="icon" style="color:var(--muted);"><use href="#i-search"/></svg><input placeholder="Rechercher un produit…"></div>
+      </div>
+      <div class="picker-body">
+        <nav class="categories">
+          <h4>Type</h4>
+          <div class="cat-item" aria-pressed="true"><span>Tous</span><span class="count">128</span></div>
+          <div class="cat-item"><span>Herbicide</span><span class="count">42</span></div>
+          <div class="cat-item"><span>Fongicide</span><span class="count">38</span></div>
+          <div class="cat-item"><span>Insecticide</span><span class="count">23</span></div>
+          <div class="cat-item"><span>Engrais</span><span class="count">25</span></div>
+        </nav>
+        <div class="results" role="listbox" aria-label="Produits">
+          <!-- En single-select, pas de checkbox visible, juste highlight -->
+          <div class="result-item selected" role="option" aria-selected="true" style="background: rgba(45,80,22,0.08); border-left: 3px solid var(--primary); padding-left: 13px;">
+            <div class="content">
+              <div class="title">Roundup Flex</div>
+              <div class="meta">Herbicide · 5 L · Glyphosate 480 g/L</div>
+            </div>
+            <svg class="icon" style="color: var(--primary);"><use href="#i-check"/></svg>
+          </div>
+          <div class="result-item" role="option" aria-selected="false">
+            <div class="content">
+              <div class="title">Karate Zeon</div>
+              <div class="meta">Insecticide · 1 L · Lambda-cyhalothrine 100 g/L</div>
+            </div>
+          </div>
+          <div class="result-item" role="option" aria-selected="false">
+            <div class="content">
+              <div class="title">Opera New</div>
+              <div class="meta">Fongicide · 5 L · Epoxiconazole + Pyraclostrobine</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <footer class="picker-footer">
+        <div class="count-info">Roundup Flex sélectionné</div>
+        <button class="btn">Annuler</button>
+        <button class="btn btn-primary">Valider</button>
+      </footer>
+    </div>
+  </div>
+
+  <h2>6. État empty (aucun résultat)</h2>
+  <div class="picker-stage">
+    <div class="picker" role="dialog" aria-modal="true" style="height: 380px;">
+      <header class="picker-header"><h3>Sélectionner un produit</h3><button class="close"><svg class="icon"><use href="#i-x"/></svg></button></header>
+      <div class="picker-search">
+        <div class="input-wrap"><svg class="icon" style="color:var(--muted);"><use href="#i-search"/></svg><input value="xyzzzz"></div>
+      </div>
+      <div class="picker-body">
+        <nav class="categories"><h4>Type</h4><div class="cat-item" aria-pressed="true"><span>Tous</span></div></nav>
+        <div class="results">
+          <div class="empty">
+            <div class="em"><svg class="icon icon-lg"><use href="#i-search"/></svg></div>
+            <p style="margin: 4px 0 8px; font-weight: 500; color: var(--text);">Aucun résultat pour « xyzzzz »</p>
+            <p style="margin: 0; font-size: 13px;">Vérifiez l'orthographe ou créez un nouvel élément.</p>
+            <button class="btn btn-create" style="margin-top: 12px;">
+              <svg class="icon icon-sm" style="vertical-align:-2px;"><use href="#i-plus"/></svg> Créer « xyzzzz »
+            </button>
+          </div>
+        </div>
+      </div>
+      <footer class="picker-footer">
+        <div class="count-info">0 résultat</div>
+        <button class="btn">Annuler</button>
+      </footer>
+    </div>
+  </div>
+
+  <h2>Accessibilité</h2>
+  <ul style="font-size: 13px; color: var(--muted);">
+    <li>Modal : <code>role="dialog"</code> + <code>aria-modal="true"</code> + <code>aria-label</code>.</li>
+    <li>Trigger : <code>aria-haspopup="dialog"</code> + <code>aria-expanded</code>.</li>
+    <li>Résultats : <code>role="listbox"</code> + <code>aria-multiselectable</code> selon mode + items <code>role="option"</code>.</li>
+    <li>Catégories : <code>aria-pressed</code> sur l'item actif.</li>
+    <li>Focus trap activé à l'ouverture, focus revient sur le trigger à la fermeture.</li>
+    <li>Esc ferme, Enter sélectionne, ↑/↓ parcourt les résultats, Tab navigue entre input/categories/results.</li>
+    <li>Cibles tactiles : 40 px (résultats), 36 px (catégories), 44 px (trigger).</li>
+    <li>Lecteur d'écran : compteur "X sélectionnés sur Y" annoncé via <code>aria-live="polite"</code>.</li>
+  </ul>
+</body>
+</html>

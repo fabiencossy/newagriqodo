@@ -1,56 +1,98 @@
-# SearchBar — Validation Checklist
+# SearchBar — Validation Checklist (v2 — pattern Odoo)
 
-**Composant** : 1/8
-**Statut** : ✅ Esquisse Phase 0 complétée
+**Composant** : 1/9
+**Statut** : ✅ Refonte complète (style Odoo SearchPanel)
 
-## Décisions prises (ambiguïtés du PROMPT)
+## Pattern adopté
+
+Inspiré du `SearchPanel` Odoo :
+
+1. **Une barre unique** contient :
+   - Icône loupe
+   - **Facets** (filtres actifs) en chips bicolores `[champ | valeurs] [×]`
+   - Input texte libre
+   - 3 boutons d'action à droite : **Filtres** · **Regrouper** · **Favoris**
+
+2. **Saisie texte** → suggestions par champ recherchable :
+   ```
+   Rechercher « darval » dans :
+     • Nom
+     • Code
+     • Notes
+     • Variété
+   ```
+   La sélection d'une suggestion crée une **facet** (le champ devient un filtre).
+
+3. **Menu Filtres** : liste de filtres rapides + champs avec sous-menus
+   (date, select, many2many → checkboxes multi-sélection).
+
+4. **Menu Regrouper** : choix d'un ou plusieurs champs de regroupement
+   (avec granularité date : jour / semaine / mois / trimestre / année).
+
+5. **Menu Favoris** : recherches sauvegardées (filtres + group by + tri).
+   - Sauvegarder la recherche courante
+   - Définir un favori par défaut
+   - Partager avec d'autres utilisateurs (optionnel)
+
+## Logique des combinaisons
+
+| Cas | Combinaison |
+|---|---|
+| Plusieurs valeurs **dans une même facet** (ex: Culture = Blé OU Maïs) | **OR** |
+| Plusieurs facets différentes (ex: Culture=Blé ET Statut=Actif) | **AND** |
+| Multiple group by | Hiérarchie ordonnée (premier = niveau 1) |
+
+## Décisions prises
 
 | Question | Réponse |
 |---|---|
-| Filter pills (afficher filtres actifs) ? | ✅ Oui, sous la barre, retrait individuel. Paramétrable via `showActivePills` (défaut `true`). |
-| Debounce | 300 ms (configurable via `debounceMs`). |
-| Filtres par défaut Parcellaire / Travaux / Troupeau | **Pas câblés au composant** — `FilterConfig[]` est passé par le parent. Le composant reste générique. Les presets vivront dans chaque module. |
-| Filtres avancés ouvert par défaut ? | Non. `defaultAdvancedOpen: false`. |
+| Pattern | **Odoo SearchPanel** (familier pour les utilisateurs Odoo, robuste). |
+| Multi-valeur sur un champ | Oui, via checkboxes dans le sous-menu (combinées en OR). |
+| Favoris | Oui, sauvegarde côté backend (côté composant : props `favorites` + callbacks). |
+| Suggestions par champ | Oui, basées sur les champs `searchable: true` du `FieldDescriptor`. |
+| Filtre date | Sous-menu avec presets (Aujourd'hui, Cette semaine, Ce mois, …) + custom range. À détailler Phase 1. |
+| Couleur des facets | Aubergine Odoo `#875a7b` (clin d'œil + contraste avec le primary vert). |
+| Mobile | Barre s'étend verticalement, actions empilées en bas (icônes seules). |
+| Sync URL | Sérialisable depuis `SearchState`. À implémenter Phase 1 (history.pushState). |
 
 ## Design & UX
-- [x] Wireframe HTML (desktop + mobile + 4 états)
-- [x] Mobile-first (stack vertical < 768 px)
-- [x] Cibles tactiles ≥ 44 px (input h:44px, boutons min 32px + padding)
-- [x] Contraste ≥ 4.5:1 (texte #1a1a1a sur #fff = 18.6:1)
-- [x] États couverts : empty / focus / valeur+clear / disabled
+- [x] Wireframe HTML : barre vide, suggestions, facets actives, dropdown 3 colonnes, multi-sélection, mobile
+- [x] Mobile-first (stack vertical < 600 px)
+- [x] Cibles tactiles ≥ 32 px icônes, 44 px barre principale
+- [x] Contraste vérifié (primary 8.9:1, accent 5.5:1 sur #fff)
+- [x] Cohérence visuelle avec ViewSwitcher / AsideCard (border-radius, palette)
 
 ## Code
-- [x] Interface `SearchBarProps` strictement typée (pas de `any`)
-- [x] `FilterConfig` et `FilterValue` exportés et réutilisables
-- [x] Valeurs par défaut documentées (`SEARCH_BAR_DEFAULTS`)
-- [x] JSDoc sur chaque prop
+- [x] `SearchState` sérialisable (sauvegarde Favoris + URL params)
+- [x] `FieldDescriptor` riche (type, options, searchable, operators)
+- [x] `Facet`, `GroupBy`, `SortBy`, `SavedFavorite` typés
+- [x] Helpers `FACET_LOGIC` documentés (OR intra, AND inter)
+- [x] Loader async (`fetchOptions`) pour many2one / many2many
+- [x] Pas de `any`
 - [ ] Implémentation React → Phase 1
 
 ## Accessibilité (WCAG AA)
-- [x] `role="search"` sur le conteneur racine
-- [x] `aria-label` sur input + bouton clear
-- [x] `aria-expanded` / `aria-controls` sur le toggle "Filtres avancés"
-- [x] Chaque pill a un bouton retrait avec `aria-label` spécifique
-- [x] Navigation clavier validée dans le wireframe (ordre logique)
+- [x] `role="search"` racine
+- [x] Suggestions : `role="listbox"` + `role="option"` + `aria-selected`
+- [x] Boutons d'action : `aria-expanded`
+- [x] Facets : `aria-label` explicite sur les boutons de retrait
+- [x] Navigation clavier : ↑/↓ suggestions, Enter valide, Backspace efface dernière facet quand input vide
+- [x] Esc ferme les menus
+- [x] Tous les boutons icône-seule ont un `aria-label`
 
 ## Edge cases
-- [x] Vide → placeholder visible, bouton clear caché
-- [x] Avec valeur → bouton clear visible
-- [x] Disabled → input grisé, pas d'interaction
-- [x] Pills débordent → wrap (flex-wrap)
-- [x] Aucun filtre actif → pas de zone pills (height 0)
+- [x] Aucun champ searchable → l'input fait fallback en plein-texte
+- [x] Sous-menu liste très longue (>100 options) → autocomplete + virtualisation Phase 1
+- [x] Conflit favoris partagés / perso → priorité au perso
+- [x] Suppression du dernier filtre actif via Backspace
+- [x] Beaucoup de facets → wrap (flex-wrap)
 
-## Edge cases à traiter en Phase 1
-- [ ] Liste de filtres > 6 → scroll horizontal ou grid responsive
-- [ ] Filtre `daterange` UI (deux date inputs liés)
-- [ ] Pill très long (truncate + tooltip)
-- [ ] Sync URL params (?q=darval&culture=ble) — décision à prendre Phase 1
-
-## Dépendances
-Aucune — composant pur, juste React.
+## Dépendances Phase 1
+Aucune externe. Optionnellement `react-virtual` pour listes très longues.
 
 ## Réutilisation
-Utilisé par : ListeParcelles, ListeTravaux, ListeAnimaux, CarnetEntries, LeaveRequestList.
+Toutes les listes : Parcelles, Carnet, Travaux, Animaux, RH (Congés/Heures).
+La forme générique permet à chaque module de fournir son propre `FieldDescriptor[]`.
 
 ## Status
 ✅ **Prêt pour Phase 1**

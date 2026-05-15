@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TimesheetEntry — Wireframe Phase 0</title>
+<title>TimesheetEntry — Wireframe Phase 0 (v2 mode présence)</title>
 <style>
   :root {
     --primary: #2d5016; --primary-hover: #1f3a0e;
     --bg: #fafaf7; --surface: #ffffff;
     --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
     --radius: 6px;
-    --error: #dc2626; --success: #16a34a;
+    --error: #dc2626; --success: #16a34a; --accent: #875a7b;
   }
   * { box-sizing: border-box; }
   body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
@@ -18,13 +18,32 @@
   h2 { font-size: 14px; color: var(--muted); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
   .note { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
 
+  .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .icon-sm { width: 14px; height: 14px; }
+
   .form-card {
-    max-width: 480px;
+    max-width: 520px;
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    padding: 20px;
+    padding: 20px; margin-bottom: 16px;
   }
   .form-card h3 { margin: 0 0 16px; font-size: 16px; }
-  .field { margin-bottom: 14px; }
+
+  /* === Mode toggle (Total vs Présence) === */
+  .mode-toggle {
+    display: flex; padding: 3px; background: #f1f1ee; border-radius: var(--radius);
+    margin-bottom: 16px; gap: 2px;
+  }
+  .mode-toggle button {
+    flex: 1; height: 34px;
+    border: 0; background: transparent; cursor: pointer;
+    border-radius: 4px; font-size: 13px; color: var(--text);
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .mode-toggle button[aria-pressed="true"] {
+    background: var(--surface); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.08);
+  }
+
+  .field { margin-bottom: 12px; }
   .field label { display: block; font-size: 13px; color: var(--text); margin-bottom: 4px; font-weight: 500; }
   .field .hint { font-size: 11px; color: var(--muted); margin-top: 3px; }
   .field input, .field select {
@@ -33,8 +52,56 @@
     font-size: 15px; background: var(--surface);
   }
   .field input:focus, .field select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(45,80,22,0.15); }
-  .field .error { color: var(--error); font-size: 12px; margin-top: 3px; }
-  .field input[aria-invalid="true"] { border-color: var(--error); }
+
+  .row-two { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 480px) { .row-two { grid-template-columns: 1fr 1fr; } }
+  .row-three { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 480px) { .row-three { grid-template-columns: 1fr 1fr 1fr; } }
+
+  /* === Pause rows === */
+  .pauses {
+    border: 1px dashed var(--border); border-radius: var(--radius);
+    padding: 10px 12px; margin-bottom: 12px; background: #fbfbf9;
+  }
+  .pauses-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .pauses-header h4 { margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; flex: 1; }
+  .pauses-header button.add-pause {
+    height: 30px; padding: 0 10px;
+    border: 1px solid var(--border); background: var(--surface); border-radius: 4px;
+    cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
+    color: var(--accent);
+  }
+  .pauses-header button.add-pause:hover { background: #f5f5f0; }
+  .pause-row {
+    display: grid; grid-template-columns: 1fr 1fr auto; gap: 8px;
+    align-items: end; margin-bottom: 6px;
+  }
+  .pause-row label { font-size: 11px; color: var(--muted); margin-bottom: 2px; display: block; }
+  .pause-row input { height: 38px; padding: 0 10px; font-size: 14px; }
+  .pause-row .remove {
+    height: 38px; width: 38px;
+    border: 1px solid var(--border); background: var(--surface); border-radius: 4px;
+    cursor: pointer; color: var(--muted);
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .pause-row .remove:hover { color: var(--error); border-color: var(--error); }
+  .pauses-empty { font-size: 12px; color: var(--muted); text-align: center; padding: 8px 0; }
+
+  /* === Calcul auto box === */
+  .calc-box {
+    background: rgba(45,80,22,0.05);
+    border: 1px solid rgba(45,80,22,0.2);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    display: flex; justify-content: space-between; align-items: center;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .calc-box .calc-row { display: flex; flex-direction: column; gap: 2px; }
+  .calc-box .calc-row .label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+  .calc-box .calc-row .value { font-size: 18px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .calc-box .calc-row .value.primary { color: var(--primary); }
+  .calc-box .sep { color: var(--border); }
 
   .input-with-suffix { position: relative; }
   .input-with-suffix .suffix {
@@ -42,68 +109,73 @@
     color: var(--muted); font-size: 13px; pointer-events: none;
   }
 
-  .row-two { display: grid; grid-template-columns: 1fr; gap: 12px; }
-  @media (min-width: 480px) { .row-two { grid-template-columns: 1fr 1fr; } }
-
-  .footer { display: flex; gap: 8px; margin-top: 8px; }
+  .footer { display: flex; gap: 8px; margin-top: 12px; }
   .btn {
     height: 44px; padding: 0 16px; border-radius: var(--radius);
     border: 1px solid var(--border); background: var(--surface); cursor: pointer; font-size: 14px; font-weight: 500;
   }
   .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); flex: 1; }
   .btn-primary:hover { background: var(--primary-hover); }
-  .btn-primary[disabled] { opacity: 0.5; cursor: not-allowed; }
-  .spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: -2px; margin-right: 6px; }
-  @keyframes spin { to { transform: rotate(360deg); } }
 
   .toast {
     margin-top: 12px; padding: 10px 14px; border-radius: var(--radius);
     font-size: 13px;
   }
   .toast.success { background: #ecf6e6; color: #1a5e1a; border: 1px solid #c9e3bb; }
-  .toast.error { background: #fdecec; color: #8a1c1c; border: 1px solid #f4c2c2; }
 </style>
 </head>
 <body>
-  <h1>TimesheetEntry — Wireframe</h1>
-  <div class="note">Form ultra-simple : date + heures (HH:MM auto-converti en décimal) + type de travail + intervention optionnelle. Submit → création auto Attendance Odoo (Hook 1).</div>
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+    <symbol id="i-presence" viewBox="0 0 24 24"><path d="M3 12h4l3-8 4 16 3-8h4"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M5 6l1 14a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-14M10 11v6M14 11v6"/></symbol>
+    <symbol id="i-coffee" viewBox="0 0 24 24"><path d="M17 8h1a4 4 0 0 1 0 8h-1M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z M6 2v3M10 2v3M14 2v3"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </svg>
 
-  <h2>Standalone — État initial</h2>
-  <form class="form-card" aria-label="Saisir des heures">
+  <h1>TimesheetEntry — Wireframe (v2 — modes Total / Présence)</h1>
+  <div class="note">
+    <strong>2 modes</strong> :
+    <strong>Total</strong> (saisie d'un volume horaire HH:MM ou décimal) ou
+    <strong>Présence</strong> (début + fin + pauses → calcul auto).
+    Auto-création Attendance Odoo (Hook 1) dans les deux cas.
+  </div>
+
+  <h2>1. Mode "Total" (saisie rapide)</h2>
+  <form class="form-card" aria-label="Saisir des heures (mode Total)">
     <h3>Saisir des heures</h3>
 
+    <div class="mode-toggle" role="tablist" aria-label="Mode de saisie">
+      <button type="button" role="tab" aria-pressed="true"><svg class="icon"><use href="#i-clock"/></svg> Total</button>
+      <button type="button" role="tab" aria-pressed="false"><svg class="icon"><use href="#i-presence"/></svg> Présence</button>
+    </div>
+
     <div class="field">
-      <label for="ts-date">Date</label>
-      <input id="ts-date" type="date" value="2026-05-15" max="2026-05-15">
-      <div class="hint">Aujourd'hui par défaut · passé autorisé jusqu'à 90 jours</div>
+      <label for="ts-date-1">Date</label>
+      <input id="ts-date-1" type="date" value="2026-05-15">
     </div>
 
     <div class="row-two">
       <div class="field">
-        <label for="ts-hours">Heures travaillées</label>
+        <label for="ts-hours-1">Heures travaillées</label>
         <div class="input-with-suffix">
-          <input id="ts-hours" type="text" inputmode="decimal" placeholder="2:30 ou 2.5" value="">
+          <input id="ts-hours-1" type="text" placeholder="2:30 ou 2.5">
           <span class="suffix">HH:MM</span>
         </div>
-        <div class="hint">Format <code>2:30</code> ou décimal <code>2.5</code> · max 16 h</div>
+        <div class="hint">Max 16 h · format <code>2:30</code> ou décimal</div>
       </div>
-
       <div class="field">
-        <label for="ts-type">Type de travail</label>
-        <select id="ts-type">
-          <option value="">— Choisir —</option>
-          <option value="Parcellaire">Parcellaire</option>
-          <option value="Travaux">Travaux</option>
-          <option value="Troupeau">Troupeau</option>
-          <option value="RH">RH</option>
+        <label for="ts-type-1">Type</label>
+        <select id="ts-type-1">
+          <option>Parcellaire</option><option>Travaux</option><option>Troupeau</option><option>RH</option>
         </select>
       </div>
     </div>
 
     <div class="field">
-      <label for="ts-interv">Intervention liée <span style="color: var(--muted); font-weight: 400;">(optionnel)</span></label>
-      <input id="ts-interv" type="text" placeholder="Rechercher une intervention…">
-      <div class="hint">Autocomplete sur les interventions ouvertes du jour</div>
+      <label for="ts-int-1">Intervention liée <span style="color: var(--muted); font-weight: 400;">(optionnel)</span></label>
+      <input id="ts-int-1" type="text" placeholder="Rechercher…">
     </div>
 
     <div class="footer">
@@ -112,81 +184,186 @@
     </div>
   </form>
 
-  <h2>Validation — Erreur format heures</h2>
-  <div class="form-card">
+  <h2>2. Mode "Présence" — début / fin / pauses</h2>
+  <form class="form-card" aria-label="Saisir des heures (mode Présence)">
+    <h3>Saisir une présence</h3>
+
+    <div class="mode-toggle" role="tablist" aria-label="Mode de saisie">
+      <button type="button" role="tab" aria-pressed="false"><svg class="icon"><use href="#i-clock"/></svg> Total</button>
+      <button type="button" role="tab" aria-pressed="true"><svg class="icon"><use href="#i-presence"/></svg> Présence</button>
+    </div>
+
     <div class="field">
-      <label for="ts-h-err">Heures travaillées</label>
-      <div class="input-with-suffix">
-        <input id="ts-h-err" type="text" value="25" aria-invalid="true" aria-describedby="h-err">
-        <span class="suffix">HH:MM</span>
+      <label for="ts-date-2">Date</label>
+      <input id="ts-date-2" type="date" value="2026-05-15">
+    </div>
+
+    <div class="row-two">
+      <div class="field">
+        <label for="ts-start">Heure de début</label>
+        <input id="ts-start" type="time" value="07:30">
       </div>
-      <div class="error" id="h-err" role="alert">Valeur invalide : maximum 16 h par jour.</div>
-    </div>
-  </div>
-
-  <h2>Loading — Submission en cours</h2>
-  <div class="form-card">
-    <div class="footer">
-      <button type="button" class="btn" disabled>Annuler</button>
-      <button type="button" class="btn btn-primary" disabled aria-busy="true">
-        <span class="spinner" aria-hidden="true"></span> Enregistrement…
-      </button>
-    </div>
-  </div>
-
-  <h2>Succès — Toast confirmation</h2>
-  <div class="form-card">
-    <div class="footer">
-      <button type="button" class="btn">Annuler</button>
-      <button type="submit" class="btn btn-primary">Enregistrer</button>
-    </div>
-    <div class="toast success" role="status">✓ Présence créée dans Odoo · 2h30 le 15/05/2026</div>
-  </div>
-
-  <h2>Erreur Odoo — Retry</h2>
-  <div class="form-card">
-    <div class="footer">
-      <button type="button" class="btn">Annuler</button>
-      <button type="submit" class="btn btn-primary">Enregistrer</button>
-    </div>
-    <div class="toast error" role="alert">
-      ⚠ Sync Odoo échouée — entrée mise en file locale.
-      <button class="btn" style="height: 32px; padding: 0 10px; margin-left: 8px; background: #fff;">Réessayer</button>
-    </div>
-  </div>
-
-  <h2>Mode "linked" — Intervention pré-remplie</h2>
-  <div class="form-card">
-    <h3>Saisir des heures · Travaux #T-2026-042</h3>
-    <div class="field">
-      <label>Intervention liée</label>
-      <div style="padding: 8px 12px; background: rgba(45,80,22,0.06); border-radius: var(--radius); color: var(--primary); font-size: 14px; font-weight: 500;">
-        🔗 T-2026-042 — Fauchage parcelle PF-002
+      <div class="field">
+        <label for="ts-end">Heure de fin</label>
+        <input id="ts-end" type="time" value="17:30">
       </div>
     </div>
-    <div class="field">
-      <label for="ts-d2">Date</label>
-      <input id="ts-d2" type="date" value="2026-05-15">
+
+    <div class="pauses" role="group" aria-label="Pauses">
+      <div class="pauses-header">
+        <svg class="icon" style="color: var(--accent);"><use href="#i-coffee"/></svg>
+        <h4>Pauses (2)</h4>
+        <button type="button" class="add-pause">
+          <svg class="icon icon-sm"><use href="#i-plus"/></svg> Ajouter une pause
+        </button>
+      </div>
+
+      <div class="pause-row">
+        <div>
+          <label>Début</label>
+          <input type="time" value="10:00">
+        </div>
+        <div>
+          <label>Fin</label>
+          <input type="time" value="10:15">
+        </div>
+        <button type="button" class="remove" aria-label="Retirer cette pause">
+          <svg class="icon icon-sm"><use href="#i-trash"/></svg>
+        </button>
+      </div>
+
+      <div class="pause-row">
+        <div>
+          <label>Début</label>
+          <input type="time" value="12:00">
+        </div>
+        <div>
+          <label>Fin</label>
+          <input type="time" value="13:00">
+        </div>
+        <button type="button" class="remove" aria-label="Retirer cette pause">
+          <svg class="icon icon-sm"><use href="#i-trash"/></svg>
+        </button>
+      </div>
     </div>
-    <div class="field">
-      <label for="ts-h2">Heures</label>
-      <div class="input-with-suffix"><input id="ts-h2" type="text" value="3:45"><span class="suffix">HH:MM</span></div>
+
+    <div class="calc-box" aria-live="polite">
+      <div class="calc-row">
+        <span class="label">Plage</span>
+        <span class="value">10:00</span>
+      </div>
+      <span class="sep">−</span>
+      <div class="calc-row">
+        <span class="label">Pauses</span>
+        <span class="value">1:15</span>
+      </div>
+      <span class="sep">=</span>
+      <div class="calc-row">
+        <span class="label">Total effectif</span>
+        <span class="value primary">8:45</span>
+      </div>
     </div>
+
+    <div class="row-two">
+      <div class="field">
+        <label for="ts-type-2">Type</label>
+        <select id="ts-type-2"><option>Parcellaire</option><option>Travaux</option><option>Troupeau</option><option>RH</option></select>
+      </div>
+      <div class="field">
+        <label for="ts-int-2">Intervention liée</label>
+        <input id="ts-int-2" type="text" placeholder="Optionnel">
+      </div>
+    </div>
+
     <div class="footer">
-      <button class="btn">Annuler</button>
-      <button class="btn btn-primary">Enregistrer</button>
+      <button type="button" class="btn">Annuler</button>
+      <button type="submit" class="btn btn-primary">Enregistrer la présence</button>
+    </div>
+  </form>
+
+  <h2>3. Mode présence — état vide (aucune pause)</h2>
+  <div class="form-card">
+    <div class="mode-toggle">
+      <button aria-pressed="false">Total</button>
+      <button aria-pressed="true">Présence</button>
+    </div>
+    <div class="row-two">
+      <div class="field"><label>Début</label><input type="time" value="08:00"></div>
+      <div class="field"><label>Fin</label><input type="time" value="12:00"></div>
+    </div>
+    <div class="pauses">
+      <div class="pauses-header">
+        <svg class="icon" style="color: var(--muted);"><use href="#i-coffee"/></svg>
+        <h4>Pauses (0)</h4>
+        <button type="button" class="add-pause">
+          <svg class="icon icon-sm"><use href="#i-plus"/></svg> Ajouter une pause
+        </button>
+      </div>
+      <div class="pauses-empty">Aucune pause — ajoutez-en si nécessaire.</div>
+    </div>
+    <div class="calc-box">
+      <div class="calc-row"><span class="label">Plage</span><span class="value">4:00</span></div>
+      <span class="sep">−</span>
+      <div class="calc-row"><span class="label">Pauses</span><span class="value">0:00</span></div>
+      <span class="sep">=</span>
+      <div class="calc-row"><span class="label">Total effectif</span><span class="value primary">4:00</span></div>
+    </div>
+  </div>
+
+  <h2>4. Validation — fin avant début</h2>
+  <div class="form-card">
+    <div class="row-two">
+      <div class="field">
+        <label>Heure de début</label>
+        <input type="time" value="14:00" aria-invalid="true">
+      </div>
+      <div class="field">
+        <label>Heure de fin</label>
+        <input type="time" value="08:00" aria-invalid="true">
+      </div>
+    </div>
+    <div style="color: var(--error); font-size: 12px; margin: -6px 0 12px;" role="alert">
+      ⚠ La fin doit être après le début. Pour une nuit chevauchant minuit, activez « plage de nuit » (à venir).
+    </div>
+  </div>
+
+  <h2>5. Validation — pauses qui chevauchent</h2>
+  <div class="form-card">
+    <div class="pauses">
+      <div class="pauses-header"><svg class="icon" style="color:var(--accent);"><use href="#i-coffee"/></svg><h4>Pauses (2)</h4></div>
+      <div class="pause-row">
+        <div><label>Début</label><input type="time" value="10:00"></div>
+        <div><label>Fin</label><input type="time" value="11:00"></div>
+        <button type="button" class="remove"><svg class="icon icon-sm"><use href="#i-trash"/></svg></button>
+      </div>
+      <div class="pause-row">
+        <div><label>Début</label><input type="time" value="10:30" aria-invalid="true"></div>
+        <div><label>Fin</label><input type="time" value="11:30" aria-invalid="true"></div>
+        <button type="button" class="remove"><svg class="icon icon-sm"><use href="#i-trash"/></svg></button>
+      </div>
+      <div style="color: var(--error); font-size: 12px; margin-top: 6px;" role="alert">
+        ⚠ Les deux pauses se chevauchent (10:30 → 11:00).
+      </div>
+    </div>
+  </div>
+
+  <h2>6. Succès</h2>
+  <div class="form-card">
+    <div class="toast success" role="status">
+      <svg class="icon" style="color:#1a5e1a;vertical-align:-3px;margin-right:4px;"><use href="#i-check"/></svg>
+      Présence enregistrée dans Odoo · 07:30 → 17:30 · 8h45 effectives
     </div>
   </div>
 
   <h2>Accessibilité</h2>
   <ul style="font-size: 13px; color: var(--muted);">
-    <li><code>&lt;form&gt;</code> avec <code>aria-label</code>.</li>
-    <li>Chaque input a un <code>&lt;label for&gt;</code>.</li>
-    <li>Erreurs : <code>aria-invalid="true"</code> + <code>aria-describedby</code> pointant vers le message d'erreur.</li>
-    <li>Toast succès : <code>role="status"</code>. Toast erreur : <code>role="alert"</code>.</li>
-    <li>Submit en cours : <code>aria-busy="true"</code>.</li>
-    <li>Cibles tactiles 44 px (inputs + boutons).</li>
-    <li>Date input natif → support clavier + accessibilité OS.</li>
+    <li>Toggle mode : <code>role="tablist"</code> + <code>aria-pressed</code>.</li>
+    <li>Pauses : <code>role="group"</code> avec label dédié.</li>
+    <li>Calcul auto : <code>aria-live="polite"</code> pour annoncer le total.</li>
+    <li>Validation : <code>aria-invalid</code> sur inputs + message <code>role="alert"</code>.</li>
+    <li>Tous les boutons ajout/retrait ont un <code>aria-label</code>.</li>
+    <li>Cibles tactiles 44 px (inputs principaux), 38 px (inputs pauses).</li>
+    <li>Bouton trash sur pause = action destructive → confirmation pas nécessaire (action minime, undo via "Ajouter").</li>
   </ul>
 </body>
 </html>

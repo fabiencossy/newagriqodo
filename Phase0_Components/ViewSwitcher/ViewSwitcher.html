@@ -23,6 +23,9 @@
   .stage { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
   .stage-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
 
+  .icon { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .icon-sm { width: 16px; height: 16px; stroke-width: 1.5; }
+
   /* Segmented control (desktop) */
   .segmented {
     display: inline-flex; padding: 4px; gap: 2px;
@@ -40,7 +43,6 @@
     background: var(--primary); color: #fff;
   }
   .segmented button[disabled] { color: var(--muted); cursor: not-allowed; opacity: 0.5; }
-  .segmented .icon { width: 20px; height: 20px; display: inline-block; }
 
   /* Tooltip */
   .tip-host { position: relative; }
@@ -50,6 +52,9 @@
     background: #1a1a1a; color: #fff; padding: 4px 8px; border-radius: 4px;
     font-size: 12px; white-space: nowrap; pointer-events: none; z-index: 10;
   }
+
+  /* Icon-only variant */
+  .segmented.icon-only button { width: 36px; padding: 0; justify-content: center; min-width: 36px; }
 
   /* Mobile dropdown */
   .dropdown-trigger {
@@ -61,13 +66,13 @@
   .dropdown-trigger:hover { background: #f8f8f5; }
   .dropdown-menu {
     list-style: none; padding: 4px; margin: 4px 0 0; border-radius: var(--radius);
-    border: 1px solid var(--border); background: var(--surface); width: 200px;
+    border: 1px solid var(--border); background: var(--surface); width: 220px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   }
   .dropdown-menu li button {
     width: 100%; text-align: left; height: 40px; padding: 0 12px;
     border: 0; background: transparent; cursor: pointer; border-radius: 4px;
-    display: flex; align-items: center; gap: 8px;
+    display: flex; align-items: center; gap: 10px;
   }
   .dropdown-menu li button[aria-selected="true"] {
     background: rgba(45,80,22,0.08); color: var(--primary); font-weight: 500;
@@ -76,62 +81,100 @@
 </style>
 </head>
 <body>
-  <h1>ViewSwitcher — Wireframe</h1>
-  <div class="note">Toggle entre Table / Carte / Dashboard pour une même donnée. Segmented control sur desktop, dropdown sur mobile. Icônes 20 px. Tooltip délai ~400 ms.</div>
+  <!-- SVG icons (Lucide-style, 1.5px stroke) -->
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="i-table" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <path d="M3 9h18M3 15h18M9 3v18M15 3v18"/>
+    </symbol>
+    <symbol id="i-map" viewBox="0 0 24 24">
+      <path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z"/>
+      <path d="M9 3v15M15 6v15"/>
+    </symbol>
+    <symbol id="i-dashboard" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="7" height="9" rx="1"/>
+      <rect x="14" y="3" width="7" height="5" rx="1"/>
+      <rect x="14" y="12" width="7" height="9" rx="1"/>
+      <rect x="3" y="16" width="7" height="5" rx="1"/>
+    </symbol>
+    <symbol id="i-kanban" viewBox="0 0 24 24">
+      <rect x="3" y="3" width="5" height="14" rx="1"/>
+      <rect x="11" y="3" width="5" height="10" rx="1"/>
+      <rect x="19" y="3" width="2" height="6" rx="1"/>
+    </symbol>
+    <symbol id="i-list" viewBox="0 0 24 24">
+      <path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>
+    </symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24">
+      <rect x="3" y="4" width="18" height="18" rx="2"/>
+      <path d="M16 2v4M8 2v4M3 10h18"/>
+    </symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  </svg>
 
-  <h2>Desktop — Segmented control</h2>
+  <h1>ViewSwitcher — Wireframe</h1>
+  <div class="note">Toggle entre Table / Carte / Dashboard. Segmented control sur desktop, dropdown sur mobile. <strong>Icônes SVG inline 20 px (style Lucide, 1.5 px stroke)</strong>. Plus d'emoji.</div>
+
+  <h2>Desktop — Segmented (icône + label)</h2>
   <div class="stage">
     <div class="stage-label">Vue active : Table</div>
     <div class="segmented" role="tablist" aria-label="Changer de vue">
-      <span class="tip-host" data-tip="Vue tableau">
-        <button role="tab" aria-pressed="true" aria-label="Vue Table">
-          <span class="icon" aria-hidden="true">▤</span> Table
-        </button>
-      </span>
-      <span class="tip-host" data-tip="Vue carte">
-        <button role="tab" aria-pressed="false" aria-label="Vue Carte">
-          <span class="icon" aria-hidden="true">🗺</span> Carte
-        </button>
-      </span>
-      <span class="tip-host" data-tip="Vue dashboard">
-        <button role="tab" aria-pressed="false" aria-label="Vue Dashboard">
-          <span class="icon" aria-hidden="true">📊</span> Dashboard
-        </button>
-      </span>
+      <button role="tab" aria-pressed="true">
+        <svg class="icon"><use href="#i-table"/></svg> Table
+      </button>
+      <button role="tab" aria-pressed="false">
+        <svg class="icon"><use href="#i-map"/></svg> Carte
+      </button>
+      <button role="tab" aria-pressed="false">
+        <svg class="icon"><use href="#i-dashboard"/></svg> Dashboard
+      </button>
     </div>
   </div>
 
-  <h2>Desktop — Hover state (tooltip)</h2>
+  <h2>Desktop — Variante icône seule (compact)</h2>
   <div class="stage">
-    <div class="segmented" role="tablist">
-      <button role="tab" aria-pressed="true">▤ Table</button>
+    <div class="segmented icon-only" role="tablist" aria-label="Changer de vue">
+      <span class="tip-host" data-tip="Vue tableau"><button role="tab" aria-pressed="true" aria-label="Table"><svg class="icon"><use href="#i-table"/></svg></button></span>
+      <span class="tip-host" data-tip="Vue carte"><button role="tab" aria-pressed="false" aria-label="Carte"><svg class="icon"><use href="#i-map"/></svg></button></span>
+      <span class="tip-host" data-tip="Vue dashboard"><button role="tab" aria-pressed="false" aria-label="Dashboard"><svg class="icon"><use href="#i-dashboard"/></svg></button></span>
+      <span class="tip-host" data-tip="Kanban"><button role="tab" aria-pressed="false" aria-label="Kanban"><svg class="icon"><use href="#i-kanban"/></svg></button></span>
+      <span class="tip-host" data-tip="Liste"><button role="tab" aria-pressed="false" aria-label="Liste"><svg class="icon"><use href="#i-list"/></svg></button></span>
+      <span class="tip-host" data-tip="Calendrier"><button role="tab" aria-pressed="false" aria-label="Calendrier"><svg class="icon"><use href="#i-calendar"/></svg></button></span>
+    </div>
+  </div>
+
+  <h2>Desktop — Hover (tooltip)</h2>
+  <div class="stage">
+    <div class="segmented icon-only" role="tablist">
+      <button role="tab" aria-pressed="true" aria-label="Table"><svg class="icon"><use href="#i-table"/></svg></button>
       <span class="tip-host" data-show-tip="true" data-tip="Vue carte">
-        <button role="tab" aria-pressed="false" style="background: rgba(0,0,0,0.04);">🗺 Carte</button>
+        <button role="tab" aria-pressed="false" aria-label="Carte" style="background: rgba(0,0,0,0.04);"><svg class="icon"><use href="#i-map"/></svg></button>
       </span>
-      <button role="tab" aria-pressed="false">📊 Dashboard</button>
+      <button role="tab" aria-pressed="false" aria-label="Dashboard"><svg class="icon"><use href="#i-dashboard"/></svg></button>
     </div>
   </div>
 
   <h2>Desktop — Disabled</h2>
   <div class="stage">
     <div class="segmented" role="tablist">
-      <button role="tab" aria-pressed="true">▤ Table</button>
-      <button role="tab" aria-pressed="false" disabled aria-disabled="true">🗺 Carte</button>
-      <button role="tab" aria-pressed="false" disabled aria-disabled="true">📊 Dashboard</button>
+      <button role="tab" aria-pressed="true"><svg class="icon"><use href="#i-table"/></svg> Table</button>
+      <button role="tab" aria-pressed="false" disabled aria-disabled="true"><svg class="icon"><use href="#i-map"/></svg> Carte</button>
+      <button role="tab" aria-pressed="false" disabled aria-disabled="true"><svg class="icon"><use href="#i-dashboard"/></svg> Dashboard</button>
     </div>
   </div>
 
   <h2>Mobile (&lt; 768px) — Dropdown</h2>
   <div class="stage" style="max-width: 360px;">
     <button class="dropdown-trigger" aria-haspopup="listbox" aria-expanded="true" aria-controls="vs-menu">
-      <span aria-hidden="true">▤</span>
+      <svg class="icon"><use href="#i-table"/></svg>
       <span>Table</span>
-      <span aria-hidden="true" style="margin-left: auto;">▾</span>
+      <svg class="icon icon-sm" style="margin-left: auto;"><use href="#i-chevron-down"/></svg>
     </button>
     <ul class="dropdown-menu" id="vs-menu" role="listbox" aria-label="Choisir une vue">
-      <li><button role="option" aria-selected="true"><span aria-hidden="true">▤</span> Table ✓</button></li>
-      <li><button role="option" aria-selected="false"><span aria-hidden="true">🗺</span> Carte</button></li>
-      <li><button role="option" aria-selected="false"><span aria-hidden="true">📊</span> Dashboard</button></li>
+      <li><button role="option" aria-selected="true"><svg class="icon"><use href="#i-table"/></svg> Table <svg class="icon icon-sm" style="margin-left: auto; color: var(--primary);"><use href="#i-check"/></svg></button></li>
+      <li><button role="option" aria-selected="false"><svg class="icon"><use href="#i-map"/></svg> Carte</button></li>
+      <li><button role="option" aria-selected="false"><svg class="icon"><use href="#i-dashboard"/></svg> Dashboard</button></li>
     </ul>
   </div>
 
@@ -139,9 +182,10 @@
   <ul style="font-size: 13px; color: var(--muted);">
     <li>Segmented : <code>role="tablist"</code> + boutons <code>role="tab"</code> + <code>aria-pressed</code>.</li>
     <li>Mobile : <code>aria-haspopup="listbox"</code>, options <code>role="option"</code>, <code>aria-selected</code>.</li>
-    <li>Toutes les vues ont un libellé textuel + icône (pas d'icône-seul).</li>
+    <li>Variant icône seule : <code>aria-label</code> obligatoire + tooltip au hover.</li>
+    <li>Icônes SVG inline (style Lucide, 1.5 px stroke, currentColor) → cohérent avec le texte.</li>
     <li>Navigation clavier : ←/→ sur segmented, ↑/↓ sur dropdown, Enter pour sélectionner.</li>
-    <li>Cibles tactiles ≥ 44 px (h:36px desktop / h:44px mobile + zone tap).</li>
+    <li>Cibles tactiles ≥ 36 px desktop, 44 px mobile.</li>
   </ul>
 </body>
 </html>

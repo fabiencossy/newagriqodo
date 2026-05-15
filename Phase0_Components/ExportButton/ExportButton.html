@@ -35,10 +35,14 @@
   }
   @keyframes spin { to { transform: rotate(360deg); } }
 
+  .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .icon-lg { width: 18px; height: 18px; }
+  .icon-file { color: var(--muted); }
+
   .menu {
     list-style: none; padding: 4px; margin: 6px 0 0;
     background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-    width: 220px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    width: 240px; box-shadow: 0 4px 12px rgba(0,0,0,0.08);
   }
   .menu li button {
     width: 100%; text-align: left; height: 40px; padding: 0 12px;
@@ -46,7 +50,7 @@
     display: flex; align-items: center; gap: 10px; font-size: 14px;
   }
   .menu li button:hover { background: #f8f8f5; }
-  .menu .meta { color: var(--muted); font-size: 12px; }
+  .menu .meta { color: var(--muted); font-size: 12px; margin-left: auto; }
 
   .toast {
     display: inline-flex; align-items: center; gap: 8px;
@@ -60,7 +64,7 @@
     padding: 16px; max-width: 360px;
   }
   .pdf-preview header { display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 10px; }
-  .pdf-preview .logo { width: 28px; height: 28px; background: var(--primary); color: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; }
+  .pdf-preview .logo { width: 28px; height: 28px; background: var(--primary); color: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; }
   .pdf-preview h3 { margin: 0; font-size: 14px; }
   .pdf-preview .sub { color: var(--muted); font-size: 11px; }
   .pdf-preview table { width: 100%; border-collapse: collapse; font-size: 11px; }
@@ -69,24 +73,51 @@
 </style>
 </head>
 <body>
+  <!-- SVG icon sprites -->
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m-5-5 5 5 5-5M5 21h14"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-file-pdf" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h4"/></symbol>
+    <symbol id="i-file-xlsx" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="m9 12 6 6m0-6-6 6"/></symbol>
+    <symbol id="i-file-csv" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6M9 9h2"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  </svg>
+
   <h1>ExportButton — Wireframe</h1>
-  <div class="note">Export PDF / CSV / Excel. Dropdown si plusieurs formats, bouton simple sinon. Filename auto : <code>&lt;title&gt;_&lt;YYYY-MM-DD&gt;.&lt;ext&gt;</code>. PDF inclut logo Qodo + filtres appliqués + timestamp.</div>
+  <div class="note">Export PDF / CSV / Excel. Dropdown si plusieurs formats, bouton simple sinon. Filename auto : <code>&lt;title&gt;_&lt;YYYY-MM-DD&gt;.&lt;ext&gt;</code>. PDF inclut logo Qodo + filtres + timestamp. Icônes SVG inline (style Lucide).</div>
 
   <h2>1. Multi-format (dropdown)</h2>
   <div class="stage">
     <button class="btn" aria-haspopup="menu" aria-expanded="true" aria-controls="exp-menu">
-      <span aria-hidden="true">↓</span> Exporter <span aria-hidden="true">▾</span>
+      <svg class="icon"><use href="#i-download"/></svg>
+      <span>Exporter</span>
+      <svg class="icon"><use href="#i-chevron-down"/></svg>
     </button>
     <ul class="menu" id="exp-menu" role="menu" aria-label="Format d'export">
-      <li><button role="menuitem"><span aria-hidden="true">📄</span> PDF <span class="meta">— mise en forme</span></button></li>
-      <li><button role="menuitem"><span aria-hidden="true">📊</span> Excel (.xlsx) <span class="meta">— données</span></button></li>
-      <li><button role="menuitem"><span aria-hidden="true">📋</span> CSV <span class="meta">— brut</span></button></li>
+      <li><button role="menuitem">
+        <svg class="icon icon-lg icon-file"><use href="#i-file-pdf"/></svg>
+        <span>PDF</span>
+        <span class="meta">mise en forme</span>
+      </button></li>
+      <li><button role="menuitem">
+        <svg class="icon icon-lg icon-file"><use href="#i-file-xlsx"/></svg>
+        <span>Excel (.xlsx)</span>
+        <span class="meta">données</span>
+      </button></li>
+      <li><button role="menuitem">
+        <svg class="icon icon-lg icon-file"><use href="#i-file-csv"/></svg>
+        <span>CSV</span>
+        <span class="meta">brut</span>
+      </button></li>
     </ul>
   </div>
 
   <h2>2. Format unique (bouton direct)</h2>
   <div class="stage">
-    <button class="btn btn-primary"><span aria-hidden="true">↓</span> Télécharger PDF</button>
+    <button class="btn btn-primary">
+      <svg class="icon"><use href="#i-download"/></svg>
+      Télécharger PDF
+    </button>
   </div>
 
   <h2>3. État loading</h2>
@@ -99,7 +130,8 @@
   <h2>4. État succès (toast)</h2>
   <div class="stage">
     <div class="toast" role="status">
-      <span aria-hidden="true">✓</span> Parcelles_2026-05-15.csv téléchargé
+      <svg class="icon" style="color: #1a5e1a;"><use href="#i-check"/></svg>
+      Parcelles_2026-05-15.csv téléchargé
     </div>
   </div>
 
@@ -110,7 +142,7 @@
         <div class="logo" aria-label="Qodo">Q</div>
         <div>
           <h3>Parcelles — Domaine Darval</h3>
-          <div class="sub">Filtre: culture=Blé · 2026-05-15 14:32</div>
+          <div class="sub">Filtre : culture = Blé · 2026-05-15 14:32</div>
         </div>
       </header>
       <table>
@@ -128,10 +160,11 @@
   <h2>Accessibilité</h2>
   <ul style="font-size: 13px; color: var(--muted);">
     <li>Bouton : <code>aria-haspopup="menu"</code> + <code>aria-expanded</code>.</li>
-    <li>Menu items : <code>role="menuitem"</code>.</li>
+    <li>Menu items : <code>role="menuitem"</code>, icône + label texte (jamais icône seule).</li>
     <li>État loading : <code>aria-busy="true"</code> + bouton disabled.</li>
     <li>Toast succès : <code>role="status"</code> (annoncé par lecteur d'écran).</li>
     <li>Cibles tactiles ≥ 40 px.</li>
+    <li>Icônes SVG <code>aria-hidden</code> par défaut (label texte fait l'a11y).</li>
   </ul>
 </body>
 </html>

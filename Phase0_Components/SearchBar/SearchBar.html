@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SearchBar — Wireframe Phase 0</title>
+<title>SearchBar — Wireframe Phase 0 (Odoo-style)</title>
 <style>
   :root {
     --primary: #2d5016;
@@ -13,163 +13,362 @@
     --text: #1a1a1a;
     --muted: #6b6b6b;
     --border: #e5e5e5;
-    --accent: #f4a261;
+    --accent: #875a7b; /* Touche Odoo (violet/aubergine) */
     --radius: 6px;
-    --gap: 12px;
   }
   * { box-sizing: border-box; }
   body { font-family: system-ui, -apple-system, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
   h1 { font-size: 20px; margin: 0 0 6px; }
   h2 { font-size: 14px; color: var(--muted); margin: 32px 0 12px; text-transform: uppercase; letter-spacing: 0.05em; }
   .note { font-size: 13px; color: var(--muted); margin-bottom: 24px; }
-  .stage { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
-  .stage-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+  .stage { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; max-width: 920px; }
 
-  /* SearchBar */
-  .searchbar { display: flex; flex-direction: column; gap: var(--gap); }
-  .searchbar-row { display: flex; gap: var(--gap); align-items: center; }
-  .search-input {
-    flex: 1; display: flex; align-items: center; gap: 8px;
-    padding: 0 12px; height: 44px;
-    border: 1px solid var(--border); border-radius: var(--radius);
+  .icon { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
+  .icon-sm { width: 14px; height: 14px; }
+
+  /* === Odoo-style search bar === */
+  .o-searchbar {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+    padding: 4px 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    min-height: 44px;
+  }
+  .o-searchbar:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(45,80,22,0.12); }
+  .o-searchbar .icon-search { color: var(--muted); margin-right: 4px; }
+
+  /* Facet = un filtre actif (style Odoo "facet pill") */
+  .o-facet {
+    display: inline-flex; align-items: stretch;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    overflow: hidden;
+    font-size: 12px;
     background: var(--surface);
   }
-  .search-input:focus-within { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(45,80,22,0.15); }
-  .search-input input { flex: 1; border: 0; outline: 0; font-size: 15px; background: transparent; min-width: 0; }
-  .search-input .icon { color: var(--muted); }
-  .clear-btn { background: transparent; border: 0; cursor: pointer; color: var(--muted); padding: 4px; border-radius: 4px; min-width: 32px; min-height: 32px; }
-  .clear-btn:hover { background: #f1f1ee; color: var(--text); }
-
-  .btn-advanced {
-    height: 44px; padding: 0 16px; border-radius: var(--radius);
-    border: 1px solid var(--border); background: var(--surface);
-    cursor: pointer; font-size: 14px; display: inline-flex; align-items: center; gap: 6px;
-    min-width: 44px;
+  .o-facet .field {
+    background: var(--accent); color: #fff;
+    padding: 2px 8px;
+    display: inline-flex; align-items: center;
+    font-weight: 500;
   }
-  .btn-advanced[aria-expanded="true"] { border-color: var(--primary); color: var(--primary); }
-  .btn-advanced:hover { background: #f8f8f5; }
+  .o-facet .values {
+    padding: 2px 8px; color: var(--text);
+    display: inline-flex; align-items: center; gap: 4px;
+  }
+  .o-facet .sep { color: var(--muted); font-weight: 500; padding: 0 2px; }
+  .o-facet .remove {
+    background: transparent; border: 0; cursor: pointer;
+    color: var(--muted); padding: 0 6px; font-size: 12px;
+    display: inline-flex; align-items: center; min-width: 24px;
+  }
+  .o-facet .remove:hover { color: var(--text); background: #f5f5f0; }
 
-  .advanced-panel {
-    display: grid; grid-template-columns: 1fr; gap: var(--gap);
-    padding: 12px; border: 1px solid var(--border); border-radius: var(--radius);
+  .o-input {
+    flex: 1; min-width: 120px;
+    border: 0; outline: 0;
+    font-size: 14px; background: transparent; min-height: 28px;
+    padding: 0 4px;
+  }
+
+  /* Action buttons à droite de la barre */
+  .o-actions {
+    display: inline-flex; align-items: center; gap: 4px;
+    border-left: 1px solid var(--border);
+    margin-left: auto; padding-left: 6px;
+  }
+  .o-action-btn {
+    height: 32px; padding: 0 10px; min-width: 32px;
+    border: 0; background: transparent; cursor: pointer;
+    border-radius: 4px; font-size: 13px;
+    display: inline-flex; align-items: center; gap: 4px;
+    color: var(--text);
+  }
+  .o-action-btn:hover { background: #f5f5f0; }
+  .o-action-btn[aria-expanded="true"] { background: rgba(135,90,123,0.08); color: var(--accent); }
+
+  /* === Dropdown : 3 colonnes Filtres / Group By / Favoris === */
+  .o-dropdown {
+    display: grid; grid-template-columns: 1fr;
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    margin-top: 6px; max-width: 720px;
+  }
+  @media (min-width: 720px) {
+    .o-dropdown { grid-template-columns: 1fr 1fr 1fr; }
+  }
+  .o-col {
+    padding: 8px 0; border-bottom: 1px solid var(--border);
+  }
+  @media (min-width: 720px) {
+    .o-col { border-bottom: 0; border-right: 1px solid var(--border); }
+    .o-col:last-child { border-right: 0; }
+  }
+  .o-col h4 {
+    margin: 0; padding: 4px 14px 8px;
+    font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .o-col h4 .ic { color: var(--accent); }
+
+  .o-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 14px;
+    font-size: 13px; cursor: pointer; user-select: none;
+  }
+  .o-item:hover { background: #f8f8f5; }
+  .o-item.has-sub::after {
+    content: '›'; margin-left: auto; color: var(--muted); font-size: 16px;
+  }
+  .o-item.checked { color: var(--primary); }
+  .o-item.checked .checkmark { color: var(--primary); }
+  .o-item .checkmark { width: 14px; color: transparent; }
+  .o-item.checked .checkmark { color: var(--primary); }
+  .o-section-divider {
+    height: 1px; background: var(--border); margin: 6px 0;
+  }
+
+  /* Suggestion sub-menu (slide-out) */
+  .o-sub {
+    padding: 6px 0 6px 28px;
     background: #fbfbf9;
+    border-top: 1px solid var(--border);
   }
-  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
-  .field select, .field input[type="date"] {
-    width: 100%; height: 40px; padding: 0 10px; border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface); font-size: 14px;
+  .o-sub .o-item { padding-left: 14px; font-size: 12px; }
+
+  /* === État : Suggestion sur saisie === */
+  .o-suggestions {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    margin-top: 6px; padding: 4px 0;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.1);
+    max-width: 540px;
   }
-
-  .pills { display: flex; flex-wrap: wrap; gap: 8px; min-height: 0; }
-  .pill {
-    display: inline-flex; align-items: center; gap: 6px;
-    padding: 4px 8px 4px 10px; border-radius: 999px;
-    background: rgba(45,80,22,0.08); color: var(--primary);
-    font-size: 12px; font-weight: 500;
+  .o-suggestions .label {
+    padding: 6px 14px; font-size: 11px; color: var(--muted);
+    text-transform: uppercase; letter-spacing: 0.06em;
   }
-  .pill button { background: transparent; border: 0; cursor: pointer; color: inherit; padding: 0 2px; font-size: 14px; line-height: 1; min-width: 20px; min-height: 20px; }
-  .pill button:hover { color: var(--primary-hover); }
-
-  /* Desktop */
-  @media (min-width: 768px) {
-    .advanced-panel { grid-template-columns: repeat(3, 1fr); }
+  .o-suggestions .o-item .term {
+    background: rgba(45,80,22,0.1); color: var(--primary);
+    padding: 1px 6px; border-radius: 3px; font-weight: 500;
   }
+  .o-suggestions .o-item.focused { background: rgba(45,80,22,0.08); }
 
-  /* States demo */
-  .states { display: grid; gap: 12px; grid-template-columns: 1fr; }
-  @media (min-width: 768px) { .states { grid-template-columns: repeat(2, 1fr); } }
-  .state-card { padding: 12px; border: 1px dashed var(--border); border-radius: var(--radius); background: var(--surface); }
-  .state-card .state-name { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
-
-  .a11y-note { font-size: 12px; color: var(--muted); margin-top: 8px; }
+  /* Mobile : la barre devient empilée verticalement quand pas de room */
+  @media (max-width: 600px) {
+    .o-actions { width: 100%; margin-left: 0; border-left: 0; border-top: 1px solid var(--border); padding-top: 6px; padding-left: 0; justify-content: space-around; }
+    .o-actions button { flex: 1; justify-content: center; }
+  }
 </style>
 </head>
 <body>
-  <h1>SearchBar — Wireframe</h1>
-  <div class="note">Filtrage dynamique pour toutes les listes (Parcellaire / Travaux / Troupeau). Debounce 300 ms. Filter pills affichent les filtres actifs.</div>
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></symbol>
+    <symbol id="i-filter" viewBox="0 0 24 24"><path d="M3 6h18M6 12h12M10 18h4"/></symbol>
+    <symbol id="i-group" viewBox="0 0 24 24"><circle cx="6" cy="6" r="2"/><circle cx="18" cy="6" r="2"/><circle cx="6" cy="18" r="2"/><circle cx="18" cy="18" r="2"/><path d="M8 6h8M8 18h8M6 8v8M18 8v8"/></symbol>
+    <symbol id="i-star" viewBox="0 0 24 24"><path d="m12 2 3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18M6 6l12 12"/></symbol>
+  </svg>
 
-  <h2>Desktop (≥ 768px)</h2>
+  <h1>SearchBar — Wireframe (style Odoo SearchPanel)</h1>
+  <div class="note">
+    Pattern Odoo : <strong>une seule barre</strong> qui contient les filtres actifs (facets) + zone de saisie.
+    Au focus, suggestions par champ. Trois menus : <strong>Filtres</strong>, <strong>Group By</strong>, <strong>Favoris</strong>.
+    Multi-tag (plusieurs valeurs sur un même champ) supporté.
+  </div>
+
+  <h2>1. Barre vide (focus)</h2>
   <div class="stage">
-    <div class="searchbar" role="search" aria-label="Rechercher parcelles">
-      <div class="searchbar-row">
-        <div class="search-input">
-          <span class="icon" aria-hidden="true">🔍</span>
-          <input type="text" value="darval" placeholder="Rechercher parcelles…" aria-label="Recherche">
-          <button class="clear-btn" aria-label="Effacer la recherche">✕</button>
-        </div>
-        <button class="btn-advanced" aria-expanded="true" aria-controls="adv-1">
-          <span>Filtres avancés</span>
-          <span aria-hidden="true">▾</span>
-        </button>
-      </div>
-
-      <div class="advanced-panel" id="adv-1">
-        <div class="field">
-          <label for="f-culture">Culture</label>
-          <select id="f-culture"><option>Blé</option><option>Maïs</option><option>Colza</option></select>
-        </div>
-        <div class="field">
-          <label for="f-status">Statut</label>
-          <select id="f-status"><option>Tous</option><option>Actif</option><option>Jachère</option></select>
-        </div>
-        <div class="field">
-          <label for="f-date">Semis après le</label>
-          <input id="f-date" type="date" value="2026-03-01">
-        </div>
-      </div>
-
-      <div class="pills" aria-label="Filtres actifs">
-        <span class="pill">Culture: Blé <button aria-label="Retirer Culture Blé">×</button></span>
-        <span class="pill">Statut: Actif <button aria-label="Retirer Statut Actif">×</button></span>
-        <span class="pill">Semis ≥ 2026-03-01 <button aria-label="Retirer filtre date">×</button></span>
+    <div class="o-searchbar" role="search" aria-label="Rechercher">
+      <svg class="icon icon-search"><use href="#i-search"/></svg>
+      <input class="o-input" placeholder="Rechercher…" aria-label="Recherche">
+      <div class="o-actions">
+        <button class="o-action-btn" aria-expanded="false"><svg class="icon"><use href="#i-filter"/></svg> Filtres</button>
+        <button class="o-action-btn" aria-expanded="false"><svg class="icon"><use href="#i-group"/></svg> Regrouper</button>
+        <button class="o-action-btn" aria-expanded="false"><svg class="icon"><use href="#i-star"/></svg> Favoris</button>
       </div>
     </div>
   </div>
 
-  <h2>Mobile (&lt; 768px)</h2>
-  <div class="stage" style="max-width: 360px;">
-    <div class="searchbar" role="search" aria-label="Rechercher">
-      <div class="search-input">
-        <span class="icon" aria-hidden="true">🔍</span>
-        <input type="text" placeholder="Rechercher…" aria-label="Recherche">
+  <h2>2. Suggestions sur saisie (recherche par champ)</h2>
+  <div class="stage">
+    <div class="o-searchbar" role="search">
+      <svg class="icon icon-search"><use href="#i-search"/></svg>
+      <input class="o-input" value="darval" aria-label="Recherche">
+      <div class="o-actions">
+        <button class="o-action-btn"><svg class="icon"><use href="#i-filter"/></svg> Filtres</button>
+        <button class="o-action-btn"><svg class="icon"><use href="#i-group"/></svg> Regrouper</button>
+        <button class="o-action-btn"><svg class="icon"><use href="#i-star"/></svg> Favoris</button>
       </div>
-      <button class="btn-advanced" aria-expanded="false" aria-controls="adv-2" style="justify-content: center;">
-        Filtres avancés <span aria-hidden="true">▾</span>
-      </button>
-      <div class="pills" aria-label="Filtres actifs">
-        <span class="pill">Culture: Blé <button aria-label="Retirer">×</button></span>
+    </div>
+    <div class="o-suggestions" role="listbox" aria-label="Suggestions">
+      <div class="label">Rechercher « <strong>darval</strong> » dans :</div>
+      <div class="o-item focused" role="option" aria-selected="true">
+        <svg class="icon checkmark"><use href="#i-search"/></svg>
+        Nom : <span class="term" style="margin-left:4px;">darval</span>
+      </div>
+      <div class="o-item" role="option">
+        <svg class="icon checkmark"><use href="#i-search"/></svg>
+        Code : <span class="term" style="margin-left:4px;">darval</span>
+      </div>
+      <div class="o-item" role="option">
+        <svg class="icon checkmark"><use href="#i-search"/></svg>
+        Notes : <span class="term" style="margin-left:4px;">darval</span>
+      </div>
+      <div class="o-item" role="option">
+        <svg class="icon checkmark"><use href="#i-search"/></svg>
+        Variété : <span class="term" style="margin-left:4px;">darval</span>
       </div>
     </div>
   </div>
 
-  <h2>États</h2>
-  <div class="states">
-    <div class="state-card">
-      <div class="state-name">Vide (placeholder)</div>
-      <div class="search-input"><span class="icon">🔍</span><input placeholder="Rechercher parcelles…"></div>
+  <h2>3. Filtres actifs (facets) + saisie en cours</h2>
+  <div class="stage">
+    <div class="o-searchbar" role="search">
+      <svg class="icon icon-search"><use href="#i-search"/></svg>
+      <span class="o-facet">
+        <span class="field">Culture</span>
+        <span class="values">Blé <span class="sep">ou</span> Maïs</span>
+        <button class="remove" aria-label="Retirer le filtre Culture"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>
+      </span>
+      <span class="o-facet">
+        <span class="field">Statut</span>
+        <span class="values">Actif</span>
+        <button class="remove" aria-label="Retirer le filtre Statut"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>
+      </span>
+      <span class="o-facet">
+        <span class="field">Semis ≥</span>
+        <span class="values">01/03/2026</span>
+        <button class="remove" aria-label="Retirer le filtre Semis"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>
+      </span>
+      <input class="o-input" placeholder="Affiner…" aria-label="Recherche">
+      <div class="o-actions">
+        <button class="o-action-btn"><svg class="icon"><use href="#i-filter"/></svg> Filtres</button>
+        <button class="o-action-btn"><svg class="icon"><use href="#i-group"/></svg> Regrouper</button>
+        <button class="o-action-btn"><svg class="icon"><use href="#i-star"/></svg> Favoris</button>
+      </div>
     </div>
-    <div class="state-card">
-      <div class="state-name">Focus</div>
-      <div class="search-input" style="border-color: var(--primary); box-shadow: 0 0 0 2px rgba(45,80,22,0.15);"><span class="icon">🔍</span><input value="darval"></div>
+  </div>
+
+  <h2>4. Dropdown 3 colonnes (Filtres / Regrouper / Favoris)</h2>
+  <div class="stage">
+    <div class="o-searchbar" role="search">
+      <svg class="icon icon-search"><use href="#i-search"/></svg>
+      <input class="o-input" aria-label="Recherche">
+      <div class="o-actions">
+        <button class="o-action-btn" aria-expanded="true"><svg class="icon"><use href="#i-filter"/></svg> Filtres</button>
+        <button class="o-action-btn" aria-expanded="true"><svg class="icon"><use href="#i-group"/></svg> Regrouper</button>
+        <button class="o-action-btn" aria-expanded="true"><svg class="icon"><use href="#i-star"/></svg> Favoris</button>
+      </div>
     </div>
-    <div class="state-card">
-      <div class="state-name">Avec valeur + clear</div>
-      <div class="search-input"><span class="icon">🔍</span><input value="darval"><button class="clear-btn">✕</button></div>
+
+    <div class="o-dropdown">
+      <!-- Filtres -->
+      <div class="o-col">
+        <h4><svg class="icon ic"><use href="#i-filter"/></svg> Filtres</h4>
+        <div class="o-item checked">
+          <svg class="icon checkmark"><use href="#i-check"/></svg> Mes parcelles
+        </div>
+        <div class="o-item">
+          <svg class="icon checkmark"><use href="#i-check"/></svg> Archivées
+        </div>
+        <div class="o-section-divider"></div>
+        <div class="o-item has-sub">
+          <svg class="icon checkmark"><use href="#i-check"/></svg> Culture
+        </div>
+        <div class="o-sub">
+          <div class="o-item checked"><svg class="icon checkmark icon-sm"><use href="#i-check"/></svg> Blé</div>
+          <div class="o-item checked"><svg class="icon checkmark icon-sm"><use href="#i-check"/></svg> Maïs</div>
+          <div class="o-item"><svg class="icon checkmark icon-sm"><use href="#i-check"/></svg> Colza</div>
+          <div class="o-item"><svg class="icon checkmark icon-sm"><use href="#i-check"/></svg> Orge</div>
+        </div>
+        <div class="o-item has-sub">
+          <svg class="icon checkmark"><use href="#i-check"/></svg> Date de semis
+        </div>
+        <div class="o-item has-sub">
+          <svg class="icon checkmark"><use href="#i-check"/></svg> Surface
+        </div>
+      </div>
+      <!-- Group By -->
+      <div class="o-col">
+        <h4><svg class="icon ic"><use href="#i-group"/></svg> Regrouper</h4>
+        <div class="o-item">
+          <svg class="icon checkmark"><use href="#i-check"/></svg> Culture
+        </div>
+        <div class="o-item checked">
+          <svg class="icon checkmark"><use href="#i-check"/></svg> Statut
+        </div>
+        <div class="o-item">
+          <svg class="icon checkmark"><use href="#i-check"/></svg> Année de semis
+        </div>
+        <div class="o-item">
+          <svg class="icon checkmark"><use href="#i-check"/></svg> Exploitation
+        </div>
+        <div class="o-section-divider"></div>
+        <div class="o-item" style="color: var(--accent);">+ Ajouter un groupe…</div>
+      </div>
+      <!-- Favoris -->
+      <div class="o-col">
+        <h4><svg class="icon ic"><use href="#i-star"/></svg> Favoris</h4>
+        <div class="o-item">
+          <svg class="icon"><use href="#i-star"/></svg> Mes parcelles actives
+        </div>
+        <div class="o-item">
+          <svg class="icon"><use href="#i-star"/></svg> À traiter cette semaine
+        </div>
+        <div class="o-item">
+          <svg class="icon"><use href="#i-star"/></svg> Blé 2026
+        </div>
+        <div class="o-section-divider"></div>
+        <div class="o-item" style="color: var(--accent);">★ Enregistrer cette recherche…</div>
+      </div>
     </div>
-    <div class="state-card">
-      <div class="state-name">Disabled</div>
-      <div class="search-input" style="background: #f4f4f0; color: var(--muted);"><span class="icon">🔍</span><input value="" placeholder="Indisponible" disabled></div>
+  </div>
+
+  <h2>5. Multi-sélection sur un champ (checkboxes)</h2>
+  <div class="stage" style="max-width: 320px;">
+    <div class="o-dropdown" style="grid-template-columns: 1fr;">
+      <div class="o-col">
+        <h4>Culture</h4>
+        <div class="o-item checked"><svg class="icon checkmark"><use href="#i-check"/></svg> Blé</div>
+        <div class="o-item checked"><svg class="icon checkmark"><use href="#i-check"/></svg> Maïs</div>
+        <div class="o-item"><svg class="icon checkmark"><use href="#i-check"/></svg> Colza</div>
+        <div class="o-item"><svg class="icon checkmark"><use href="#i-check"/></svg> Orge</div>
+        <div class="o-item"><svg class="icon checkmark"><use href="#i-check"/></svg> Tournesol</div>
+      </div>
+    </div>
+  </div>
+
+  <h2>6. Mobile (&lt; 600px)</h2>
+  <div class="stage" style="max-width: 340px;">
+    <div class="o-searchbar">
+      <svg class="icon icon-search"><use href="#i-search"/></svg>
+      <span class="o-facet">
+        <span class="field">Culture</span>
+        <span class="values">Blé</span>
+        <button class="remove" aria-label="Retirer"><svg class="icon icon-sm"><use href="#i-x"/></svg></button>
+      </span>
+      <input class="o-input" placeholder="Rechercher…" aria-label="Recherche">
+      <div class="o-actions">
+        <button class="o-action-btn"><svg class="icon"><use href="#i-filter"/></svg></button>
+        <button class="o-action-btn"><svg class="icon"><use href="#i-group"/></svg></button>
+        <button class="o-action-btn"><svg class="icon"><use href="#i-star"/></svg></button>
+      </div>
     </div>
   </div>
 
   <h2>Accessibilité</h2>
-  <ul class="a11y-note">
-    <li>role="search" sur le conteneur</li>
-    <li>aria-label sur input + clear button</li>
-    <li>aria-expanded + aria-controls sur le bouton "Filtres avancés"</li>
-    <li>Pills : chaque bouton de retrait a un aria-label spécifique</li>
-    <li>Contraste texte ≥ 4.5:1 (vérifié : #1a1a1a sur #ffffff = 18.6:1)</li>
-    <li>Cibles tactiles ≥ 44 × 44 px (input height 44px, boutons min 32px + padding)</li>
-    <li>Navigation clavier : Tab → input → clear → bouton avancé → champs avancés</li>
+  <ul style="font-size: 13px; color: var(--muted);">
+    <li><code>role="search"</code> sur le conteneur racine.</li>
+    <li>Facets : chaque bouton de retrait a un <code>aria-label</code> explicite ("Retirer le filtre Culture").</li>
+    <li>Suggestions : <code>role="listbox"</code> + items <code>role="option"</code> + <code>aria-selected</code>.</li>
+    <li>Boutons d'action : <code>aria-expanded</code> sur Filtres / Regrouper / Favoris.</li>
+    <li>Navigation clavier : ↑/↓ pour parcourir suggestions, Enter pour valider, Backspace efface la dernière facet quand input vide.</li>
+    <li>Contraste primary #2d5016 sur fond #fff = 8.9:1 ✓, accent #875a7b sur #fff = 5.5:1 ✓.</li>
+    <li>Cibles tactiles ≥ 32 px (icônes) / 44 px (barre principale).</li>
   </ul>
 </body>
 </html>

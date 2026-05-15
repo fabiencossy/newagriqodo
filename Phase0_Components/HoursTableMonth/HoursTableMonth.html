@@ -8,7 +8,10 @@
   :root {
     --primary: #2d5016; --bg: #fafaf7; --surface: #ffffff;
     --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
-    --radius: 6px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
     --pos: #16a34a; --neg: #dc2626; --neutral: #6b6b6b;
   }
   * { box-sizing: border-box; }
@@ -32,7 +35,7 @@
   }
   .year-picker button {
     width: 28px; height: 28px; min-width: 28px;
-    border: 0; background: transparent; cursor: pointer; border-radius: 4px;
+    border: 0; background: transparent; cursor: pointer; border-radius: var(--radius-sm);
   }
   .year-picker button:hover { background: #f1f1ee; }
   .year-picker .year { font-weight: 600; min-width: 50px; text-align: center; }
@@ -178,9 +181,9 @@
   <div class="card">
     <header><h3>Bilan heures</h3></header>
     <div aria-busy="true">
-      <div style="height: 30px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; margin-bottom: 4px;"></div>
-      <div style="height: 30px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; margin-bottom: 4px;"></div>
-      <div style="height: 30px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px;"></div>
+      <div style="height: 30px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: var(--radius-sm); margin-bottom: 4px;"></div>
+      <div style="height: 30px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: var(--radius-sm); margin-bottom: 4px;"></div>
+      <div style="height: 30px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: var(--radius-sm);"></div>
     </div>
   </div>
 

@@ -9,7 +9,10 @@
     --primary: #2d5016; --primary-hover: #1f3a0e;
     --bg: #fafaf7; --surface: #ffffff;
     --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
-    --radius: 6px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
   }
   * { box-sizing: border-box; }
   body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
@@ -46,7 +49,7 @@
   }
   .menu li button {
     width: 100%; text-align: left; height: 40px; padding: 0 12px;
-    border: 0; background: transparent; cursor: pointer; border-radius: 4px;
+    border: 0; background: transparent; cursor: pointer; border-radius: var(--radius-sm);
     display: flex; align-items: center; gap: 10px; font-size: 14px;
   }
   .menu li button:hover { background: #f8f8f5; }
@@ -64,7 +67,7 @@
     padding: 16px; max-width: 360px;
   }
   .pdf-preview header { display: flex; align-items: center; gap: 8px; border-bottom: 2px solid var(--primary); padding-bottom: 8px; margin-bottom: 10px; }
-  .pdf-preview .logo { width: 28px; height: 28px; background: var(--primary); color: #fff; border-radius: 4px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; }
+  .pdf-preview .logo { width: 28px; height: 28px; background: var(--primary); color: #fff; border-radius: var(--radius-sm); display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; letter-spacing: 0.05em; }
   .pdf-preview h3 { margin: 0; font-size: 14px; }
   .pdf-preview .sub { color: var(--muted); font-size: 11px; }
   .pdf-preview table { width: 100%; border-collapse: collapse; font-size: 11px; }

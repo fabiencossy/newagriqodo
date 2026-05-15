@@ -9,7 +9,10 @@
     --primary: #2d5016; --primary-hover: #1f3a0e;
     --bg: #fafaf7; --surface: #ffffff;
     --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
-    --radius: 6px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
   }
   * { box-sizing: border-box; }
   body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
@@ -64,22 +67,22 @@
   .btn-icon { width: 40px; min-width: 40px; padding: 0; display: inline-flex; align-items: center; justify-content: center; }
 
   /* Mobile bottom sheet */
-  .mobile-frame { max-width: 360px; border: 1px solid var(--border); border-radius: 12px; overflow: hidden; background: #f1f1ee; }
+  .mobile-frame { max-width: 360px; border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; background: #f1f1ee; }
   .mobile-content { padding: 16px; min-height: 200px; color: var(--muted); display: flex; align-items: center; justify-content: center; }
   .sheet {
     background: var(--surface);
-    border-top-left-radius: 16px; border-top-right-radius: 16px;
+    border-top-left-radius: var(--radius-lg); border-top-right-radius: var(--radius-lg);
     box-shadow: 0 -4px 12px rgba(0,0,0,0.1);
     transform: translateY(0); transition: transform 250ms ease-out;
   }
-  .sheet .handle { width: 36px; height: 4px; background: var(--border); border-radius: 2px; margin: 8px auto; }
+  .sheet .handle { width: 36px; height: 4px; background: var(--border); border-radius: var(--radius-sm); margin: 8px auto; }
   .sheet header { display: flex; align-items: center; padding: 4px 16px 8px; }
   .sheet header h3 { margin: 0; font-size: 15px; flex: 1; }
   .sheet .body { padding: 0 16px 12px; max-height: 280px; overflow-y: auto; }
   .sheet footer { padding: 12px 16px; border-top: 1px solid var(--border); display: flex; gap: 8px; }
 
   /* Loading skeleton */
-  .skeleton { background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; }
+  .skeleton { background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: var(--radius-sm); }
   @keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
 </style>
 </head>

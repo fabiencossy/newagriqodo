@@ -9,7 +9,10 @@
     --primary: #2d5016; --primary-hover: #1f3a0e;
     --bg: #fafaf7; --surface: #ffffff;
     --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
-    --radius: 6px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
     --error: #dc2626; --success: #16a34a; --accent: #875a7b;
   }
   * { box-sizing: border-box; }
@@ -50,7 +53,7 @@
   .pauses-header h4 { margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; flex: 1; }
   .pauses-header button.add-pause {
     height: 30px; padding: 0 10px;
-    border: 1px solid var(--border); background: var(--surface); border-radius: 4px;
+    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-sm);
     cursor: pointer; font-size: 12px; display: inline-flex; align-items: center; gap: 4px;
     color: var(--accent);
   }
@@ -63,7 +66,7 @@
   .pause-row input { height: 38px; padding: 0 10px; font-size: 14px; }
   .pause-row .remove {
     height: 38px; width: 38px;
-    border: 1px solid var(--border); background: var(--surface); border-radius: 4px;
+    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-sm);
     cursor: pointer; color: var(--muted);
     display: inline-flex; align-items: center; justify-content: center;
   }
@@ -106,7 +109,7 @@
   }
   .quick-times button {
     height: 26px; padding: 0 8px;
-    border: 1px solid var(--border); background: var(--surface); border-radius: 4px;
+    border: 1px solid var(--border); background: var(--surface); border-radius: var(--radius-pill);
     cursor: pointer; font-size: 11px; color: var(--text);
   }
   .quick-times button:hover { background: rgba(45,80,22,0.06); color: var(--primary); }

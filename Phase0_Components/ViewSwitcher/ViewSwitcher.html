@@ -13,7 +13,10 @@
     --text: #1a1a1a;
     --muted: #6b6b6b;
     --border: #e5e5e5;
-    --radius: 6px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
   }
   * { box-sizing: border-box; }
   body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
@@ -35,7 +38,7 @@
     display: inline-flex; align-items: center; gap: 6px;
     height: 36px; padding: 0 14px; min-width: 44px;
     border: 0; background: transparent; cursor: pointer;
-    border-radius: 4px; font-size: 14px; color: var(--text);
+    border-radius: var(--radius-sm); font-size: 14px; color: var(--text);
     position: relative;
   }
   .segmented button:hover { background: rgba(0,0,0,0.04); }
@@ -49,7 +52,7 @@
   .tip-host[data-show-tip="true"]::after {
     content: attr(data-tip);
     position: absolute; top: calc(100% + 6px); left: 50%; transform: translateX(-50%);
-    background: #1a1a1a; color: #fff; padding: 4px 8px; border-radius: 4px;
+    background: #1a1a1a; color: #fff; padding: 4px 8px; border-radius: var(--radius-sm);
     font-size: 12px; white-space: nowrap; pointer-events: none; z-index: 10;
   }
 
@@ -71,7 +74,7 @@
   }
   .dropdown-menu li button {
     width: 100%; text-align: left; height: 40px; padding: 0 12px;
-    border: 0; background: transparent; cursor: pointer; border-radius: 4px;
+    border: 0; background: transparent; cursor: pointer; border-radius: var(--radius-sm);
     display: flex; align-items: center; gap: 10px;
   }
   .dropdown-menu li button[aria-selected="true"] {

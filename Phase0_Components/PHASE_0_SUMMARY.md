@@ -77,6 +77,7 @@
 
 ### Design tokens
 ```css
+/* Couleurs */
 --primary: #2d5016        /* Vert Qodo */
 --accent:  #875a7b        /* Aubergine Odoo */
 --bg:      #fafaf7
@@ -84,8 +85,21 @@
 --text:    #1a1a1a
 --muted:   #6b6b6b
 --border:  #e5e5e5
---radius:  6px
 --success: #16a34a · --warning: #f59e0b · --error: #dc2626
+
+/* Border radius — système unifié (v6) */
+--radius-sm:   6px      /* Petits éléments inline (hover bg interne, divers) */
+--radius:     10px      /* Boutons, inputs, cards, conteneurs principaux */
+--radius-lg:  16px      /* Modals, bottom sheets, grosses cards */
+--radius-pill: 999px    /* Chips, facets, badges, balance pills */
+```
+
+**Règle de cohérence** :
+- Plus aucune valeur de `border-radius` en dur dans les wireframes (sauf `50%` pour cercles : FAB, dots)
+- Boutons & inputs & cards : `var(--radius)` (10 px)
+- Chips et tags : `var(--radius-pill)` (pill complète)
+- Petits éléments (hover bg de boutons icône) : `var(--radius-sm)`
+- Conteneurs modaux mobile : `var(--radius-lg)`
 
 /* Dark (SearchBar opt-in) */
 --bar-bg:      #1f242b

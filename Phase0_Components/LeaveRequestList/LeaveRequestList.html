@@ -8,7 +8,10 @@
   :root {
     --primary: #2d5016; --bg: #fafaf7; --surface: #ffffff;
     --text: #1a1a1a; --muted: #6b6b6b; --border: #e5e5e5;
-    --radius: 6px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
     --pending: #f59e0b; --approved: #16a34a; --rejected: #dc2626;
   }
   * { box-sizing: border-box; }
@@ -28,7 +31,7 @@
   .card header h3 { margin: 0; font-size: 16px; }
   .balance-pill {
     display: inline-flex; align-items: center; gap: 6px;
-    padding: 6px 12px; border-radius: 999px;
+    padding: 6px 12px; border-radius: var(--radius-pill);
     background: rgba(45,80,22,0.08); color: var(--primary);
     font-size: 13px; font-weight: 500;
   }
@@ -39,7 +42,7 @@
   }
   .filters button {
     height: 32px; padding: 0 12px; border: 0; background: transparent; cursor: pointer;
-    border-radius: 4px; font-size: 13px; color: var(--text);
+    border-radius: var(--radius-sm); font-size: 13px; color: var(--text);
   }
   .filters button[aria-pressed="true"] { background: var(--surface); font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.08); }
 
@@ -58,7 +61,7 @@
   }
   .badge {
     display: inline-flex; align-items: center; gap: 4px;
-    padding: 3px 8px; border-radius: 999px;
+    padding: 3px 8px; border-radius: var(--radius-pill);
     font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
     white-space: nowrap;
   }
@@ -171,9 +174,9 @@
   <h2>État loading</h2>
   <div class="card" aria-busy="true">
     <header><h3>Mes congés</h3></header>
-    <div style="height: 60px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; margin-bottom: 8px;"></div>
-    <div style="height: 60px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px; margin-bottom: 8px;"></div>
-    <div style="height: 60px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: 4px;"></div>
+    <div style="height: 60px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: var(--radius-sm); margin-bottom: 8px;"></div>
+    <div style="height: 60px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: var(--radius-sm); margin-bottom: 8px;"></div>
+    <div style="height: 60px; background: linear-gradient(90deg, #eee, #f5f5f5, #eee); background-size: 200% 100%; animation: shimmer 1.2s infinite; border-radius: var(--radius-sm);"></div>
   </div>
 
   <h2>Sync Odoo indisponible</h2>

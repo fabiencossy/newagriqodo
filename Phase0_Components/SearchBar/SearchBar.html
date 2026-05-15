@@ -14,7 +14,10 @@
     --text: #1a1a1a;
     --muted: #6b6b6b;
     --border: #e5e5e5;
-    --radius: 6px;
+    --radius: 10px;
+    --radius-sm: 6px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
   }
   * { box-sizing: border-box; }
   body { font-family: system-ui, sans-serif; margin: 0; padding: 24px; background: var(--bg); color: var(--text); }
@@ -52,7 +55,7 @@
     width: 26px; height: 26px;
     background: transparent; border: 0; cursor: pointer; color: inherit;
     display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 3px;
+    border-radius: var(--radius-sm);
   }
   .sb .lead button:hover { background: #f1f1ee; color: var(--text); }
   .sb .lead button[aria-pressed="true"] { color: var(--accent); background: rgba(135,90,123,0.08); }
@@ -74,8 +77,8 @@
   .facet {
     display: inline-flex; align-items: center; gap: 4px;
     background: var(--accent); color: #fff;
-    padding: 2px 4px 2px 8px;
-    border-radius: 3px;
+    padding: 2px 4px 2px 10px;
+    border-radius: var(--radius-pill);
     font-size: 12px; line-height: 1; white-space: nowrap;
     height: 22px;
   }
@@ -84,7 +87,7 @@
     background: transparent; border: 0; cursor: pointer; color: inherit;
     width: 18px; height: 18px; padding: 0;
     display: inline-flex; align-items: center; justify-content: center;
-    border-radius: 2px;
+    border-radius: var(--radius-sm);
   }
   .facet button:hover { background: rgba(0,0,0,0.2); }
 
@@ -155,7 +158,7 @@
     max-width: 540px;
   }
   .suggestions .hdr { padding: 6px 14px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
-  .suggestions .item .term { background: rgba(45,80,22,0.1); color: var(--primary); padding: 1px 6px; border-radius: 3px; font-weight: 500; }
+  .suggestions .item .term { background: rgba(45,80,22,0.1); color: var(--primary); padding: 1px 6px; border-radius: var(--radius-sm); font-weight: 500; }
   .suggestions .item.focused { background: rgba(45,80,22,0.07); }
 
   /* ===========================================================

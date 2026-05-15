@@ -19,8 +19,9 @@
   "dependencies": {
     "@tanstack/react-query": "^5.59.0",
     "@types/geojson": "^7946.0.16",
+    "@types/leaflet": "^1.9.21",
     "@types/shpjs": "^3.4.7",
-    "maplibre-gl": "^5.24.0",
+    "leaflet": "^1.9.4",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
     "react-router-dom": "^7.1.1",

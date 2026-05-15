@@ -1,14 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import maplibregl, { type Map as MaplibreMap, type MapMouseEvent } from 'maplibre-gl';
-import 'maplibre-gl/dist/maplibre-gl.css';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { MapIcon, type IconName } from './icons';
-import { BASEMAP_LABELS, BASEMAP_STYLES } from './basemaps';
 import {
   MAP_VIEW_DEFAULTS,
   MARKER_COLORS,
   TOOL_LABELS,
   TOOL_SHORTCUTS,
-  parcelsToFeatureCollection,
   type Basemap,
   type MapTool,
   type MapViewProps,
@@ -24,10 +22,22 @@ const TOOL_ICONS: Record<MapTool, IconName> = {
   layers: 'layers',
 };
 
-const PARCEL_SOURCE = 'qodo-parcels';
-const PARCEL_FILL_LAYER = 'qodo-parcels-fill';
-const PARCEL_LINE_LAYER = 'qodo-parcels-line';
-const PARCEL_LABEL_LAYER = 'qodo-parcels-label';
+/* ============ Sources de tuiles (Swisstopo WMTS) ============ */
+const TILE_URLS: Record<Basemap, string> = {
+  satellite:
+    'https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.swissimage/default/current/3857/{z}/{x}/{y}.jpeg',
+  street:
+    'https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg',
+  topo: 'https://wmts.geo.admin.ch/1.0.0/ch.swisstopo.pixelkarte-farbe/default/current/3857/{z}/{x}/{y}.jpeg',
+};
+
+const TILE_ATTRIBUTION = '© <a href="https://www.swisstopo.admin.ch" target="_blank">swisstopo</a>';
+
+const BASEMAP_LABELS: Record<Basemap, string> = {
+  street: 'Carte',
+  satellite: 'Satellite',
+  topo: 'Topo',
+};
 
 export function MapView({
   parcels,
@@ -38,7 +48,6 @@ export function MapView({
   activeTool = MAP_VIEW_DEFAULTS.activeTool,
   onToolChange,
   enabledTools = MAP_VIEW_DEFAULTS.enabledTools,
-  onDrawComplete: _onDrawComplete,
   onCreateGroup,
   center = MAP_VIEW_DEFAULTS.defaultCenter,
   zoom = MAP_VIEW_DEFAULTS.zoom,
@@ -51,286 +60,180 @@ export function MapView({
   className,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<MaplibreMap | null>(null);
-  const markerRefs = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const mapRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const parcelLayerRef = useRef<L.GeoJSON | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
   const hasFittedRef = useRef(false);
-  const [mapReady, setMapReady] = useState(false);
   const [basemap, setBasemap] = useState<Basemap>(basemapProp ?? 'satellite');
-  // Compteur incrémenté à chaque setStyle pour re-déclencher l'init des layers
-  const [styleVersion, setStyleVersion] = useState(0);
 
   const effectiveSelectedIds = useMemo(
     () => [...(selectedIds ?? []), ...(selectedId ? [selectedId] : [])].filter(Boolean),
     [selectedIds, selectedId],
   );
 
-  /* ---------- Init carte ---------- */
+  /* ---------- Init carte Leaflet ---------- */
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
 
-    let cancelled = false;
-    let rafId = 0;
-    let map: MaplibreMap | null = null;
-    let ro: ResizeObserver | null = null;
+    const map = L.map(containerRef.current, {
+      // Leaflet utilise [lat, lng] et non [lng, lat] !
+      center: [center[1], center[0]],
+      zoom,
+      minZoom: zoomRange[0],
+      maxZoom: zoomRange[1],
+      zoomControl: false, // on ajoute en bas-gauche manuellement
+      attributionControl: true,
+      dragging: interactive,
+      scrollWheelZoom: interactive,
+      doubleClickZoom: interactive,
+      boxZoom: interactive,
+      keyboard: interactive,
+      touchZoom: interactive,
+    });
 
-    // Attendre que le container ait une taille non-nulle avant d'instancier
-    // la map. Sans ça, au reload (avant que le layout soit calculé), Maplibre
-    // crée un canvas WebGL 0×0 et ne se réveille jamais correctement.
-    function waitForSize() {
-      if (cancelled) return;
-      const c = containerRef.current;
-      if (!c) return;
-      const w = c.offsetWidth;
-      const h = c.offsetHeight;
-      if (w === 0 || h === 0) {
-        rafId = requestAnimationFrame(waitForSize);
-        return;
-      }
-      initMap(c, w, h);
+    if (interactive) {
+      L.control.zoom({ position: 'bottomleft' }).addTo(map);
     }
 
-    function initMap(container: HTMLDivElement, w: number, h: number) {
-      console.log('[MapView] init', { center, zoom, basemap, w, h });
-      map = new maplibregl.Map({
-        container,
-        style: BASEMAP_STYLES[basemap],
-        center,
-        zoom,
-        minZoom: zoomRange[0],
-        maxZoom: zoomRange[1],
-        interactive,
-      });
-      map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-left');
+    // Première couche de tuiles
+    const tileLayer = L.tileLayer(TILE_URLS[basemap], {
+      attribution: TILE_ATTRIBUTION,
+      maxZoom: 22,
+    });
+    tileLayer.addTo(map);
+    tileLayerRef.current = tileLayer;
 
-      map.on('error', (e) => console.warn('[MapView] error', e));
-      map.on('load', () => console.log('[MapView] load OK'));
-      map.on('idle', () => console.log('[MapView] idle (tiles loaded)'));
-      map.on('styledata', () => {
-        if (mapRef.current === map) setStyleVersion((v) => v + 1);
-      });
+    // Groupes vides pour les markers et parcelles (mis à jour dans effets séparés)
+    markersLayerRef.current = L.layerGroup().addTo(map);
 
-      mapRef.current = map;
-      setMapReady(true);
-
-      ro = new ResizeObserver(() => {
-        if (map) {
-          map.resize();
-          map.triggerRepaint();
-        }
-      });
-      ro.observe(container);
-    }
-
-    waitForSize();
+    mapRef.current = map;
 
     return () => {
-      cancelled = true;
-      if (rafId) cancelAnimationFrame(rafId);
-      ro?.disconnect();
-      map?.remove();
+      map.remove();
       mapRef.current = null;
-      setMapReady(false);
+      tileLayerRef.current = null;
+      parcelLayerRef.current = null;
+      markersLayerRef.current = null;
+      hasFittedRef.current = false;
     };
-    // Initialiser uniquement au mount ; les changements de basemap passent par setStyle()
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [interactive]);
 
   /* ---------- Switch basemap ---------- */
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
-    map.setStyle(BASEMAP_STYLES[basemap], { diff: false });
-  }, [basemap, mapReady]);
+    if (!map || !tileLayerRef.current) return;
+    map.removeLayer(tileLayerRef.current);
+    const newLayer = L.tileLayer(TILE_URLS[basemap], {
+      attribution: TILE_ATTRIBUTION,
+      maxZoom: 22,
+    });
+    newLayer.addTo(map);
+    tileLayerRef.current = newLayer;
+  }, [basemap]);
 
-  /* ---------- Layers parcelles ---------- */
-  // styleVersion bump à chaque setStyle → force la ré-injection des sources/layers
+  /* ---------- Layer parcelles (GeoJSON) ---------- */
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
-    // Attendre que le style soit chargé après setStyle
-    if (!map.isStyleLoaded()) return;
+    if (!map) return;
 
-    const data = parcelsToFeatureCollection(parcels);
-
-    const existing = map.getSource(PARCEL_SOURCE) as maplibregl.GeoJSONSource | undefined;
-    if (existing) {
-      existing.setData(data);
-    } else {
-      map.addSource(PARCEL_SOURCE, { type: 'geojson', data });
-      map.addLayer({
-        id: PARCEL_FILL_LAYER,
-        type: 'fill',
-        source: PARCEL_SOURCE,
-        paint: {
-          'fill-color': [
-            'case',
-            ['boolean', ['feature-state', 'selected'], false],
-            '#2d5016',
-            ['get', 'color'],
-            ['get', 'color'],
-            '#f4a261',
-          ],
-          'fill-opacity': ['case', ['boolean', ['feature-state', 'selected'], false], 0.55, 0.35],
-        },
-      });
-      map.addLayer({
-        id: PARCEL_LINE_LAYER,
-        type: 'line',
-        source: PARCEL_SOURCE,
-        paint: {
-          'line-color': [
-            'case',
-            ['boolean', ['feature-state', 'selected'], false],
-            '#2d5016',
-            '#1a1a1a',
-          ],
-          'line-width': ['case', ['boolean', ['feature-state', 'selected'], false], 3, 1.5],
-        },
-      });
-      map.addLayer({
-        id: PARCEL_LABEL_LAYER,
-        type: 'symbol',
-        source: PARCEL_SOURCE,
-        layout: {
-          'text-field': ['concat', ['get', 'name']],
-          'text-size': 11,
-          'text-anchor': 'center',
-          'text-allow-overlap': false,
-        },
-        paint: {
-          'text-color': '#1a1a1a',
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 1.5,
-        },
-      });
+    // Retirer l'ancien layer si présent
+    if (parcelLayerRef.current) {
+      map.removeLayer(parcelLayerRef.current);
+      parcelLayerRef.current = null;
     }
-  }, [parcels, mapReady, styleVersion]);
 
-  /* ---------- Auto-fit aux parcelles (une seule fois au load) ---------- */
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-    if (hasFittedRef.current) return;
     if (parcels.length === 0) return;
 
-    // Calcul bbox des parcelles
-    let minLng = Infinity;
-    let minLat = Infinity;
-    let maxLng = -Infinity;
-    let maxLat = -Infinity;
-    for (const p of parcels) {
-      const polys =
-        p.geometry.type === 'Polygon' ? [p.geometry.coordinates] : p.geometry.coordinates;
-      for (const poly of polys) {
-        for (const ring of poly) {
-          for (const coord of ring) {
-            const lng = coord[0]!;
-            const lat = coord[1]!;
-            if (lng < minLng) minLng = lng;
-            if (lat < minLat) minLat = lat;
-            if (lng > maxLng) maxLng = lng;
-            if (lat > maxLat) maxLat = lat;
-          }
-        }
-      }
-    }
+    const featureCollection: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: parcels.map((p) => ({
+        type: 'Feature',
+        properties: { id: p.id, name: p.name, surface: p.surfaceHa },
+        geometry: p.geometry,
+      })),
+    };
 
-    if (Number.isFinite(minLng)) {
-      map.fitBounds(
-        [
-          [minLng, minLat],
-          [maxLng, maxLat],
-        ],
-        { padding: 60, animate: false, maxZoom: 17 },
-      );
+    const layer = L.geoJSON(featureCollection, {
+      style: (feature) => {
+        const id = feature?.properties?.id as string;
+        const isSelected = effectiveSelectedIds.includes(id);
+        const parcel = parcels.find((p) => p.id === id);
+        return {
+          color: isSelected ? '#2d5016' : '#1a1a1a',
+          weight: isSelected ? 3 : 1.5,
+          fillColor: isSelected ? '#2d5016' : (parcel?.color ?? '#f4a261'),
+          fillOpacity: isSelected ? 0.55 : 0.35,
+        };
+      },
+      onEachFeature: (feature, layerInstance) => {
+        const id = feature.properties?.id as string;
+        const name = feature.properties?.name as string;
+        // Label au centre
+        layerInstance.bindTooltip(name, {
+          permanent: true,
+          direction: 'center',
+          className: 'qodo-parcel-label',
+        });
+        // Clic = sélection
+        layerInstance.on('click', (e) => {
+          const orig = e.originalEvent as MouseEvent;
+          const multi = orig.shiftKey || orig.metaKey;
+          if (multi) {
+            const next = effectiveSelectedIds.includes(id)
+              ? effectiveSelectedIds.filter((s) => s !== id)
+              : [...effectiveSelectedIds, id];
+            onSelectionChange(next);
+          } else {
+            onSelectionChange([id]);
+          }
+        });
+      },
+    });
+    layer.addTo(map);
+    parcelLayerRef.current = layer;
+  }, [parcels, effectiveSelectedIds, onSelectionChange]);
+
+  /* ---------- Auto-fit aux parcelles (une seule fois) ---------- */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || hasFittedRef.current || parcels.length === 0) return;
+    if (!parcelLayerRef.current) return;
+    const bounds = parcelLayerRef.current.getBounds();
+    if (bounds.isValid()) {
+      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 17, animate: false });
       hasFittedRef.current = true;
     }
-  }, [parcels, mapReady]);
+  }, [parcels]);
 
-  /* ---------- Feature states (sélection) ---------- */
+  /* ---------- Markers ---------- */
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady) return;
-    for (const p of parcels) {
-      const isSel = effectiveSelectedIds.includes(p.id);
-      try {
-        map.setFeatureState({ source: PARCEL_SOURCE, id: p.id }, { selected: isSel });
-      } catch {
-        // Source pas encore prête : on ignore
-      }
-    }
-  }, [effectiveSelectedIds, parcels, mapReady, styleVersion]);
-
-  /* ---------- Sélection au clic ---------- */
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-    if (activeTool !== 'select') return;
-
-    const handler = (e: MapMouseEvent) => {
-      const features = map.queryRenderedFeatures(e.point, { layers: [PARCEL_FILL_LAYER] });
-      if (features.length === 0) {
-        onSelectionChange([]);
-        return;
-      }
-      const props = features[0]!.properties as { id?: string } | null;
-      const id = props?.id;
-      if (!id) return;
-      const multi = e.originalEvent.shiftKey || e.originalEvent.metaKey;
-      if (multi) {
-        const next = effectiveSelectedIds.includes(id)
-          ? effectiveSelectedIds.filter((s) => s !== id)
-          : [...effectiveSelectedIds, id];
-        onSelectionChange(next);
-      } else {
-        onSelectionChange([id]);
-      }
-    };
-    map.on('click', handler);
-    map.getCanvas().style.cursor = 'pointer';
-    return () => {
-      map.off('click', handler);
-      map.getCanvas().style.cursor = '';
-    };
-  }, [activeTool, onSelectionChange, effectiveSelectedIds, mapReady]);
-
-  /* ---------- Markers (interventions / observations / …) ---------- */
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapReady) return;
-
-    // Retirer anciens markers
-    const currentIds = new Set(markers.map((m) => m.id));
-    for (const [id, marker] of markerRefs.current.entries()) {
-      if (!currentIds.has(id)) {
-        marker.remove();
-        markerRefs.current.delete(id);
-      }
-    }
-
+    const layer = markersLayerRef.current;
+    if (!map || !layer) return;
+    layer.clearLayers();
     for (const m of markers) {
-      const existing = markerRefs.current.get(m.id);
       const color = m.color ?? MARKER_COLORS[m.kind];
-      if (existing) {
-        existing.setLngLat(m.position);
-        continue;
-      }
-      const marker = new maplibregl.Marker({ color }).setLngLat(m.position);
-      if (m.label) marker.setPopup(new maplibregl.Popup().setText(m.label));
-      marker.addTo(map);
-      markerRefs.current.set(m.id, marker);
+      const icon = L.divIcon({
+        html: `<span style="display:inline-block;width:16px;height:16px;background:${color};border:2px solid white;border-radius:50%;box-shadow:0 0 0 1px rgba(0,0,0,0.3);"></span>`,
+        className: '',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8],
+      });
+      const marker = L.marker([m.position[1], m.position[0]], { icon });
+      if (m.label) marker.bindPopup(m.label);
+      marker.addTo(layer);
     }
-  }, [markers, mapReady]);
+  }, [markers]);
 
   /* ---------- Raccourcis clavier outils ---------- */
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
-      // Ignore si l'utilisateur tape dans un input
       const target = e.target as HTMLElement;
       if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
         return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
-
       const key = e.key.toLowerCase();
       const tool = (Object.entries(TOOL_SHORTCUTS) as [MapTool, string][]).find(
         ([, k]) => k === key,
@@ -343,7 +246,6 @@ export function MapView({
     return () => document.removeEventListener('keydown', onKey);
   }, [onToolChange, enabledTools]);
 
-  /* ---------- Toolbar handlers ---------- */
   const handleToolClick = useCallback(
     (tool: MapTool) => {
       if (tool === 'group' && effectiveSelectedIds.length > 0) {
@@ -371,7 +273,7 @@ export function MapView({
         <div
           role="toolbar"
           aria-label="Outils carte"
-          className="absolute top-3 left-3 z-10 flex flex-col overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-card)"
+          className="absolute top-3 left-3 z-[400] flex flex-col overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-card)"
         >
           {enabledTools.map((tool, idx) => {
             const isActive = tool === activeTool;
@@ -392,7 +294,7 @@ export function MapView({
                   isActive
                     ? 'bg-(--color-accent) text-white'
                     : 'text-(--color-text) hover:bg-[#f5f5f0]',
-                  groupDisabled ? 'opacity-40 cursor-not-allowed' : '',
+                  groupDisabled ? 'cursor-not-allowed opacity-40' : '',
                 ].join(' ')}
               >
                 <MapIcon name={TOOL_ICONS[tool]} />
@@ -402,9 +304,9 @@ export function MapView({
         </div>
       )}
 
-      {/* Sélection badge */}
+      {/* Sélection badge (multi) */}
       {effectiveSelectedIds.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 z-10 -translate-x-1/2 transform">
+        <div className="absolute bottom-4 left-1/2 z-[500] -translate-x-1/2 transform">
           <div className="inline-flex items-center gap-3 rounded-(--radius-pill) bg-(--color-accent) px-4 py-2 text-sm font-medium text-white shadow-(--shadow-fab)">
             <span>
               <strong className="font-semibold">{effectiveSelectedIds.length}</strong> parcelles
@@ -432,7 +334,7 @@ export function MapView({
 
       {/* Légende markers */}
       {showLegend && markers.length > 0 && (
-        <div className="absolute bottom-3 left-3 z-10 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 py-2 text-xs shadow-(--shadow-card)">
+        <div className="absolute right-3 bottom-3 z-[400] rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 py-2 text-xs shadow-(--shadow-card)">
           <LegendDot color={MARKER_COLORS.intervention} label="Intervention" />
           <LegendDot color={MARKER_COLORS.observation} label="Observation" />
           <LegendDot color={MARKER_COLORS.problem} label="Problème" />
@@ -442,7 +344,7 @@ export function MapView({
         </div>
       )}
 
-      {/* Toggle basemap (haut-droite) — bouton unique avec dropdown Satellite/Topo */}
+      {/* Toggle basemap */}
       {showBasemapToggle && <BasemapPicker basemap={basemap} onChange={setBasemap} />}
     </div>
   );
@@ -484,7 +386,7 @@ function BasemapPicker({
   }, [open]);
 
   return (
-    <div ref={wrapperRef} className="absolute top-3 right-3 z-10">
+    <div ref={wrapperRef} className="absolute top-3 right-3 z-[400]">
       <button
         type="button"
         aria-haspopup="listbox"

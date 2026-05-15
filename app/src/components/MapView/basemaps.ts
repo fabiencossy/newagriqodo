@@ -41,14 +41,16 @@ const BASE_SATELLITE: StyleSpecification = {
   sources: {
     sat: {
       type: 'raster',
-      // ESRI World Imagery — officiel, gratuit, CORS OK, sans API key.
-      // À remplacer par self-hosted en Phase 2.5 si besoin.
+      // EOX Sentinel-2 cloudless 2024 — service public européen, CORS OK,
+      // gratuit pour usage non commercial / dev. Fonctionne sur localhost
+      // sans key. Couvre toute la Terre, max zoom 15 (suffisant pour l'agri).
       tiles: [
-        'https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        'https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2024_3857/default/g/{z}/{y}/{x}.jpg',
       ],
       tileSize: 256,
-      attribution: 'Tiles © Esri — Source : Esri, Maxar, GeoEye, Earthstar Geographics',
-      maxzoom: 19,
+      attribution:
+        'Sentinel-2 cloudless 2024 by EOX (Contains modified Copernicus Sentinel data 2024)',
+      maxzoom: 15,
     },
   },
   layers: [

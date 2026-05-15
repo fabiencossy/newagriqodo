@@ -16,8 +16,100 @@ import {
   type SortKey,
 } from './components/HoursTableMonth';
 import { LeaveRequestList, type LeaveStatusFilter } from './components/LeaveRequestList';
+import { TimesheetEntry } from './components/TimesheetEntry';
+import { MapView, type MapMarker, type MapTool, type Parcel } from './components/MapView';
 
 /* ============ Données d'exemple ============ */
+
+// Parcelles GeoJSON autour de Lausanne/Échallens (centre Suisse romande)
+const MAP_PARCELS: Parcel[] = [
+  {
+    id: 'PF-001',
+    name: 'Plat de la Cure',
+    surfaceHa: 2.5,
+    culture: 'Blé',
+    status: 'active',
+    color: '#f4a261',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [6.6285, 46.5215],
+          [6.633, 46.5218],
+          [6.6332, 46.5195],
+          [6.6287, 46.5192],
+          [6.6285, 46.5215],
+        ],
+      ],
+    },
+  },
+  {
+    id: 'PF-002',
+    name: 'Champ du Haut',
+    surfaceHa: 1.8,
+    culture: 'Blé',
+    status: 'active',
+    color: '#f4a261',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [6.634, 46.521],
+          [6.6385, 46.5213],
+          [6.6388, 46.519],
+          [6.6342, 46.5188],
+          [6.634, 46.521],
+        ],
+      ],
+    },
+  },
+  {
+    id: 'PF-003',
+    name: 'Petite Pièce',
+    surfaceHa: 0.9,
+    culture: 'Jachère',
+    status: 'fallow',
+    color: '#a3a380',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [6.628, 46.5185],
+          [6.6315, 46.5187],
+          [6.6317, 46.517],
+          [6.6282, 46.5168],
+          [6.628, 46.5185],
+        ],
+      ],
+    },
+  },
+  {
+    id: 'PF-004',
+    name: 'Champ Long',
+    surfaceHa: 4.1,
+    culture: 'Maïs',
+    status: 'active',
+    color: '#f59e0b',
+    geometry: {
+      type: 'Polygon',
+      coordinates: [
+        [
+          [6.6325, 46.5183],
+          [6.638, 46.5186],
+          [6.6383, 46.5165],
+          [6.6328, 46.5162],
+          [6.6325, 46.5183],
+        ],
+      ],
+    },
+  },
+];
+
+const MAP_MARKERS: MapMarker[] = [
+  { id: 'm1', kind: 'intervention', position: [6.6307, 46.5205] },
+  { id: 'm2', kind: 'observation', position: [6.6362, 46.5198], label: 'Carence azote ?' },
+  { id: 'm3', kind: 'problem', position: [6.6355, 46.5173], label: 'Adventices' },
+];
 
 const SAMPLE_PARCELS = [
   { code: 'PF-001', name: 'Plat de la Cure', surface: 2.5, culture: 'Blé' },
@@ -200,6 +292,10 @@ export default function App() {
 
   const [leaveFilter, setLeaveFilter] = useState<LeaveStatusFilter>('all');
 
+  const [mapSelected, setMapSelected] = useState<string[]>([]);
+  const [mapTool, setMapTool] = useState<MapTool>('select');
+  const [tsLog, setTsLog] = useState<string | null>(null);
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
       <header className="mb-8">
@@ -373,6 +469,52 @@ export default function App() {
           statusFilter={leaveFilter}
           onFilterChange={setLeaveFilter}
         />
+      </Section>
+
+      {/* TimesheetEntry */}
+      <Section title="TimesheetEntry">
+        <TimesheetEntry
+          onSubmit={async (entry) => {
+            await new Promise((r) => setTimeout(r, 400));
+            const segments = entry.breaks.length;
+            const msg = `Présence enregistrée · ${entry.hoursWorked.toFixed(2)}h effectives · ${segments} pause(s) → ${segments + 1} attendance(s) Odoo`;
+            setTsLog(msg);
+          }}
+        />
+        {tsLog && (
+          <div
+            role="status"
+            className="mx-auto mt-3 max-w-xl rounded-(--radius) border border-[#c9e3bb] bg-[#ecf6e6] px-3 py-2 text-xs text-[#1a5e1a]"
+          >
+            ✓ {tsLog}
+          </div>
+        )}
+      </Section>
+
+      {/* MapView */}
+      <Section title="MapView">
+        <p className="mb-3 text-xs text-(--color-muted)">
+          Carte Maplibre GL · 4 parcelles GeoJSON · 3 markers · clic pour sélectionner · Shift+clic
+          pour multi-sélection · raccourcis clavier (S / L / P / M / R / G / Y).
+        </p>
+        <MapView
+          parcels={MAP_PARCELS}
+          markers={MAP_MARKERS}
+          selectedIds={mapSelected}
+          onSelectionChange={setMapSelected}
+          activeTool={mapTool}
+          onToolChange={setMapTool}
+          onCreateGroup={(ids) => {
+            alert(`Créer un groupe de ${ids.length} parcelles : ${ids.join(', ')}`);
+            setMapSelected([]);
+          }}
+        />
+        <p className="mt-3 text-xs text-(--color-muted)">
+          Sélection :{' '}
+          <strong className="text-(--color-text)">
+            {mapSelected.length === 0 ? 'aucune' : mapSelected.join(', ')}
+          </strong>
+        </p>
       </Section>
     </main>
   );

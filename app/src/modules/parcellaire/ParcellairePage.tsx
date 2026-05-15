@@ -97,6 +97,8 @@ export default function ParcellairePage() {
   const [parcels, setParcels] = useState<ParcelDetail[]>(PARCELLES);
   const geojsonInputRef = useRef<HTMLInputElement>(null);
   const shapefileInputRef = useRef<HTMLInputElement>(null);
+  // Polygon dessiné en attente de configuration (dialog post draw-parcel).
+  const [drawnDraft, setDrawnDraft] = useState<Polygon | null>(null);
 
   const importFeatures = (features: ReadonlyArray<Feature>) => {
     const additions: ParcelDetail[] = [];
@@ -352,6 +354,12 @@ export default function ParcellairePage() {
             onSelectionChange={(ids) => setSelectedId(ids[0])}
             activeTool={activeTool}
             onToolChange={setActiveTool}
+            onDrawComplete={(e) => {
+              if (e.tool === 'draw-parcel' && e.geometry.type === 'Polygon') {
+                setDrawnDraft(e.geometry as Polygon);
+                setActiveTool('select');
+              }
+            }}
             height="100%"
             className="!rounded-none !border-0"
           />
@@ -365,6 +373,19 @@ export default function ParcellairePage() {
                 onOpenAssolement={() => navigate(`/assolement?parcel=${selected.id}`)}
               />
             </div>
+          )}
+          {/* Dialog post draw-parcel : configurer la parcelle dessinée */}
+          {drawnDraft && (
+            <NewParcelDialog
+              geometry={drawnDraft}
+              existingCount={parcels.length}
+              onCancel={() => setDrawnDraft(null)}
+              onCreate={(parcel) => {
+                setParcels((curr) => [...curr, parcel]);
+                setDrawnDraft(null);
+                setSelectedId(parcel.id);
+              }}
+            />
           )}
         </div>
       ) : (
@@ -424,6 +445,154 @@ function KpiCard({ label, value }: { label: string; value: string }) {
     <div className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5">
       <div className="text-xs tracking-wider text-(--color-muted) uppercase">{label}</div>
       <div className="mt-1 text-2xl font-semibold tabular-nums">{value}</div>
+    </div>
+  );
+}
+
+/* ============ Dialog post draw-parcel ============ */
+
+function NewParcelDialog({
+  geometry,
+  existingCount,
+  onCancel,
+  onCreate,
+}: {
+  geometry: Polygon;
+  existingCount: number;
+  onCancel: () => void;
+  onCreate: (parcel: ParcelDetail) => void;
+}) {
+  const [name, setName] = useState(`Nouvelle parcelle ${existingCount + 1}`);
+  const [code, setCode] = useState(`PF-${String(existingCount + 1).padStart(3, '0')}`);
+  const [culture, setCulture] = useState<string>('Jachère');
+  const [notes, setNotes] = useState('');
+  const surfaceHa = useMemo(() => estimateSurfaceHa(geometry), [geometry]);
+  const cultureOptions = listCultureGroups();
+  const year = new Date().getFullYear();
+
+  const submit = () => {
+    if (!name.trim() || !code.trim()) return;
+    onCreate({
+      id: code.trim(),
+      name: name.trim(),
+      surfaceHa: Number(surfaceHa.toFixed(2)),
+      culture,
+      year,
+      status: 'active',
+      color: cultureColor(culture),
+      notes: notes.trim() || undefined,
+      geometry,
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1200] flex items-end justify-center bg-black/40 backdrop-blur-sm md:items-center md:p-6">
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Configurer la nouvelle parcelle"
+        className="flex max-h-[88vh] w-full flex-col overflow-hidden rounded-t-(--radius-lg) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-popup) md:max-w-[480px] md:rounded-(--radius-lg)"
+      >
+        <header className="flex items-start gap-3 border-b border-(--color-border) px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="m-0 text-sm font-semibold">Nouvelle parcelle</h2>
+            <p className="m-0 mt-0.5 text-xs text-(--color-muted)">
+              Surface estimée : <strong>{surfaceHa.toFixed(2)} ha</strong>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            aria-label="Annuler"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-(--radius-sm) text-(--color-muted) hover:bg-[#f1f1ee] hover:text-(--color-text)"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.75}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              width={16}
+              height={16}
+              aria-hidden="true"
+            >
+              <path d="M18 6 6 18M6 6l12 12" />
+            </svg>
+          </button>
+        </header>
+        <div className="flex-1 space-y-3 overflow-y-auto p-4">
+          <DialogField label="Nom">
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              autoFocus
+              className={dialogInput}
+            />
+          </DialogField>
+          <DialogField label="Code">
+            <input
+              type="text"
+              value={code}
+              onChange={(e) => setCode(e.target.value)}
+              className={dialogInput}
+            />
+          </DialogField>
+          <DialogField label="Culture initiale">
+            <select
+              value={culture}
+              onChange={(e) => setCulture(e.target.value)}
+              className={dialogInput}
+            >
+              {cultureOptions.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+              <option value="Jachère">Jachère</option>
+            </select>
+          </DialogField>
+          <DialogField label="Notes">
+            <textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={3}
+              placeholder="Observations…"
+              className={dialogInput.replace('h-10', 'min-h-[60px] py-2')}
+            />
+          </DialogField>
+        </div>
+        <footer className="flex items-center gap-2 border-t border-(--color-border) p-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            className="inline-flex h-10 items-center rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-4 text-sm font-medium hover:bg-[#f8f8f5]"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={submit}
+            disabled={!name.trim() || !code.trim()}
+            className="ml-auto inline-flex h-10 items-center rounded-(--radius) border border-(--color-primary) bg-(--color-primary) px-5 text-sm font-medium text-white hover:bg-(--color-primary-hover) disabled:opacity-50"
+          >
+            Créer la parcelle
+          </button>
+        </footer>
+      </div>
+    </div>
+  );
+}
+
+const dialogInput =
+  'h-10 w-full rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-sm focus:border-(--color-primary) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/15';
+
+function DialogField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1 block text-xs font-medium">{label}</label>
+      {children}
     </div>
   );
 }

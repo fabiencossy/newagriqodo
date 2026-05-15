@@ -49,6 +49,7 @@ export function MapView({
   onToolChange,
   enabledTools = MAP_VIEW_DEFAULTS.enabledTools,
   onCreateGroup,
+  onDrawComplete,
   center = MAP_VIEW_DEFAULTS.defaultCenter,
   zoom = MAP_VIEW_DEFAULTS.zoom,
   zoomRange = MAP_VIEW_DEFAULTS.zoomRange,
@@ -225,12 +226,14 @@ export function MapView({
   const selectionRef = useRef<string[]>([]);
   const onSelectionRef = useRef(onSelectionChange);
   const parcelsRef = useRef(parcels);
+  const onDrawCompleteRef = useRef(onDrawComplete);
   useEffect(() => {
     // eslint-disable-next-line react-hooks/immutability
     selectionRef.current = effectiveSelectedIds;
     // eslint-disable-next-line react-hooks/immutability
     onSelectionRef.current = onSelectionChange;
     parcelsRef.current = parcels;
+    onDrawCompleteRef.current = onDrawComplete;
   });
 
   /* ---------- Restyle au changement de sélection (sans recréer le layer) ---------- */
@@ -421,9 +424,20 @@ export function MapView({
       const onDblClick = (e: L.LeafletMouseEvent) => {
         L.DomEvent.stop(e as unknown as L.LeafletEvent);
         if (vertices.length < 3) return;
-        const coords: Array<[number, number]> = vertices.map((v) => [v.lat, v.lng]);
-        coords.push(coords[0]!);
-        setDrawnPolygons((curr) => [...curr, { id: `poly-${Date.now()}`, coords }]);
+        // Coordonnées GeoJSON Polygon : [lng, lat] et ring fermé.
+        const ring: Array<[number, number]> = vertices.map((v) => [v.lng, v.lat]);
+        ring.push(ring[0]!);
+        const polygon: GeoJSON.Polygon = { type: 'Polygon', coordinates: [ring] };
+        // Si le parent gère la complétion, on lui laisse la suite (dialog
+        // de configuration). Sinon, fallback : on garde le polygon comme
+        // dessin local pour visualisation.
+        if (onDrawCompleteRef.current) {
+          onDrawCompleteRef.current({ tool: 'draw-parcel', geometry: polygon });
+        } else {
+          const coordsLatLng: Array<[number, number]> = vertices.map((v) => [v.lat, v.lng]);
+          coordsLatLng.push(coordsLatLng[0]!);
+          setDrawnPolygons((curr) => [...curr, { id: `poly-${Date.now()}`, coords: coordsLatLng }]);
+        }
         vertices = [];
         draftLayer.clearLayers();
         previewLine = null;

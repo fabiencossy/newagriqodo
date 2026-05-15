@@ -54,7 +54,7 @@ export function MapView({
   const mapRef = useRef<MaplibreMap | null>(null);
   const markerRefs = useRef<Map<string, maplibregl.Marker>>(new Map());
   const [mapReady, setMapReady] = useState(false);
-  const [basemap, setBasemap] = useState<Basemap>(basemapProp ?? 'street');
+  const [basemap, setBasemap] = useState<Basemap>(basemapProp ?? 'satellite');
   // Compteur incrémenté à chaque setStyle pour re-déclencher l'init des layers
   const [styleVersion, setStyleVersion] = useState(0);
 
@@ -356,34 +356,8 @@ export function MapView({
         </div>
       )}
 
-      {/* Toggle basemap (haut-droite) */}
-      {showBasemapToggle && (
-        <div
-          role="radiogroup"
-          aria-label="Fond de carte"
-          className="absolute top-3 right-3 z-10 inline-flex overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-card)"
-        >
-          {(['satellite', 'street', 'topo'] as const).map((b) => {
-            const isActive = b === basemap;
-            return (
-              <button
-                key={b}
-                type="button"
-                aria-pressed={isActive}
-                onClick={() => setBasemap(b)}
-                className={[
-                  'h-8 px-3 text-xs font-medium transition-colors',
-                  isActive
-                    ? 'bg-(--color-primary) text-white'
-                    : 'text-(--color-text) hover:bg-[#f5f5f0]',
-                ].join(' ')}
-              >
-                {BASEMAP_LABELS[b]}
-              </button>
-            );
-          })}
-        </div>
-      )}
+      {/* Toggle basemap (haut-droite) — bouton unique avec dropdown Satellite/Topo */}
+      {showBasemapToggle && <BasemapPicker basemap={basemap} onChange={setBasemap} />}
 
       {/* État loading */}
       {!mapReady && (
@@ -404,5 +378,95 @@ function LegendDot({ color, label }: { color: string; label: string }) {
       />
       <span>{label}</span>
     </div>
+  );
+}
+
+/* ============ BasemapPicker ============ */
+const PICKER_OPTIONS: Basemap[] = ['satellite', 'topo'];
+
+function BasemapPicker({
+  basemap,
+  onChange,
+}: {
+  basemap: Basemap;
+  onChange: (b: Basemap) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function onDoc(e: MouseEvent) {
+      if (wrapperRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+    }
+    document.addEventListener('mousedown', onDoc);
+    return () => document.removeEventListener('mousedown', onDoc);
+  }, [open]);
+
+  return (
+    <div ref={wrapperRef} className="absolute top-3 right-3 z-10">
+      <button
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label="Fond de carte"
+        onClick={() => setOpen((o) => !o)}
+        className="inline-flex h-9 items-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium shadow-(--shadow-card) hover:bg-[#f5f5f0]"
+      >
+        <LayersGlyph />
+        <span>{BASEMAP_LABELS[basemap]}</span>
+      </button>
+      {open && (
+        <ul
+          role="listbox"
+          className="absolute right-0 mt-1 w-[140px] overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-popup)"
+        >
+          {PICKER_OPTIONS.map((b) => {
+            const isActive = b === basemap;
+            return (
+              <li key={b}>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isActive}
+                  onClick={() => {
+                    onChange(b);
+                    setOpen(false);
+                  }}
+                  className={[
+                    'flex h-9 w-full items-center gap-2 px-3 text-xs',
+                    isActive
+                      ? 'bg-(--color-primary)/10 font-medium text-(--color-primary)'
+                      : 'text-(--color-text) hover:bg-[#f5f5f0]',
+                  ].join(' ')}
+                >
+                  {BASEMAP_LABELS[b]}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function LayersGlyph() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width={14}
+      height={14}
+      aria-hidden="true"
+    >
+      <path d="m12 2 10 6-10 6L2 8z" />
+      <path d="m2 14 10 6 10-6" />
+    </svg>
   );
 }

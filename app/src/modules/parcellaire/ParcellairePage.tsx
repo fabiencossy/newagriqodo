@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
-import { PageContainer } from '../_shared/PageContainer';
-import { PageHeader } from '../_shared/PageHeader';
+import { useFabActions } from '../../layouts/useFab';
 import { SearchBar, type FieldDescriptor, type SearchState } from '../../components/SearchBar';
 import { ViewSwitcher, type ViewKey } from '../../components/ViewSwitcher';
 import { ExportButton, type ExportColumn } from '../../components/ExportButton';
@@ -105,6 +104,32 @@ export default function ParcellairePage() {
     setAsideMode('view');
   };
 
+  // FAB contextuel — actions principales de la page Parcellaire
+  useFabActions(
+    useMemo(
+      () => [
+        {
+          id: 'nouvelle-parcelle',
+          label: 'Nouvelle parcelle',
+          onClick: () => {
+            setView('map');
+            // En Phase suivante : activer l'outil draw-parcel sur la map
+
+            alert("Active l'outil de dessin sur la carte (à brancher Phase 2.5).");
+          },
+        },
+        {
+          id: 'ajouter-intervention',
+          label: 'Ajouter une intervention',
+          onClick: () => {
+            alert("Création d'une intervention (à brancher Phase 2.5).");
+          },
+        },
+      ],
+      [],
+    ),
+  );
+
   const viewSwitcher = (
     <ViewSwitcher
       views={['map', 'table', 'dashboard']}
@@ -123,14 +148,14 @@ export default function ParcellairePage() {
   );
 
   /* ============================================================
-   * VUE MAP — full-page avec overlays absolus
+   * Layout unifié pour les 3 vues : top bar identique + contenu adaptatif
    * ============================================================ */
-  if (view === 'map') {
-    return (
-      <div className="flex h-full flex-col overflow-hidden">
-        {/* === TOP BAR === */}
-        {/* Mobile : SearchBar + ViewSwitcher icon-only + Export sur une seule ligne */}
-        <div className="flex items-center gap-2 border-b border-(--color-border) bg-(--color-surface) px-3 py-2 md:hidden">
+  return (
+    <div className="flex h-full flex-col overflow-hidden">
+      {/* === TOP BAR (identique pour toutes les vues) === */}
+      <div className="flex-shrink-0 border-b border-(--color-border) bg-(--color-surface)">
+        {/* Mobile : SearchBar + ViewSwitcher icon-only + Export — 1 ligne */}
+        <div className="flex items-center gap-2 px-3 py-2 md:hidden">
           <div className="min-w-0 flex-1">
             <SearchBar
               fields={FIELDS}
@@ -149,8 +174,8 @@ export default function ParcellairePage() {
           {exportBtn}
         </div>
 
-        {/* Desktop : ligne 1 = titre + actions, ligne 2 = SearchBar */}
-        <div className="hidden border-b border-(--color-border) bg-(--color-surface) px-4 py-2 md:block">
+        {/* Desktop : titre + actions, puis SearchBar dessous */}
+        <div className="hidden px-4 py-2 md:block">
           <div className="flex items-center gap-3">
             <div className="flex min-w-0 items-baseline gap-2">
               <h1 className="m-0 truncate text-base font-semibold">Parcellaire</h1>
@@ -170,8 +195,10 @@ export default function ParcellairePage() {
             />
           </div>
         </div>
+      </div>
 
-        {/* === CARTE flex-1 === */}
+      {/* === CONTENU flex-1 === */}
+      {view === 'map' ? (
         <div className="relative flex-1 overflow-hidden">
           <MapView
             parcels={filtered}
@@ -180,7 +207,6 @@ export default function ParcellairePage() {
             height="100%"
             className="!rounded-none !border-0"
           />
-
           {/* Aside flottant à droite (desktop) */}
           {selected && (
             <div className="absolute top-3 right-3 bottom-3 z-30 hidden w-[360px] max-w-[calc(100%-1.5rem)] rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-popup) lg:flex">
@@ -199,8 +225,6 @@ export default function ParcellairePage() {
               />
             </div>
           )}
-
-          {/* Bottom sheet mobile sur sélection */}
           {selected && (
             <div className="fixed inset-x-0 bottom-0 z-40 lg:hidden">
               <AsideCard
@@ -218,67 +242,45 @@ export default function ParcellairePage() {
             </div>
           )}
         </div>
-      </div>
-    );
-  }
-
-  /* ============================================================
-   * VUES TABLE / DASHBOARD — layout classique avec PageContainer
-   * ============================================================ */
-  return (
-    <PageContainer>
-      <PageHeader
-        title="Parcellaire"
-        subtitle={summary}
-        actions={
-          <>
-            {viewSwitcher}
-            {exportBtn}
-          </>
-        }
-      />
-
-      <div className="mb-4">
-        <SearchBar
-          fields={FIELDS}
-          value={searchState}
-          onChange={setSearchState}
-          ariaLabel="Rechercher dans le parcellaire"
-        />
-      </div>
-
-      <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_360px]">
-        <div className="min-w-0">
-          {view === 'table' ? (
-            <ParcellaireTable parcels={filtered} selectedId={selectedId} onSelect={setSelectedId} />
-          ) : (
-            <DashboardView parcels={filtered} />
-          )}
+      ) : (
+        <div className="flex-1 overflow-y-auto">
+          <div className="grid grid-cols-1 gap-4 p-4 lg:grid-cols-[1fr_360px]">
+            <div className="min-w-0">
+              {view === 'table' ? (
+                <ParcellaireTable
+                  parcels={filtered}
+                  selectedId={selectedId}
+                  onSelect={setSelectedId}
+                />
+              ) : (
+                <DashboardView parcels={filtered} />
+              )}
+            </div>
+            <div className="hidden lg:block">
+              {selected ? (
+                <AsideCard
+                  title={`${selected.id} — ${selected.name}`}
+                  subtitle="Sélection courante"
+                  data={selected as unknown as Record<string, unknown>}
+                  fields={ASIDE_FIELDS}
+                  mode={asideMode}
+                  onModeChange={setAsideMode}
+                  editable
+                  onClose={() => setSelectedId(undefined)}
+                  onSave={handleSaveAside}
+                  layout="aside"
+                  width="100%"
+                />
+              ) : (
+                <aside className="flex h-full min-h-[400px] flex-col items-center justify-center rounded-(--radius) border border-dashed border-(--color-border) bg-(--color-surface) p-6 text-center text-sm text-(--color-muted)">
+                  <p className="m-0">Sélectionnez une parcelle pour voir le détail.</p>
+                </aside>
+              )}
+            </div>
+          </div>
         </div>
-
-        <div className="hidden lg:block">
-          {selected ? (
-            <AsideCard
-              title={`${selected.id} — ${selected.name}`}
-              subtitle="Sélection courante"
-              data={selected as unknown as Record<string, unknown>}
-              fields={ASIDE_FIELDS}
-              mode={asideMode}
-              onModeChange={setAsideMode}
-              editable
-              onClose={() => setSelectedId(undefined)}
-              onSave={handleSaveAside}
-              layout="aside"
-              width="100%"
-            />
-          ) : (
-            <aside className="flex h-full min-h-[400px] flex-col items-center justify-center rounded-(--radius) border border-dashed border-(--color-border) bg-(--color-surface) p-6 text-center text-sm text-(--color-muted)">
-              <p className="m-0">Sélectionnez une parcelle pour voir le détail.</p>
-            </aside>
-          )}
-        </div>
-      </div>
-    </PageContainer>
+      )}
+    </div>
   );
 }
 

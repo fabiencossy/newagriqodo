@@ -39,21 +39,26 @@ const BASE_STREETS: StyleSpecification = {
 const BASE_SATELLITE: StyleSpecification = {
   version: 8,
   sources: {
-    esri: {
+    sat: {
       type: 'raster',
+      // Google satellite — fonctionne sans API key, multiples sub-domaines
+      // pour le load balancing. À remplacer par self-hosted en Phase 2.5.
       tiles: [
-        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        'https://mt0.google.com/vt/lyrs=s&hl=fr&x={x}&y={y}&z={z}',
+        'https://mt1.google.com/vt/lyrs=s&hl=fr&x={x}&y={y}&z={z}',
+        'https://mt2.google.com/vt/lyrs=s&hl=fr&x={x}&y={y}&z={z}',
+        'https://mt3.google.com/vt/lyrs=s&hl=fr&x={x}&y={y}&z={z}',
       ],
       tileSize: 256,
-      attribution: 'Tiles © Esri, Maxar, Earthstar Geographics, USDA, USGS',
-      maxzoom: 19,
+      attribution: '© Google',
+      maxzoom: 20,
     },
   },
   layers: [
     {
       id: 'satellite-layer',
       type: 'raster',
-      source: 'esri',
+      source: 'sat',
       minzoom: 0,
       maxzoom: 22,
     },

@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { PageHeader } from '../_shared/PageHeader';
-import { FloatingActionButton } from '../_shared/FloatingActionButton';
+import { useFabActions } from '../../layouts/useFab';
 import { LeaveRequestList, type LeaveStatusFilter } from '../../components/LeaveRequestList';
 
 const LEAVES = [
@@ -36,13 +36,24 @@ const LEAVES = [
 export default function MesCongesPage() {
   const [filter, setFilter] = useState<LeaveStatusFilter>('all');
 
-  const handleRequest = () => {
-    // En Phase 2.5 : ouvrir Odoo dans un nouvel onglet (URL configurable).
+  useFabActions(
+    useMemo(
+      () => [
+        {
+          id: 'demander-conge',
+          label: 'Demander un congé',
+          onClick: () => {
+            // En Phase 2.5 : ouvrir Odoo dans un nouvel onglet.
 
-    alert(
-      "Les demandes de congés se font dans Odoo.\n\n(Ce bouton ouvrira Odoo dans un nouvel onglet une fois l'intégration finalisée.)",
-    );
-  };
+            alert(
+              "Les demandes de congés se font dans Odoo.\n\n(Ce bouton ouvrira Odoo dans un nouvel onglet une fois l'intégration finalisée.)",
+            );
+          },
+        },
+      ],
+      [],
+    ),
+  );
 
   return (
     <>
@@ -54,7 +65,6 @@ export default function MesCongesPage() {
         statusFilter={filter}
         onFilterChange={setFilter}
       />
-      <FloatingActionButton label="Demander un congé" onClick={handleRequest} />
     </>
   );
 }

@@ -1,6 +1,7 @@
+import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../_shared/PageHeader';
-import { FloatingActionButton } from '../_shared/FloatingActionButton';
+import { useFabActions } from '../../layouts/useFab';
 import { HoursTableMonth, type HoursMonthRow } from '../../components/HoursTableMonth';
 
 const HOURS_DATA: HoursMonthRow[] = [
@@ -22,11 +23,23 @@ const HOURS_DATA: HoursMonthRow[] = [
 export default function MesHeuresPage() {
   const navigate = useNavigate();
 
+  useFabActions(
+    useMemo(
+      () => [
+        {
+          id: 'saisir-presence',
+          label: 'Saisir une présence',
+          onClick: () => navigate('/rh/saisir'),
+        },
+      ],
+      [navigate],
+    ),
+  );
+
   return (
     <>
       <PageHeader title="Mes heures" />
       <HoursTableMonth employeeId="emp-1" year={2026} rows={HOURS_DATA} />
-      <FloatingActionButton label="Saisir une présence" onClick={() => navigate('/rh/saisir')} />
     </>
   );
 }

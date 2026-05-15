@@ -103,7 +103,7 @@ export interface MapViewProps {
 export const MAP_VIEW_DEFAULTS = {
   zoom: 14,
   zoomRange: [5, 20] as [number, number],
-  basemap: 'street' as Basemap,
+  basemap: 'satellite' as Basemap,
   showBasemapToggle: true,
   showLegend: true,
   activeTool: 'select' as MapTool,

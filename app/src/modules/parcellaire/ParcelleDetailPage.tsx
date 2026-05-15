@@ -1,7 +1,26 @@
 import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageContainer } from '../_shared/PageContainer';
+import { MapView } from '../../components/MapView';
 import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
+
+/** Calcule le centroïde d'un polygone (moyenne des points du ring extérieur). */
+function computeCentroid(parcel: ParcelDetail): [number, number] {
+  const ring =
+    parcel.geometry.type === 'Polygon'
+      ? parcel.geometry.coordinates[0]!
+      : parcel.geometry.coordinates[0]![0]!;
+  let sumX = 0;
+  let sumY = 0;
+  let count = 0;
+  for (let i = 0; i < ring.length - 1; i++) {
+    // ignorer le dernier point (= premier point pour fermer le ring)
+    sumX += ring[i]![0]!;
+    sumY += ring[i]![1]!;
+    count++;
+  }
+  return [sumX / count, sumY / count];
+}
 
 const STATUS_LABELS: Record<NonNullable<ParcelDetail['status']>, string> = {
   active: 'Actif',
@@ -206,6 +225,26 @@ export default function ParcelleDetailPage() {
             placeholder="Observations, contexte, voisins…"
             rows={5}
             className={inputClass.replace('h-10', 'min-h-[120px] py-2')}
+          />
+        </section>
+
+        {/* Localisation — mini-carte avec la parcelle centrée */}
+        <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-3">
+          <h2 className="m-0 mb-3 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
+            Localisation
+          </h2>
+          <MapView
+            parcels={[draft]}
+            selectedId={draft.id}
+            onSelectionChange={() => {
+              /* lecture seule */
+            }}
+            center={computeCentroid(draft)}
+            zoom={16}
+            enabledTools={[]}
+            showBasemapToggle
+            height="360px"
+            className="!rounded-(--radius)"
           />
         </section>
 

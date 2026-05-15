@@ -76,9 +76,11 @@ export function MapView({
       interactive,
     });
     map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
-    map.on('load', () => setMapReady(true));
+    // mapReady : on déclenche au premier styledata (style appliqué, sans attendre
+    // qu'une tuile soit chargée — sinon écran "Chargement..." bloque indéfiniment
+    // si les tuiles sont lentes ou échouent).
+    map.once('styledata', () => setMapReady(true));
     map.on('styledata', () => {
-      // Re-fire si l'app a déjà mis le map en état ready
       if (mapRef.current === map) setStyleVersion((v) => v + 1);
     });
     mapRef.current = map;
@@ -289,39 +291,41 @@ export function MapView({
     >
       <div ref={containerRef} className="absolute inset-0" />
 
-      {/* Toolbar latérale gauche */}
-      <div
-        role="toolbar"
-        aria-label="Outils carte"
-        className="absolute top-3 left-3 z-10 flex flex-col overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-card)"
-      >
-        {enabledTools.map((tool, idx) => {
-          const isActive = tool === activeTool;
-          const isGroupAction = tool === 'group';
-          const groupDisabled = isGroupAction && effectiveSelectedIds.length === 0;
-          return (
-            <button
-              key={tool}
-              type="button"
-              aria-pressed={isActive}
-              aria-label={`${TOOL_LABELS[tool]} (${TOOL_SHORTCUTS[tool].toUpperCase()})`}
-              title={`${TOOL_LABELS[tool]} (${TOOL_SHORTCUTS[tool].toUpperCase()})`}
-              disabled={groupDisabled}
-              onClick={() => handleToolClick(tool)}
-              className={[
-                'inline-flex h-10 w-10 items-center justify-center transition-colors',
-                idx > 0 ? 'border-t border-(--color-border)' : '',
-                isActive
-                  ? 'bg-(--color-accent) text-white'
-                  : 'text-(--color-text) hover:bg-[#f5f5f0]',
-                groupDisabled ? 'opacity-40 cursor-not-allowed' : '',
-              ].join(' ')}
-            >
-              <MapIcon name={TOOL_ICONS[tool]} />
-            </button>
-          );
-        })}
-      </div>
+      {/* Toolbar latérale gauche (cachée si aucun outil enabled) */}
+      {enabledTools.length > 0 && (
+        <div
+          role="toolbar"
+          aria-label="Outils carte"
+          className="absolute top-3 left-3 z-10 flex flex-col overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface) shadow-(--shadow-card)"
+        >
+          {enabledTools.map((tool, idx) => {
+            const isActive = tool === activeTool;
+            const isGroupAction = tool === 'group';
+            const groupDisabled = isGroupAction && effectiveSelectedIds.length === 0;
+            return (
+              <button
+                key={tool}
+                type="button"
+                aria-pressed={isActive}
+                aria-label={`${TOOL_LABELS[tool]} (${TOOL_SHORTCUTS[tool].toUpperCase()})`}
+                title={`${TOOL_LABELS[tool]} (${TOOL_SHORTCUTS[tool].toUpperCase()})`}
+                disabled={groupDisabled}
+                onClick={() => handleToolClick(tool)}
+                className={[
+                  'inline-flex h-10 w-10 items-center justify-center transition-colors',
+                  idx > 0 ? 'border-t border-(--color-border)' : '',
+                  isActive
+                    ? 'bg-(--color-accent) text-white'
+                    : 'text-(--color-text) hover:bg-[#f5f5f0]',
+                  groupDisabled ? 'opacity-40 cursor-not-allowed' : '',
+                ].join(' ')}
+              >
+                <MapIcon name={TOOL_ICONS[tool]} />
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Sélection badge */}
       {effectiveSelectedIds.length > 1 && (
@@ -366,10 +370,13 @@ export function MapView({
       {/* Toggle basemap (haut-droite) — bouton unique avec dropdown Satellite/Topo */}
       {showBasemapToggle && <BasemapPicker basemap={basemap} onChange={setBasemap} />}
 
-      {/* État loading */}
+      {/* État loading : spinner subtil en haut au lieu d'un overlay bloquant */}
       {!mapReady && (
-        <div className="absolute inset-0 z-20 flex items-center justify-center bg-(--color-bg)">
-          <span className="text-sm text-(--color-muted)">Chargement de la carte…</span>
+        <div className="pointer-events-none absolute top-1/2 left-1/2 z-20 -translate-x-1/2 -translate-y-1/2">
+          <span
+            aria-label="Chargement de la carte"
+            className="inline-block h-6 w-6 animate-spin rounded-(--radius-pill) border-2 border-(--color-primary) border-r-transparent"
+          />
         </div>
       )}
     </div>

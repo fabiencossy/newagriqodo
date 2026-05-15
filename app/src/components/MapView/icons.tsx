@@ -9,12 +9,6 @@ const BASE = {
 
 const ICONS = {
   select: <path d="m4 4 8 18 2.5-7.5L22 12z" />,
-  lasso: (
-    <>
-      <path d="M7 4c5-2 12 0 13 5s-4 8-10 8c-3 0-5-2-5-3s2-2 4-2" />
-      <path d="M5 14c-1 2 0 4 2 4M7 18c-1 0-1 2 0 2" />
-    </>
-  ),
   drawParcel: (
     <>
       <path d="M5 5 19 7l3 12-13 3L3 12z" />

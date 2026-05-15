@@ -53,14 +53,7 @@ export interface MapMarker {
 
 export type Basemap = 'satellite' | 'street' | 'topo';
 
-export type MapTool =
-  | 'select'
-  | 'lasso'
-  | 'draw-parcel'
-  | 'add-marker'
-  | 'measure'
-  | 'group'
-  | 'layers';
+export type MapTool = 'select' | 'draw-parcel' | 'add-marker' | 'measure' | 'group' | 'layers';
 
 export interface DrawEvent {
   tool: 'draw-parcel' | 'add-marker' | 'measure';
@@ -107,10 +100,9 @@ export const MAP_VIEW_DEFAULTS = {
   showBasemapToggle: true,
   showLegend: true,
   activeTool: 'select' as MapTool,
-  // 'group' et 'layers' retirés par défaut :
-  //  - group : la sélection multiple se fait via shift+clic ou lasso
-  //  - layers : doublon avec le bouton Satellite/Topo en haut à droite
-  enabledTools: ['select', 'lasso', 'draw-parcel', 'add-marker', 'measure'] as MapTool[],
+  // Outils carte par défaut (retirés : lasso, group, layers — peu utiles
+  // ou doublons avec d'autres UI).
+  enabledTools: ['select', 'draw-parcel', 'add-marker', 'measure'] as MapTool[],
   interactive: true,
   height: '480px',
   /** Style raster OSM gratuit (à remplacer par self-hosted Qodo en Phase 1.5). */
@@ -129,7 +121,6 @@ export const MARKER_COLORS: Record<MarkerKind, string> = {
 
 export const TOOL_SHORTCUTS: Record<MapTool, string> = {
   select: 's',
-  lasso: 'l',
   'draw-parcel': 'p',
   'add-marker': 'm',
   measure: 'r',
@@ -139,7 +130,6 @@ export const TOOL_SHORTCUTS: Record<MapTool, string> = {
 
 export const TOOL_LABELS: Record<MapTool, string> = {
   select: 'Sélection',
-  lasso: 'Lasso',
   'draw-parcel': 'Dessiner une parcelle',
   'add-marker': 'Ajouter un point',
   measure: 'Mesurer',

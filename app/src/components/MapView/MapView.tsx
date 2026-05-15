@@ -15,7 +15,6 @@ import {
 
 const TOOL_ICONS: Record<MapTool, IconName> = {
   select: 'select',
-  lasso: 'lasso',
   'draw-parcel': 'drawParcel',
   'add-marker': 'pin',
   measure: 'ruler',
@@ -440,66 +439,6 @@ export function MapView({
       };
     }
 
-    if (activeTool === 'lasso') {
-      setHint('Maintenez la souris et tracez une forme libre pour sélectionner.');
-      let pts: L.LatLng[] = [];
-      let line: L.Polyline | null = null;
-      let dragging = false;
-
-      const onMouseDown = (e: L.LeafletMouseEvent) => {
-        dragging = true;
-        pts = [e.latlng];
-        map.dragging.disable();
-        if (line) draftLayer.removeLayer(line);
-        line = L.polyline(pts, { color: '#a855f7', weight: 2, dashArray: '4 3' });
-        line.addTo(draftLayer);
-      };
-      const onMouseMove = (e: L.LeafletMouseEvent) => {
-        if (!dragging || !line) return;
-        pts.push(e.latlng);
-        line.setLatLngs(pts);
-      };
-      const onMouseUp = () => {
-        if (!dragging) return;
-        dragging = false;
-        map.dragging.enable();
-        if (pts.length >= 3) {
-          const lassoLngLat = pts.map((p): [number, number] => [p.lng, p.lat]);
-          const selected: string[] = [];
-          for (const p of parcelsRef.current) {
-            const ring =
-              p.geometry.type === 'Polygon'
-                ? p.geometry.coordinates[0]!
-                : p.geometry.coordinates[0]![0]!;
-            let sumX = 0;
-            let sumY = 0;
-            let n = 0;
-            for (let i = 0; i < ring.length - 1; i++) {
-              sumX += ring[i]![0]!;
-              sumY += ring[i]![1]!;
-              n++;
-            }
-            const centroid: [number, number] = [sumX / n, sumY / n];
-            if (isPointInPolygon(centroid, lassoLngLat)) selected.push(p.id);
-          }
-          onSelectionRef.current(selected);
-        }
-        draftLayer.clearLayers();
-        line = null;
-      };
-      map.on('mousedown', onMouseDown);
-      map.on('mousemove', onMouseMove);
-      map.on('mouseup', onMouseUp);
-      return () => {
-        map.off('mousedown', onMouseDown);
-        map.off('mousemove', onMouseMove);
-        map.off('mouseup', onMouseUp);
-        map.dragging.enable();
-        draftLayer.clearLayers();
-        setHint(null);
-      };
-    }
-
     return undefined;
     // On ne dépend QUE de activeTool : `parcels` est lu via parcelsRef pour
     // ne pas remonter l'effet pendant qu'on dessine un polygon (sinon les
@@ -650,24 +589,6 @@ export function MapView({
       )}
     </div>
   );
-}
-
-/** Ray casting : true si le point est dans le polygon. Coordonnées en [lng, lat]. */
-function isPointInPolygon(
-  point: [number, number],
-  polygon: ReadonlyArray<[number, number]>,
-): boolean {
-  let inside = false;
-  for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
-    const xi = polygon[i]![0];
-    const yi = polygon[i]![1];
-    const xj = polygon[j]![0];
-    const yj = polygon[j]![1];
-    const intersect =
-      yi > point[1] !== yj > point[1] && point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi) + xi;
-    if (intersect) inside = !inside;
-  }
-  return inside;
 }
 
 function LegendDot({ color, label }: { color: string; label: string }) {

@@ -7,6 +7,17 @@ import {
   type SearchState,
 } from './components/SearchBar';
 import { ExportButton, type ExportColumn } from './components/ExportButton';
+import { FieldPicker, type PickerItem } from './components/FieldPicker';
+import { AsideCard, type FieldConfig } from './components/AsideCard';
+import {
+  HoursTableMonth,
+  type HoursMonthRow,
+  type SortDirection,
+  type SortKey,
+} from './components/HoursTableMonth';
+import { LeaveRequestList, type LeaveStatusFilter } from './components/LeaveRequestList';
+
+/* ============ Données d'exemple ============ */
 
 const SAMPLE_PARCELS = [
   { code: 'PF-001', name: 'Plat de la Cure', surface: 2.5, culture: 'Blé' },
@@ -62,6 +73,100 @@ const PARCEL_FIELDS: FieldDescriptor[] = [
   },
 ];
 
+const PARCEL_PICKER_ITEMS: PickerItem[] = [
+  {
+    id: 'p1',
+    label: 'Plat de la Cure',
+    meta: 'PF-001 · 2.5 ha · Blé',
+    categoryIds: ['active', 'wheat'],
+  },
+  {
+    id: 'p2',
+    label: 'Champ du Haut',
+    meta: 'PF-002 · 1.8 ha · Blé',
+    categoryIds: ['active', 'wheat'],
+  },
+  { id: 'p3', label: 'Petite Pièce', meta: 'PF-003 · 0.9 ha · Jachère', categoryIds: ['fallow'] },
+  {
+    id: 'p4',
+    label: 'Champ Long',
+    meta: 'PF-004 · 4.1 ha · Maïs',
+    categoryIds: ['active', 'corn'],
+  },
+  {
+    id: 'p5',
+    label: 'Champ Rond',
+    meta: 'PF-005 · 0.6 ha · Maïs',
+    categoryIds: ['active', 'corn'],
+  },
+];
+
+const ASIDE_FIELDS: FieldConfig[] = [
+  { key: 'code', label: 'Code', type: 'text', readonly: true },
+  { key: 'name', label: 'Nom', type: 'text' },
+  { key: 'surface', label: 'Surface (ha)', type: 'number' },
+  {
+    key: 'culture',
+    label: 'Culture',
+    type: 'select',
+    options: [
+      { label: 'Blé', value: 'Blé' },
+      { label: 'Maïs', value: 'Maïs' },
+      { label: 'Colza', value: 'Colza' },
+    ],
+  },
+  { key: 'sowingDate', label: 'Date semis', type: 'date' },
+  { key: 'notes', label: 'Notes', type: 'textarea' },
+];
+
+const HOURS_DATA: HoursMonthRow[] = [
+  { month: 1, monthName: 'Janvier', hoursWorked: 150, hoursDue: 145, balance: 5, leavesTaken: 2 },
+  { month: 2, monthName: 'Février', hoursWorked: 142, hoursDue: 140, balance: 2, leavesTaken: 0 },
+  { month: 3, monthName: 'Mars', hoursWorked: 145, hoursDue: 145, balance: 0, leavesTaken: 0 },
+  { month: 4, monthName: 'Avril', hoursWorked: 148, hoursDue: 145, balance: 3, leavesTaken: 1 },
+  {
+    month: 5,
+    monthName: 'Mai',
+    hoursWorked: 152,
+    hoursDue: 147,
+    balance: 5,
+    leavesTaken: 0,
+    isCurrentMonth: true,
+  },
+];
+
+const LEAVES = [
+  {
+    id: 'l1',
+    dateFrom: new Date(2026, 4, 15),
+    dateTo: new Date(2026, 4, 30),
+    days: 12,
+    reason: "Vacances d'été",
+    status: 'approved' as const,
+    createdAt: new Date(2026, 3, 1),
+  },
+  {
+    id: 'l2',
+    dateFrom: new Date(2026, 5, 1),
+    dateTo: new Date(2026, 5, 7),
+    days: 5,
+    reason: 'Conférence métier',
+    status: 'pending' as const,
+    createdAt: new Date(2026, 4, 1),
+  },
+  {
+    id: 'l3',
+    dateFrom: new Date(2026, 7, 12),
+    dateTo: new Date(2026, 7, 14),
+    days: 3,
+    reason: 'Raisons personnelles',
+    status: 'rejected' as const,
+    createdAt: new Date(2026, 5, 15),
+  },
+];
+
+/* ============ App ============ */
+
 export default function App() {
   const [view, setView] = useState<ViewKey>('table');
   const [searchState, setSearchState] = useState<SearchState>({ facets: [], groupBy: [] });
@@ -70,30 +175,43 @@ export default function App() {
       id: 'f1',
       name: 'Mes parcelles actives',
       state: {
-        facets: [
-          {
-            id: 'fav-1',
-            fieldId: 'status',
-            operator: 'in',
-            values: ['active'],
-          },
-        ],
+        facets: [{ id: 'fav-1', fieldId: 'status', operator: 'in', values: ['active'] }],
         groupBy: [],
       },
     },
   ]);
 
+  const [pickedSingle, setPickedSingle] = useState<string[]>([]);
+  const [pickedMulti, setPickedMulti] = useState<string[]>([]);
+
+  const [asideData, setAsideData] = useState<Record<string, unknown> | null>({
+    code: 'PF-002',
+    name: 'Champ du Haut',
+    surface: 1.8,
+    culture: 'Blé',
+    sowingDate: '2026-03-12',
+    notes: 'Sol limoneux, drainage moyen.',
+  });
+  const [asideMode, setAsideMode] = useState<'view' | 'edit'>('view');
+
+  const [hoursYear, setHoursYear] = useState(2026);
+  const [hoursSortBy, setHoursSortBy] = useState<SortKey | undefined>();
+  const [hoursSortDir, setHoursSortDir] = useState<SortDirection | undefined>();
+
+  const [leaveFilter, setLeaveFilter] = useState<LeaveStatusFilter>('all');
+
   return (
     <main className="mx-auto max-w-5xl px-6 py-10">
       <header className="mb-8">
-        <h1 className="m-0 text-2xl font-semibold text-(--color-text)">NewagriQodo — Sprint 1</h1>
-        <p className="mt-1 text-sm text-(--color-muted)">Composants : ViewSwitcher · SearchBar</p>
+        <h1 className="m-0 text-2xl font-semibold text-(--color-text)">NewagriQodo — Sprint 1+2</h1>
+        <p className="mt-1 text-sm text-(--color-muted)">
+          7 composants : ViewSwitcher · SearchBar · ExportButton · FieldPicker · AsideCard ·
+          HoursTableMonth · LeaveRequestList
+        </p>
       </header>
 
-      <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">
-        <h2 className="mb-4 text-xs font-medium tracking-wider text-(--color-muted) uppercase">
-          SearchBar (style Odoo — light)
-        </h2>
+      {/* SearchBar */}
+      <Section title="SearchBar">
         <SearchBar
           fields={PARCEL_FIELDS}
           value={searchState}
@@ -104,16 +222,12 @@ export default function App() {
           }}
           ariaLabel="Rechercher parcelles"
         />
-        <pre className="mt-4 max-h-48 overflow-auto rounded-(--radius-sm) bg-[#f1f1ee] p-3 text-xs">
-          {JSON.stringify(searchState, null, 2)}
-        </pre>
-      </section>
+      </Section>
 
-      <section className="mt-6 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-xs font-medium tracking-wider text-(--color-muted) uppercase">
-            ExportButton
-          </h2>
+      {/* ExportButton */}
+      <Section
+        title="ExportButton"
+        right={
           <ExportButton
             data={SAMPLE_PARCELS}
             columns={EXPORT_COLUMNS}
@@ -121,38 +235,167 @@ export default function App() {
             formats={['pdf', 'xlsx', 'csv']}
             pdfMeta={{ title: 'Parcelles — Domaine Darval' }}
           />
-        </div>
-        <p className="text-xs text-(--color-muted)">
-          {SAMPLE_PARCELS.length} parcelles. CSV fonctionnel (téléchargement réel) ; PDF/Excel stub
-          (libs à brancher Phase 1).
+        }
+      >
+        <p className="m-0 text-xs text-(--color-muted)">
+          Bouton kebab regroupe les actions. {SAMPLE_PARCELS.length} parcelles. CSV fonctionnel ;
+          PDF/Excel stubs Phase 1.
         </p>
-      </section>
+      </Section>
 
-      <section className="mt-6 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">
-        <h2 className="mb-4 text-xs font-medium tracking-wider text-(--color-muted) uppercase">
-          ViewSwitcher (auto)
-        </h2>
-        <ViewSwitcher views={['table', 'map', 'dashboard']} activeView={view} onChange={setView} />
-        <p className="mt-4 text-sm text-(--color-muted)">
-          Vue active : <strong className="text-(--color-text)">{VIEW_LABELS[view]}</strong>{' '}
-          <code className="ml-2 rounded-(--radius-sm) bg-[#f1f1ee] px-1.5 py-0.5 font-mono text-xs">
-            {view}
-          </code>
-        </p>
-      </section>
-
-      <section className="mt-6 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">
-        <h2 className="mb-4 text-xs font-medium tracking-wider text-(--color-muted) uppercase">
-          Icon only (compact)
-        </h2>
+      {/* ViewSwitcher */}
+      <Section title="ViewSwitcher">
         <ViewSwitcher
           views={['table', 'map', 'dashboard', 'kanban', 'list', 'calendar']}
           activeView={view}
           onChange={setView}
-          layout="segmented"
-          display="icon-only"
         />
-      </section>
+        <p className="mt-3 text-xs text-(--color-muted)">
+          Vue active : <strong className="text-(--color-text)">{VIEW_LABELS[view]}</strong>
+        </p>
+      </Section>
+
+      {/* FieldPicker */}
+      <Section title="FieldPicker">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div>
+            <h3 className="mb-1.5 text-xs font-medium text-(--color-muted)">
+              Single — sélectionner une parcelle
+            </h3>
+            <FieldPicker
+              title="Sélectionner une parcelle"
+              mode="single"
+              value={pickedSingle}
+              onChange={setPickedSingle}
+              items={PARCEL_PICKER_ITEMS}
+              categoryGroups={[
+                {
+                  id: 'status',
+                  title: 'Statut',
+                  categories: [
+                    { id: 'active', label: 'Actives', count: 4 },
+                    { id: 'fallow', label: 'Jachère', count: 1 },
+                  ],
+                },
+                {
+                  id: 'culture',
+                  title: 'Culture',
+                  categories: [
+                    { id: 'wheat', label: 'Blé', count: 2 },
+                    { id: 'corn', label: 'Maïs', count: 2 },
+                  ],
+                },
+              ]}
+              placeholder="Choisir une parcelle…"
+            />
+          </div>
+          <div>
+            <h3 className="mb-1.5 text-xs font-medium text-(--color-muted)">
+              Multi — plusieurs parcelles
+            </h3>
+            <FieldPicker
+              title="Sélectionner des parcelles"
+              mode="multiple"
+              value={pickedMulti}
+              onChange={setPickedMulti}
+              items={PARCEL_PICKER_ITEMS}
+              categoryGroups={[
+                {
+                  id: 'status',
+                  categories: [
+                    { id: 'active', label: 'Actives', count: 4 },
+                    { id: 'fallow', label: 'Jachère', count: 1 },
+                  ],
+                },
+              ]}
+              placeholder="Choisir des parcelles…"
+              allowCreate
+              onCreate={async (q) => ({
+                id: `new-${Date.now()}`,
+                label: q,
+                meta: 'Créé à la volée',
+              })}
+            />
+          </div>
+        </div>
+      </Section>
+
+      {/* AsideCard */}
+      <Section title="AsideCard">
+        <p className="mb-3 text-xs text-(--color-muted)">
+          Mode : <strong className="text-(--color-text)">{asideMode}</strong>
+        </p>
+        <div className="overflow-hidden rounded-(--radius) border border-(--color-border)">
+          <div className="grid grid-cols-1 md:grid-cols-[1fr_360px]">
+            <div className="flex min-h-[280px] items-center justify-center bg-[#f1f1ee] p-6 text-sm text-(--color-muted)">
+              [Contenu principal — carte, table, etc.]
+            </div>
+            <AsideCard
+              title="PF-002 — Champ du Haut"
+              subtitle="Sélection courante"
+              data={asideData}
+              fields={ASIDE_FIELDS}
+              mode={asideMode}
+              editable
+              onModeChange={setAsideMode}
+              onClose={() => setAsideData(null)}
+              onSave={async (d) => {
+                setAsideData(d);
+              }}
+              layout="aside"
+            />
+          </div>
+        </div>
+      </Section>
+
+      {/* HoursTableMonth */}
+      <Section title="HoursTableMonth">
+        <HoursTableMonth
+          employeeId="emp-1"
+          year={hoursYear}
+          rows={HOURS_DATA}
+          onYearChange={setHoursYear}
+          sortBy={hoursSortBy}
+          sortDirection={hoursSortDir}
+          onSortChange={(k, d) => {
+            setHoursSortBy(k);
+            setHoursSortDir(d);
+          }}
+        />
+      </Section>
+
+      {/* LeaveRequestList */}
+      <Section title="LeaveRequestList">
+        <LeaveRequestList
+          employeeId="emp-1"
+          requests={LEAVES}
+          balance={{ remainingDays: 12, takenDays: 8, pendingDays: 5, year: 2026 }}
+          statusFilter={leaveFilter}
+          onFilterChange={setLeaveFilter}
+        />
+      </Section>
     </main>
+  );
+}
+
+function Section({
+  title,
+  right,
+  children,
+}: {
+  title: string;
+  right?: React.ReactNode;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="mb-6 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-6 shadow-(--shadow-card)">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="m-0 text-xs font-medium tracking-wider text-(--color-muted) uppercase">
+          {title}
+        </h2>
+        {right}
+      </div>
+      {children}
+    </section>
   );
 }

@@ -63,26 +63,44 @@ Cela colle directement à la sémantique Odoo `hr.attendance` (`check_in` / `che
 - [x] Total effectif négatif (pauses > plage) → clampé à 0 + warning
 - [x] Présence sans pause → autorisée (effectif = plage)
 
-## Conformité Hook 1 (Odoo) — décision Fabien 2026-05-15
+## Conformité Hook 1 (Odoo) — sémantique pauses = absence de timbrage
 
-**Les pauses ne sont PAS stockées dans Odoo.** Elles servent uniquement à calculer
-le total effectif côté Qodo. Odoo reçoit seulement les bornes finales.
+**Une pause = simplement une absence de timbrage entre deux périodes de présence.**
+Le concept de "pause" n'existe pas en tant qu'objet métier — il sert uniquement
+à l'ergonomie de saisie. Côté Odoo, on crée **N `hr.attendance`** (une par
+segment continu entre 2 timbrages).
 
+### Exemple
+
+Saisie utilisateur : 07:30 → 17:30 avec 2 pauses (10:00-10:15 et 12:00-13:00)
+
+Création Odoo :
+
+| # | check_in | check_out | duration |
+|---|---|---|---|
+| 1 | 07:30 | 10:00 | 2h30 |
+| 2 | 10:15 | 12:00 | 1h45 |
+| 3 | 13:00 | 17:30 | 4h30 |
+
+Total : 8h45 effectives.
+
+Helper côté composant : `splitPresenceIntoAttendances(start, end, breaks)` → `PresenceSegment[]`.
+
+### Détails Hook 1
 - [x] Trigger : création TimesheetEntry
-- [x] Action côté Qodo : persister la présence complète (startTime, endTime, pauses[], hoursWorked, projectType, interventionId)
-- [x] Action côté Odoo : créer **1 seule `hr.attendance`** avec :
-  - `check_in` = `startTime`
-  - `check_out` = `endTime`
-  - **Pas de pauses dans Odoo** (elles vivent uniquement dans Qodo)
-- [x] Si une intervention est liée → créer aussi 1 `account.analytic.line` (timesheet) avec `unit_amount = hoursWorked` (effectif, pauses déduites)
-- [x] Mapping employé : le user Qodo doit être lié à un `hr.employee` Odoo. À résoudre côté backend (table de mapping ou champ Odoo custom).
-- [x] Idempotency : même date + même employé → erreur 409, l'utilisateur édite la présence existante
+- [x] Action côté Qodo : persister la présence complète (startTime, endTime, pauses[], hoursWorked)
+- [x] Action côté Odoo : créer **N `hr.attendance`** (1 par segment)
+  - Itère sur `splitPresenceIntoAttendances(...)` → 1 RPC `create` par segment
+  - **OU** 1 seul RPC `create_multi` avec la liste des segments (préférable, moins de round-trips)
+- [x] Si `interventionId` → créer **1 seul** `account.analytic.line` avec `unit_amount = hoursWorked` (effectif total, sans répartir par segment)
+- [x] Mapping employé : `hr.employee` lié au user Qodo (table de mapping backend)
+- [x] Idempotency : même date + même employé + même segment → ne pas dupliquer
 
-### Conséquence côté UI
-- L'utilisateur saisit ses pauses → Qodo calcule le total
-- Côté Odoo, on ne verra qu'une présence continue (`check_in` 07:30 → `check_out` 17:30)
-- Le total dans `account.analytic.line` reflète les pauses déduites (8h45 plutôt que 10h)
-- C'est cohérent avec le `HoursTableMonth` qui affiche les **heures effectives**
+### Avantages de cette approche
+- **Fidèle au modèle Odoo natif** : un timbrage = une attendance. Pas de champ custom à créer.
+- **Compatible avec d'autres outils Odoo** : rapports, dashboards, exports natifs marchent direct.
+- **Pause modifiable a posteriori** : si l'utilisateur édite une pause, on supprime/recrée les attendances impactées.
+- **Pas de notion de "pause" à expliquer aux gestionnaires RH** : ils ne voient que des timbrages, comme s'ils sortaient d'un terminal physique.
 
 ## Réutilisation
 - Module RH (entry standalone)

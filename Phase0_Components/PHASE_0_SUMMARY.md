@@ -52,11 +52,13 @@
 - Configurable via prop `mobileCategoryDropdownThreshold` (défaut 5)
 - 2 nouveaux wireframes mobile illustrant chaque cas
 
-### TimesheetEntry — clarification Odoo
-- **Les pauses ne sont PAS stockées dans Odoo** (décision Fabien)
-- Odoo reçoit seulement : 1 `hr.attendance` (check_in / check_out) + éventuellement 1 `account.analytic.line` (heures effectives)
-- Les pauses vivent uniquement dans Qodo (calcul du total)
-- Documenté dans `TimesheetEntry.types.ts` (header) et `_CHECKLIST.md` (section Hook 1)
+### TimesheetEntry — pause = absence de timbrage
+- Une pause **n'est pas un objet métier** — c'est juste une absence de timbrage entre 2 présences continues.
+- Côté Odoo : créer **N `hr.attendance`** (une par segment de présence continue), pas une seule avec champ "pauses".
+- Exemple : `07:30 → 17:30` avec pauses `10:00-10:15` et `12:00-13:00`
+  = 3 `hr.attendance` (07:30-10:00, 10:15-12:00, 13:00-17:30)
+- Helper `splitPresenceIntoAttendances(start, end, breaks)` retourne les segments
+- Fidèle au modèle natif Odoo (rapports, dashboards existants marchent direct)
 - **Mapping user Qodo ↔ hr.employee Odoo** : table de mapping côté backend (hors scope composant)
 
 ### MapView — recommandation tile server

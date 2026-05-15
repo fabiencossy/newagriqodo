@@ -1,15 +1,21 @@
 /**
  * TimesheetEntry — Form de saisie d'une présence.
  *
- * Modèle unique : toujours heure de début + heure de fin + pauses (0 à N).
- * Le total effectif (en heures décimales) est calculé : `plage − pauses`.
+ * Modèle de saisie : heure de début + heure de fin + pauses (0 à N).
+ * Une "pause" n'est PAS un objet métier — c'est simplement une absence de
+ * timbrage entre deux périodes de présence. La saisie côté Qodo est juste
+ * une ergonomie : on saisit la plage et les coupures, mais on stocke des
+ * segments de présence continus.
  *
- * Submit → Hook 1 :
- *  - Persistance complète côté Qodo (start, end, breaks[], hoursWorked, …)
- *  - Côté Odoo : 1 seule `hr.attendance` (check_in = start, check_out = end).
- *    **Les pauses ne sont PAS envoyées à Odoo** — elles vivent uniquement dans Qodo.
- *  - Si `interventionId` → 1 `account.analytic.line` avec `unit_amount = hoursWorked`
- *    (effectif après déduction des pauses).
+ * Transformation côté envoi Odoo (Hook 1) :
+ *  - Une saisie 07:30 → 17:30 avec pauses 10:00-10:15 et 12:00-13:00
+ *  - = 3 segments de présence : 07:30-10:00, 10:15-12:00, 13:00-17:30
+ *  - = 3 enregistrements `hr.attendance` (1 par segment)
+ *
+ * Voir `splitPresenceIntoAttendances()` pour le helper qui fait la conversion.
+ *
+ * Pour les timesheets liés à une intervention (`interventionId`) :
+ *  - 1 seul `account.analytic.line` avec `unit_amount = hoursWorked` (effectif total).
  *
  * Mapping user → employee : le user Qodo doit être lié à un `hr.employee` Odoo
  * via une table de mapping côté backend (non géré par ce composant).
@@ -229,4 +235,83 @@ export function computePresenceHours(
     breaksMin,
     effectiveHours: Math.max(0, rangeMin - breaksMin) / 60,
   };
+}
+
+/** Segment continu de présence (entre 2 timbrages). */
+export interface PresenceSegment {
+  /** Heure de début (HH:MM) — début du timbrage. */
+  start: string;
+  /** Heure de fin (HH:MM) — fin du timbrage. */
+  end: string;
+  /** Durée en minutes. */
+  durationMinutes: number;
+}
+
+/**
+ * Découpe une présence (start, end, pauses) en N segments continus.
+ *
+ * Exemple :
+ *   start = "07:30", end = "17:30"
+ *   breaks = [{ start: "10:00", end: "10:15" }, { start: "12:00", end: "13:00" }]
+ *   → [
+ *     { start: "07:30", end: "10:00", durationMinutes: 150 },
+ *     { start: "10:15", end: "12:00", durationMinutes: 105 },
+ *     { start: "13:00", end: "17:30", durationMinutes: 270 },
+ *   ]
+ *
+ * Chaque segment correspond à 1 `hr.attendance` Odoo (check_in / check_out).
+ * Retourne null si une donnée est invalide.
+ */
+export function splitPresenceIntoAttendances(
+  startTime: string,
+  endTime: string,
+  breaks: ReadonlyArray<BreakPeriod>,
+): PresenceSegment[] | null {
+  const presenceStart = timeStringToMinutes(startTime);
+  const presenceEnd = timeStringToMinutes(endTime);
+  if (presenceStart === null || presenceEnd === null) return null;
+  if (presenceEnd <= presenceStart) return null;
+
+  // Trier les pauses par début, en convertissant en minutes.
+  const sortedBreaks = [...breaks]
+    .map((b) => {
+      const s = timeStringToMinutes(b.start);
+      const e = timeStringToMinutes(b.end);
+      return s !== null && e !== null && e > s ? { s, e } : null;
+    })
+    .filter((x): x is { s: number; e: number } => x !== null)
+    .sort((a, b) => a.s - b.s);
+
+  // Construire les segments en sautant les pauses.
+  const segments: PresenceSegment[] = [];
+  let cursor = presenceStart;
+  for (const br of sortedBreaks) {
+    if (br.s >= presenceEnd) break;
+    if (br.e <= cursor) continue;
+    const segStart = Math.max(cursor, presenceStart);
+    const segEnd = Math.min(br.s, presenceEnd);
+    if (segEnd > segStart) {
+      segments.push({
+        start: minutesToTimeString(segStart),
+        end: minutesToTimeString(segEnd),
+        durationMinutes: segEnd - segStart,
+      });
+    }
+    cursor = Math.max(cursor, br.e);
+  }
+  if (cursor < presenceEnd) {
+    segments.push({
+      start: minutesToTimeString(cursor),
+      end: minutesToTimeString(presenceEnd),
+      durationMinutes: presenceEnd - cursor,
+    });
+  }
+  return segments;
+}
+
+/** Convertit un nombre de minutes depuis minuit en "HH:MM". */
+export function minutesToTimeString(minutes: number): string {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
 }

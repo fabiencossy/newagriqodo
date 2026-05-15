@@ -2,7 +2,14 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { PageContainer } from '../_shared/PageContainer';
 import { MapView } from '../../components/MapView';
+import { useFabActions } from '../../layouts/useFab';
 import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
+
+/** URL Google Maps en mode itinéraire vers le centroïde de la parcelle. */
+function googleMapsDirUrl(parcel: ParcelDetail): string {
+  const [lng, lat] = computeCentroid(parcel);
+  return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
+}
 
 /** Calcule le centroïde d'un polygone (moyenne des points du ring extérieur). */
 function computeCentroid(parcel: ParcelDetail): [number, number] {
@@ -44,6 +51,34 @@ export default function ParcelleDetailPage() {
   const [draft, setDraft] = useState<ParcelDetail | undefined>(initial);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+
+  // FAB contextuel : actions disponibles sur la fiche parcelle
+  useFabActions(
+    useMemo(() => {
+      if (!draft) return [];
+      return [
+        {
+          id: 'gmaps',
+          label: 'Itinéraire (Google Maps)',
+          onClick: () => window.open(googleMapsDirUrl(draft), '_blank', 'noopener'),
+        },
+        {
+          id: 'add-intervention',
+          label: 'Ajouter une intervention',
+          onClick: () => {
+            alert("Création d'une intervention (à brancher Phase 2.5 avec le Carnet).");
+          },
+        },
+        {
+          id: 'duplicate',
+          label: 'Dupliquer la parcelle',
+          onClick: () => {
+            alert('Duplication de parcelle (à brancher Phase 2.5).');
+          },
+        },
+      ];
+    }, [draft]),
+  );
 
   if (!initial || !draft) {
     return (
@@ -230,9 +265,21 @@ export default function ParcelleDetailPage() {
 
         {/* Localisation — mini-carte avec la parcelle centrée */}
         <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-3">
-          <h2 className="m-0 mb-3 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
-            Localisation
-          </h2>
+          <div className="mb-3 flex items-center justify-between gap-2">
+            <h2 className="m-0 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
+              Localisation
+            </h2>
+            <a
+              href={googleMapsDirUrl(draft)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex h-9 items-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium text-(--color-text) hover:bg-[#f8f8f5]"
+            >
+              <GoogleMapsIcon />
+              <span>Itinéraire</span>
+              <ExternalLinkIcon />
+            </a>
+          </div>
           <MapView
             parcels={[draft]}
             selectedId={draft.id}
@@ -331,6 +378,44 @@ function BackIcon() {
       aria-hidden="true"
     >
       <path d="m15 18-6-6 6-6" />
+    </svg>
+  );
+}
+
+function GoogleMapsIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width={14}
+      height={14}
+      aria-hidden="true"
+    >
+      <path d="M12 22s-7-7-7-12a7 7 0 0 1 14 0c0 5-7 12-7 12z" />
+      <circle cx="12" cy="10" r="2.5" />
+    </svg>
+  );
+}
+
+function ExternalLinkIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width={12}
+      height={12}
+      aria-hidden="true"
+    >
+      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+      <path d="M15 3h6v6M10 14 21 3" />
     </svg>
   );
 }

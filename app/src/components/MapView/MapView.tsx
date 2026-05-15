@@ -53,6 +53,7 @@ export function MapView({
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<MaplibreMap | null>(null);
   const markerRefs = useRef<Map<string, maplibregl.Marker>>(new Map());
+  const hasFittedRef = useRef(false);
   const [mapReady, setMapReady] = useState(false);
   const [basemap, setBasemap] = useState<Basemap>(basemapProp ?? 'satellite');
   // Compteur incrémenté à chaque setStyle pour re-déclencher l'init des layers
@@ -77,7 +78,7 @@ export function MapView({
       maxZoom: zoomRange[1],
       interactive,
     });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-left');
 
     // Debug : tracer toutes les erreurs de tile et load
 
@@ -97,14 +98,25 @@ export function MapView({
     // s'abonnent à 'idle'/'styledata' en interne.
     setMapReady(true);
 
-    // ResizeObserver : forcer map.resize() à chaque changement de taille du container.
+    // ResizeObserver : forcer map.resize() + triggerRepaint à chaque changement.
     const ro = new ResizeObserver(() => {
       map.resize();
+      map.triggerRepaint();
     });
     ro.observe(containerRef.current);
 
-    // Resize initial juste après mount (au cas où le container a 0 px à la création)
-    requestAnimationFrame(() => map.resize());
+    // Double rAF + setTimeout : couvre tous les cas où le container a 0 px au mount
+    // (notamment quand on est dans un grid qui n'a pas encore calculé son layout).
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        map.resize();
+        map.triggerRepaint();
+      });
+    });
+    setTimeout(() => {
+      map.resize();
+      map.triggerRepaint();
+    }, 200);
 
     return () => {
       ro.disconnect();
@@ -186,6 +198,47 @@ export function MapView({
       });
     }
   }, [parcels, mapReady, styleVersion]);
+
+  /* ---------- Auto-fit aux parcelles (une seule fois au load) ---------- */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    if (hasFittedRef.current) return;
+    if (parcels.length === 0) return;
+
+    // Calcul bbox des parcelles
+    let minLng = Infinity;
+    let minLat = Infinity;
+    let maxLng = -Infinity;
+    let maxLat = -Infinity;
+    for (const p of parcels) {
+      const polys =
+        p.geometry.type === 'Polygon' ? [p.geometry.coordinates] : p.geometry.coordinates;
+      for (const poly of polys) {
+        for (const ring of poly) {
+          for (const coord of ring) {
+            const lng = coord[0]!;
+            const lat = coord[1]!;
+            if (lng < minLng) minLng = lng;
+            if (lat < minLat) minLat = lat;
+            if (lng > maxLng) maxLng = lng;
+            if (lat > maxLat) maxLat = lat;
+          }
+        }
+      }
+    }
+
+    if (Number.isFinite(minLng)) {
+      map.fitBounds(
+        [
+          [minLng, minLat],
+          [maxLng, maxLat],
+        ],
+        { padding: 60, animate: false, maxZoom: 17 },
+      );
+      hasFittedRef.current = true;
+    }
+  }, [parcels, mapReady]);
 
   /* ---------- Feature states (sélection) ---------- */
   useEffect(() => {
@@ -304,7 +357,7 @@ export function MapView({
       ].join(' ')}
       style={{ height }}
     >
-      <div ref={containerRef} className="absolute inset-0 bg-[#e5e3df]" />
+      <div ref={containerRef} className="absolute inset-0" style={{ background: '#e5e3df' }} />
 
       {/* Toolbar latérale gauche (cachée si aucun outil enabled) */}
       {enabledTools.length > 0 && (

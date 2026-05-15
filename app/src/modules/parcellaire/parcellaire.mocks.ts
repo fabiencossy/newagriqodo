@@ -1,250 +1,114 @@
+import type { Feature, FeatureCollection, MultiPolygon, Polygon } from 'geojson';
 import type { Parcel } from '../../components/MapView';
+import { cultureColor } from '../assolement/cultures';
+import darvalGeoJSON from './darval.geojson.json';
 
 /**
- * Mock data : 12 parcelles autour de Lausanne / Échallens.
- * Coordonnées approximatives. À remplacer par fetch Odoo `agri.parcel` en Phase 2.
+ * Parcelles réelles du Domaine Darval — chargées depuis le fichier
+ * `darval.geojson.json` (export VD GELAN 2026, 27 features).
+ *
+ * Mapping affectation Agridéa → culture du catalogue :
+ *   513 → Blé d'automne
+ *   601 → Prairie temporaire
+ *   613 → Prairie naturelle (Prairies perm. fauche)
+ *   616 → Pâturage (attenants)
+ *   617 → Prairie extensive (Pâturages extensifs - SPB)
+ *   521 → Maïs ensilage
+ *   901 → Forêt          (status archived)
+ *   902 → Surface improductive (status archived)
  */
 
 export interface ParcelDetail extends Parcel {
   varietyName?: string;
-  sowingDate?: string; // YYYY-MM-DD
-  notes?: string;
-  year: number;
-}
-
-export const PARCELLES: ParcelDetail[] = [
-  buildParcel({
-    id: 'PF-001',
-    name: 'Plat de la Cure',
-    surfaceHa: 2.5,
-    culture: "Blé d'automne",
-    status: 'active',
-    color: '#f97316',
-    varietyName: 'Arnold',
-    sowingDate: '2026-03-12',
-    notes: 'Sol limoneux, drainage moyen. Voisin ouest = colza.',
-    year: 2026,
-    coords: [
-      [6.6285, 46.5215],
-      [6.633, 46.5218],
-      [6.6332, 46.5195],
-      [6.6287, 46.5192],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-002',
-    name: 'Champ du Haut',
-    surfaceHa: 1.8,
-    culture: "Blé d'automne",
-    status: 'active',
-    color: '#f97316',
-    varietyName: 'Arnold',
-    sowingDate: '2026-03-14',
-    notes: '',
-    year: 2026,
-    coords: [
-      [6.634, 46.521],
-      [6.6385, 46.5213],
-      [6.6388, 46.519],
-      [6.6342, 46.5188],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-003',
-    name: 'Petite Pièce',
-    surfaceHa: 0.9,
-    culture: 'Jachère',
-    status: 'fallow',
-    color: '#a3a380',
-    sowingDate: '',
-    notes: 'En jachère depuis 2025.',
-    year: 2025,
-    coords: [
-      [6.628, 46.5185],
-      [6.6315, 46.5187],
-      [6.6317, 46.517],
-      [6.6282, 46.5168],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-004',
-    name: 'Champ Long',
-    surfaceHa: 4.1,
-    culture: 'Maïs ensilage',
-    status: 'active',
-    color: '#dc2626',
-    varietyName: 'Limagrain LG31.330',
-    sowingDate: '2026-04-22',
-    year: 2026,
-    coords: [
-      [6.6325, 46.5183],
-      [6.638, 46.5186],
-      [6.6383, 46.5165],
-      [6.6328, 46.5162],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-005',
-    name: 'Champ du Bas',
-    surfaceHa: 2.3,
-    culture: "Blé d'automne",
-    status: 'active',
-    color: '#f97316',
-    varietyName: 'Arnold',
-    sowingDate: '2026-03-14',
-    year: 2026,
-    coords: [
-      [6.625, 46.5165],
-      [6.6298, 46.5168],
-      [6.63, 46.515],
-      [6.6253, 46.5147],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-006',
-    name: 'Pré du Moulin',
-    surfaceHa: 3.2,
-    culture: "Colza d'automne",
-    status: 'active',
-    color: '#fef08a',
-    varietyName: 'DK Exception',
-    sowingDate: '2025-08-25',
-    year: 2025,
-    coords: [
-      [6.6395, 46.5165],
-      [6.644, 46.5168],
-      [6.6442, 46.5148],
-      [6.6398, 46.5145],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-007',
-    name: 'Champ Rond',
-    surfaceHa: 0.6,
-    culture: 'Maïs ensilage',
-    status: 'active',
-    color: '#dc2626',
-    varietyName: 'Limagrain LG31.330',
-    sowingDate: '2026-04-23',
-    year: 2026,
-    coords: [
-      [6.6298, 46.5142],
-      [6.6328, 46.5145],
-      [6.633, 46.513],
-      [6.63, 46.5128],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-008',
-    name: 'Vers la Ferme',
-    surfaceHa: 1.5,
-    culture: "Orge d'automne",
-    status: 'active',
-    color: '#fbbf24',
-    varietyName: 'KWS Cassia',
-    sowingDate: '2025-10-12',
-    year: 2025,
-    coords: [
-      [6.6342, 46.5142],
-      [6.6385, 46.5145],
-      [6.6387, 46.5127],
-      [6.6344, 46.5125],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-009',
-    name: 'Grande Pièce',
-    surfaceHa: 5.7,
-    culture: "Blé d'automne",
-    status: 'active',
-    color: '#f97316',
-    varietyName: 'Lemaire',
-    sowingDate: '2026-03-15',
-    year: 2026,
-    coords: [
-      [6.625, 46.5135],
-      [6.632, 46.5138],
-      [6.6322, 46.511],
-      [6.6253, 46.5108],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-010',
-    name: 'Bord de Route',
-    surfaceHa: 1.1,
-    culture: 'Jachère',
-    status: 'fallow',
-    color: '#a3a380',
-    notes: 'Bande tampon route cantonale.',
-    year: 2026,
-    coords: [
-      [6.6398, 46.5113],
-      [6.6438, 46.5115],
-      [6.644, 46.51],
-      [6.64, 46.5098],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-011',
-    name: 'Champ Sud',
-    surfaceHa: 2.9,
-    culture: 'Maïs ensilage',
-    status: 'active',
-    color: '#dc2626',
-    varietyName: 'Limagrain LG31.330',
-    sowingDate: '2026-04-24',
-    year: 2026,
-    coords: [
-      [6.6258, 46.5105],
-      [6.6315, 46.5108],
-      [6.6317, 46.5088],
-      [6.626, 46.5085],
-    ],
-  }),
-  buildParcel({
-    id: 'PF-012',
-    name: 'Verger Vieux',
-    surfaceHa: 0.4,
-    culture: 'Archivé',
-    status: 'archived',
-    color: '#9ca3af',
-    notes: 'Ancien verger, arraché 2024.',
-    year: 2024,
-    coords: [
-      [6.6338, 46.5105],
-      [6.6362, 46.5107],
-      [6.6363, 46.5092],
-      [6.634, 46.509],
-    ],
-  }),
-];
-
-function buildParcel(args: {
-  id: string;
-  name: string;
-  surfaceHa: number;
-  culture: string;
-  status: 'active' | 'fallow' | 'archived';
-  color: string;
-  varietyName?: string;
   sowingDate?: string;
   notes?: string;
   year: number;
-  coords: [number, number][];
-}): ParcelDetail {
-  // ferme le ring
-  const ring = [...args.coords, args.coords[0]!];
-  return {
-    id: args.id,
-    name: args.name,
-    surfaceHa: args.surfaceHa,
-    culture: args.culture,
-    status: args.status,
-    color: args.color,
-    varietyName: args.varietyName,
-    sowingDate: args.sowingDate,
-    notes: args.notes,
-    year: args.year,
-    geometry: { type: 'Polygon', coordinates: [ring] },
-  };
 }
+
+const AFFECTATION_TO_CULTURE: Record<string, string> = {
+  '513': "Blé d'automne",
+  '601': 'Prairie temporaire',
+  '613': 'Prairie naturelle',
+  '616': 'Pâturage',
+  '617': 'Prairie extensive',
+  '521': 'Maïs ensilage',
+  '901': 'Forêt',
+  '902': 'Surface improductive',
+};
+
+function affectationToCulture(affectation: string | undefined): string {
+  if (!affectation) return 'Sol nu / Labour';
+  const code = affectation.slice(0, 3);
+  return AFFECTATION_TO_CULTURE[code] ?? 'Sol nu / Labour';
+}
+
+/** Surface (ha) approximée par shoelace + correction latitude. */
+function estimateSurfaceHa(geom: Polygon | MultiPolygon): number {
+  const polygons = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
+  let total = 0;
+  for (const polygon of polygons) {
+    const outer = polygon[0];
+    if (!outer || outer.length < 4) continue;
+    let area = 0;
+    for (let i = 0; i < outer.length - 1; i++) {
+      const [x1, y1] = outer[i]!;
+      const [x2, y2] = outer[i + 1]!;
+      area += x1! * y2! - x2! * y1!;
+    }
+    area = Math.abs(area) / 2;
+    const meanLat = outer.reduce((s, p) => s + p[1]!, 0) / outer.length;
+    const mPerDegLat = 111_320;
+    const mPerDegLng = 111_320 * Math.cos((meanLat * Math.PI) / 180);
+    total += (area * mPerDegLat * mPerDegLng) / 10_000;
+  }
+  return total;
+}
+
+/** Title-case les noms tout-majuscules. Conserve les autres tels quels. */
+function prettifyName(name: string): string {
+  const isAllCaps = name === name.toUpperCase();
+  if (!isAllCaps) return name;
+  return name
+    .toLowerCase()
+    .split(/\s+/)
+    .map((w) => (w.length > 0 ? w[0]!.toUpperCase() + w.slice(1) : ''))
+    .join(' ');
+}
+
+interface ParcelProperties {
+  id?: string;
+  parcel_nam?: string;
+  affectatio?: string;
+}
+
+const VARIETIES: Record<string, string> = {
+  "Blé d'automne": 'Arnold',
+  'Maïs ensilage': 'Limagrain LG31.330',
+};
+
+const fc = darvalGeoJSON as unknown as FeatureCollection;
+
+export const PARCELLES: ParcelDetail[] = fc.features
+  .filter((f: Feature) =>
+    Boolean(f.geometry && (f.geometry.type === 'Polygon' || f.geometry.type === 'MultiPolygon')),
+  )
+  .map((f, idx): ParcelDetail => {
+    const props = (f.properties ?? {}) as ParcelProperties;
+    const id = props.id ?? `DARVAL-${idx + 1}`;
+    const name = prettifyName(props.parcel_nam ?? `Parcelle ${idx + 1}`);
+    const culture = affectationToCulture(props.affectatio);
+    const surfaceHa = Number(estimateSurfaceHa(f.geometry as Polygon | MultiPolygon).toFixed(2));
+    const status: ParcelDetail['status'] =
+      culture === 'Forêt' || culture === 'Surface improductive' ? 'archived' : 'active';
+    return {
+      id,
+      name,
+      surfaceHa,
+      culture,
+      varietyName: VARIETIES[culture],
+      year: 2026,
+      status,
+      color: cultureColor(culture),
+      geometry: f.geometry as Polygon | MultiPolygon,
+    };
+  });

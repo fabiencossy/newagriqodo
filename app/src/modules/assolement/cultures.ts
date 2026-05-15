@@ -98,9 +98,11 @@ export const CULTURES: ReadonlyArray<CultureInfo> = [
   { key: 'green-manure', label: 'Engrais vert', color: '#16a34a', category: 'cover' },
   { key: 'cover-crop', label: 'Couvert végétal', color: '#15803d', category: 'cover' },
 
-  // === Jachère / sol nu
+  // === Jachère / sol nu / non-productif
   { key: 'fallow', label: 'Jachère', color: '#a3a380', category: 'fallow' },
   { key: 'bare-soil', label: 'Sol nu / Labour', color: '#a8a29e', category: 'fallow' },
+  { key: 'forest', label: 'Forêt', color: '#064e3b', category: 'fallow' },
+  { key: 'unproductive', label: 'Surface improductive', color: '#525252', category: 'fallow' },
 
   // === Autre (exclu des listes de sélection)
   { key: 'archived', label: 'Archivé', color: '#9ca3af', category: 'other' },

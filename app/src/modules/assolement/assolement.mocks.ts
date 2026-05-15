@@ -26,8 +26,20 @@ const ROTATION: Record<string, string> = {
   "Orge d'automne": 'Maïs ensilage',
 };
 
+// Cultures pluriannuelles / non-rotatives : on garde la même d'une campagne à l'autre.
+const NON_ROTATING = new Set([
+  'Jachère',
+  'Archivé',
+  'Prairie temporaire',
+  'Prairie naturelle',
+  'Prairie extensive',
+  'Pâturage',
+  'Forêt',
+  'Surface improductive',
+]);
+
 function rotate(culture: string): string {
-  if (culture === 'Jachère' || culture === 'Archivé') return culture;
+  if (NON_ROTATING.has(culture)) return culture;
   return ROTATION[culture] ?? culture;
 }
 
@@ -58,7 +70,16 @@ function cultureWindow(culture: string, year: number): CultureWindow | undefined
     case "Colza d'automne":
       return { start: `${year - 1}-08-25`, end: `${year}-07-15` };
     case 'Jachère':
+    case 'Prairie temporaire':
+    case 'Prairie naturelle':
+    case 'Prairie extensive':
+    case 'Pâturage':
+      // Cultures pluriannuelles : occupent toute la campagne.
       return { start: `${year}-01-01`, end: `${year}-12-31` };
+    case 'Forêt':
+    case 'Surface improductive':
+      // Non-productif : aucun segment d'assolement à proprement parler.
+      return undefined;
     default:
       return undefined;
   }

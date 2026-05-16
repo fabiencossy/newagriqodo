@@ -128,31 +128,36 @@ services:
       PGRST_APP_SETTINGS_JWT_EXP: 3600
 
   # --------------------------------------------------------------------------
-  # 4. Realtime — websockets pour les subscriptions Postgres
+  # 4. Realtime — DÉSACTIVÉ pour le MVP (image v2.30.34 instable en self-host).
   # --------------------------------------------------------------------------
-  realtime:
-    image: supabase/realtime:v2.30.34
-    restart: unless-stopped
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      PORT: 4000
-      DB_HOST: db
-      DB_PORT: 5432
-      DB_USER: supabase_admin
-      DB_PASSWORD: ${POSTGRES_PASSWORD}
-      DB_NAME: postgres
-      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
-      DB_ENC_KEY: ${REALTIME_ENC_KEY}
-      API_JWT_SECRET: ${JWT_SECRET}
-      SECRET_KEY_BASE: ${REALTIME_SECRET_KEY_BASE}
-      ERL_AFLAGS: -proto_dist inet_tcp
-      ENABLE_TAILSCALE: 'false'
-      DNS_NODES: "''"
-      # Bug image v2.30.34 : RLIMIT_NOFILE doit être défini, sinon run.sh
-      # plante avec "RLIMIT_NOFILE: unbound variable" et restart en boucle.
-      RLIMIT_NOFILE: '10000'
+  # Réactiver quand on aura besoin d'abonnements live (notifications push
+  # intervention en cours, présence multi-user, etc.). Pour l'instant le
+  # MVP utilise REST pull-only — aucune feature impactée.
+  #
+  # Avant réactivation : utiliser une image plus récente (>= v2.34) qui a
+  # corrigé les bugs RLIMIT_NOFILE et la requête CREATE SCHEMA _realtime.
+  #
+  # realtime:
+  #   image: supabase/realtime:v2.30.34
+  #   restart: unless-stopped
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #   environment:
+  #     PORT: 4000
+  #     DB_HOST: db
+  #     DB_PORT: 5432
+  #     DB_USER: supabase_admin
+  #     DB_PASSWORD: ${POSTGRES_PASSWORD}
+  #     DB_NAME: postgres
+  #     DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+  #     DB_ENC_KEY: ${REALTIME_ENC_KEY}
+  #     API_JWT_SECRET: ${JWT_SECRET}
+  #     SECRET_KEY_BASE: ${REALTIME_SECRET_KEY_BASE}
+  #     ERL_AFLAGS: -proto_dist inet_tcp
+  #     ENABLE_TAILSCALE: 'false'
+  #     DNS_NODES: "''"
+  #     RLIMIT_NOFILE: '10000'
 
   # --------------------------------------------------------------------------
   # 5. Storage — uploads (photos parcelles, justificatifs, exports PDF)

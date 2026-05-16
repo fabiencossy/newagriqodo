@@ -11,8 +11,22 @@ import MesHeuresPage from './modules/rh/MesHeuresPage';
 import SaisirPresencePage from './modules/rh/SaisirPresencePage';
 import MesCongesPage from './modules/rh/MesCongesPage';
 import ParametresPage from './modules/parametres/ParametresPage';
+import LoginPage from './modules/auth/LoginPage';
+import { useAuth } from './modules/auth/auth.store';
 
 export default function App() {
+  const { mode } = useAuth();
+
+  // Pas connecté : on force la page de login (sauf si on est déjà dessus).
+  if (mode === 'logged-out') {
+    return (
+      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    );
+  }
+
   return (
     <Routes>
       <Route element={<AppLayout />}>
@@ -33,6 +47,8 @@ export default function App() {
         </Route>
 
         <Route path="/parametres" element={<ParametresPage />} />
+        {/* /login accessible aussi en mode connecté (pour déconnexion) */}
+        <Route path="/login" element={<Navigate to="/parcellaire" replace />} />
         <Route path="*" element={<Navigate to="/parcellaire" replace />} />
       </Route>
     </Routes>

@@ -9,6 +9,7 @@ import type { Product, ProductType } from '../products/products.types';
 import { UserSelect } from '../users/UserSelect';
 import { getUserById } from '../users/users.store';
 import { ParcelLink } from '../../components/EntityLink/ParcelLink';
+import { ParcelMultiPicker } from '../parcel-groups/ParcelMultiPicker';
 
 interface InterventionFormProps {
   /** Intervention en cours d'édition. Si fournie sans id, c'est un nouveau brouillon. */
@@ -60,9 +61,15 @@ export function InterventionForm({
   });
   const [bbchHelpOpen, setBbchHelpOpen] = useState(false);
   const [productPickerOpen, setProductPickerOpen] = useState(false);
-  // Multi-sélection : parcelles supplémentaires (en plus de draft.parcelId).
-  // Au submit, on crée 1 intervention par parcelle (avec id distinct par parcelle).
-  const [additionalParcelIds, setAdditionalParcelIds] = useState<ReadonlyArray<string>>([]);
+  // Multi-sélection : N parcelles dans une même intervention (1 enregistrement par parcelle).
+  // La 1re est la principale (= draft.parcelId pour les calculs). Au submit, on crée 1
+  // intervention par id avec doseValue × surface réelle de chaque parcelle.
+  // Init lazy : exécuté une seule fois au mount (compatible react-hooks/purity).
+  const [allSelectedIds, setAllSelectedIds] = useState<ReadonlyArray<string>>(() => {
+    if (initial?.parcelId) return [initial.parcelId];
+    if (lockedParcelId) return [lockedParcelId];
+    return [];
+  });
   const [parcelPickerOpen, setParcelPickerOpen] = useState(false);
 
   const setField = <K extends keyof Intervention>(key: K, value: Intervention[K] | undefined) => {
@@ -181,10 +188,11 @@ export function InterventionForm({
       notes: draft.notes,
     };
     onSave(intervention);
-    // Multi-sélection : crée une copie identique pour chaque parcelle additionnelle,
-    // avec id unique par parcelle. Le caller (CarnetPage / ParcelleDetailPage) reçoit
-    // chaque intervention via onSave et délègue à addInterventions du store.
-    for (const otherParcelId of additionalParcelIds) {
+    // Multi-sélection : crée une copie identique pour chaque parcelle additionnelle
+    // (toutes celles dans allSelectedIds sauf la principale = draft.parcelId).
+    // Le caller délègue à addInterventions via le store.
+    const additionalIds = allSelectedIds.filter((id) => id !== draft.parcelId);
+    for (const otherParcelId of additionalIds) {
       onSave({
         ...intervention,
         id: `${baseId}-${otherParcelId}`,
@@ -259,47 +267,73 @@ export function InterventionForm({
             </div>
           </FormField>
 
-          {/* Parcelle + lien vers la fiche */}
-          <FormField label="Parcelle">
-            <div className="flex items-center gap-2">
-              <select
-                value={draft.parcelId ?? ''}
-                onChange={(e) => setField('parcelId', e.target.value)}
-                disabled={Boolean(lockedParcelId)}
-                className={inputClass}
-              >
-                {parcels.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.id} — {p.name}
-                  </option>
-                ))}
-              </select>
-              {draft.parcelId && (
+          {/* Parcelle(s) — multi-sélection directe avec support des groupes */}
+          <FormField label={allSelectedIds.length > 1 ? 'Parcelles' : 'Parcelle'}>
+            {lockedParcelId ? (
+              /* Verrouillée : pas de sélection possible (depuis ParcelleDetailPage) */
+              <div className="flex items-center gap-2">
+                <div className={inputClass + ' flex items-center'}>
+                  {parcel?.name ?? lockedParcelId}
+                </div>
                 <ParcelLink
-                  parcelId={draft.parcelId}
+                  parcelId={lockedParcelId}
                   variant="compact-button"
                   beforeNavigate={onCancel}
                 />
-              )}
-            </div>
-            {/* Multi-sélection : appliquer à d'autres parcelles (uniquement en création) */}
-            {isNew && !lockedParcelId && (
+              </div>
+            ) : (
               <>
-                {additionalParcelIds.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setParcelPickerOpen(true)}
+                  className={[
+                    'flex h-10 w-full items-center gap-2 rounded-(--radius) border bg-(--color-surface) px-3 text-left text-sm transition-colors hover:bg-[#fbfbf9]',
+                    allSelectedIds.length > 0
+                      ? 'border-(--color-border)'
+                      : 'border-dashed border-(--color-border) text-(--color-muted)',
+                  ].join(' ')}
+                >
+                  <span className="min-w-0 flex-1 truncate">
+                    {allSelectedIds.length === 0
+                      ? 'Sélectionner les parcelles…'
+                      : allSelectedIds.length === 1
+                        ? (parcels.find((p) => p.id === allSelectedIds[0])?.name ??
+                          allSelectedIds[0])
+                        : `${allSelectedIds.length} parcelles sélectionnées`}
+                  </span>
+                  <span className="shrink-0 text-(--color-muted)">
+                    <ChevronIcon />
+                  </span>
+                </button>
+                {/* Chips removables si > 1 parcelle */}
+                {allSelectedIds.length > 1 && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
-                    {additionalParcelIds.map((pid) => {
+                    {allSelectedIds.map((pid, idx) => {
                       const p = parcels.find((x) => x.id === pid);
+                      const isPrincipal = idx === 0;
                       return (
                         <span
                           key={pid}
-                          className="inline-flex items-center gap-1.5 rounded-(--radius-pill) border border-(--color-border) bg-[#fbfbf9] py-1 pr-1 pl-2.5 text-xs"
+                          className={[
+                            'inline-flex items-center gap-1.5 rounded-(--radius-pill) border py-1 pr-1 pl-2.5 text-xs',
+                            isPrincipal
+                              ? 'border-(--color-primary) bg-(--color-primary)/10 text-(--color-primary)'
+                              : 'border-(--color-border) bg-[#fbfbf9]',
+                          ].join(' ')}
                         >
                           <span className="font-medium">{p?.name ?? pid}</span>
+                          {isPrincipal && (
+                            <span className="text-[9px] font-semibold tracking-wider uppercase">
+                              principale
+                            </span>
+                          )}
                           <button
                             type="button"
-                            onClick={() =>
-                              setAdditionalParcelIds((curr) => curr.filter((x) => x !== pid))
-                            }
+                            onClick={() => {
+                              const next = allSelectedIds.filter((x) => x !== pid);
+                              setAllSelectedIds(next);
+                              setField('parcelId', next[0]);
+                            }}
                             aria-label={`Retirer ${p?.name ?? pid}`}
                             className="inline-flex h-5 w-5 items-center justify-center rounded-(--radius-pill) text-(--color-muted) hover:bg-[#f1f1ee] hover:text-(--color-text)"
                           >
@@ -322,33 +356,24 @@ export function InterventionForm({
                     })}
                   </div>
                 )}
-                <button
-                  type="button"
-                  onClick={() => setParcelPickerOpen(true)}
-                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-(--color-primary) hover:underline"
-                >
-                  + Appliquer à d'autres parcelles
-                </button>
-                {additionalParcelIds.length > 0 && (
+                {allSelectedIds.length > 1 && (
                   <p className="m-0 mt-1 text-[11px] text-(--color-muted)">
-                    {additionalParcelIds.length + 1} interventions seront créées (1 par parcelle,
-                    identiques).
+                    {allSelectedIds.length} interventions seront créées (1 par parcelle,
+                    identiques). La 1<sup>re</sup> est la principale (utilisée pour les calculs).
                   </p>
                 )}
               </>
             )}
           </FormField>
 
-          {/* Modal multi-sélection parcelles */}
-          {parcelPickerOpen && (
-            <MultiParcelPicker
+          {/* Modal multi-sélection avec support des groupes */}
+          {parcelPickerOpen && !lockedParcelId && (
+            <ParcelMultiPicker
               parcels={parcels}
-              excludedIds={
-                draft.parcelId ? [draft.parcelId, ...additionalParcelIds] : additionalParcelIds
-              }
-              initiallySelected={additionalParcelIds}
+              selectedIds={allSelectedIds}
               onConfirm={(ids) => {
-                setAdditionalParcelIds(ids);
+                setAllSelectedIds(ids);
+                setField('parcelId', ids[0]);
                 setParcelPickerOpen(false);
               }}
               onClose={() => setParcelPickerOpen(false)}
@@ -892,134 +917,5 @@ function ChevronIcon() {
     >
       <path d="m6 9 6 6 6-6" />
     </svg>
-  );
-}
-
-/**
- * Modal multi-sélection de parcelles. Utilisé pour "Appliquer à d'autres parcelles"
- * dans le formulaire d'intervention (création d'une intervention identique sur N parcelles).
- */
-function MultiParcelPicker({
-  parcels,
-  excludedIds,
-  initiallySelected,
-  onConfirm,
-  onClose,
-}: {
-  parcels: ReadonlyArray<ParcelDetail>;
-  /** Parcelles déjà prises (parcelle principale + déjà ajoutées) — affichées en grisé. */
-  excludedIds: ReadonlyArray<string>;
-  initiallySelected: ReadonlyArray<string>;
-  onConfirm: (ids: ReadonlyArray<string>) => void;
-  onClose: () => void;
-}) {
-  const [query, setQuery] = useState('');
-  const [selected, setSelected] = useState<Set<string>>(new Set(initiallySelected));
-
-  const excludedSet = new Set(excludedIds);
-  // La parcelle principale est dans excludedIds mais ne doit pas apparaître du tout.
-  const principalId = excludedIds[0];
-
-  const available = useMemo(
-    () =>
-      parcels
-        .filter((p) => p.id !== principalId)
-        .filter((p) => {
-          if (!query.trim()) return true;
-          const q = query.toLowerCase();
-          return p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
-        })
-        .sort((a, b) => a.name.localeCompare(b.name)),
-    [parcels, principalId, query],
-  );
-
-  const toggle = (id: string) => {
-    setSelected((curr) => {
-      const next = new Set(curr);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  return (
-    <div className="fixed inset-0 z-[1300] flex flex-col bg-(--color-surface) md:items-center md:justify-center md:bg-black/40 md:p-6 md:backdrop-blur-sm">
-      <div className="flex h-full w-full flex-col overflow-hidden bg-(--color-surface) md:h-[80vh] md:max-w-[560px] md:rounded-(--radius-lg) md:border md:border-(--color-border) md:shadow-(--shadow-popup)">
-        <header className="flex items-center gap-2 border-b border-(--color-border) px-4 py-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="m-0 text-sm font-semibold">Appliquer à d'autres parcelles</h2>
-            <p className="m-0 mt-0.5 text-xs text-(--color-muted)">
-              {selected.size} sélectionnée{selected.size > 1 ? 's' : ''} sur {available.length}
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={onClose}
-            aria-label="Fermer"
-            className="inline-flex h-9 w-9 items-center justify-center rounded-(--radius-sm) text-(--color-muted) hover:bg-[#f1f1ee] hover:text-(--color-text)"
-          >
-            <CloseIcon />
-          </button>
-        </header>
-        <div className="border-b border-(--color-border) p-3">
-          <input
-            type="search"
-            autoFocus
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher une parcelle…"
-            className="h-10 w-full rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-sm focus:border-(--color-primary) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/15"
-          />
-        </div>
-        <ul className="m-0 flex-1 list-none overflow-y-auto p-0">
-          {available.map((p) => {
-            const isExcluded = excludedSet.has(p.id) && p.id !== principalId;
-            const isSelected = selected.has(p.id);
-            return (
-              <li key={p.id}>
-                <label
-                  className={[
-                    'flex cursor-pointer items-center gap-3 border-b border-(--color-border) px-4 py-3 text-sm hover:bg-[#fbfbf9]',
-                    isSelected ? 'bg-(--color-primary)/5' : '',
-                    isExcluded ? 'cursor-not-allowed opacity-50' : '',
-                  ].join(' ')}
-                >
-                  <input
-                    type="checkbox"
-                    checked={isSelected}
-                    disabled={isExcluded}
-                    onChange={() => toggle(p.id)}
-                    className="h-4 w-4 accent-(--color-primary)"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate font-medium">{p.name}</div>
-                    <div className="font-mono text-[11px] text-(--color-muted)">
-                      {p.id} · {p.surfaceHa.toFixed(2)} ha
-                      {p.culture ? ` · ${p.culture}` : ''}
-                    </div>
-                  </div>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
-        <footer className="flex items-center gap-2 border-t border-(--color-border) p-3">
-          <button
-            type="button"
-            onClick={onClose}
-            className="inline-flex h-10 items-center rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-4 text-sm font-medium hover:bg-[#f8f8f5]"
-          >
-            Annuler
-          </button>
-          <button
-            type="button"
-            onClick={() => onConfirm([...selected])}
-            className="ml-auto inline-flex h-10 items-center rounded-(--radius) border border-(--color-primary) bg-(--color-primary) px-5 text-sm font-medium text-white hover:bg-(--color-primary-hover)"
-          >
-            Confirmer ({selected.size})
-          </button>
-        </footer>
-      </div>
-    </div>
   );
 }

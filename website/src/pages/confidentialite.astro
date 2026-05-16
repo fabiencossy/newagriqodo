@@ -1,0 +1,176 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Politique de confidentialité"
+  description="Comment NewagriQodo collecte, utilise et protège vos données — conforme RGPD et LPD suisse, hébergement en Suisse uniquement."
+>
+  <section class="border-b border-(--color-border) bg-gradient-to-b from-(--color-bg) to-(--color-surface)/40 px-4 py-12 sm:px-6">
+    <div class="mx-auto max-w-3xl">
+      <span class="inline-block rounded-(--radius-pill) bg-(--color-primary)/10 px-3 py-1 text-xs font-semibold tracking-wider text-(--color-primary) uppercase">
+        RGPD / LPD
+      </span>
+      <h1 class="m-0 mt-3 text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
+        Politique de confidentialité
+      </h1>
+      <p class="m-0 mt-3 text-sm text-(--color-muted)">Dernière mise à jour : 16 mai 2026</p>
+    </div>
+  </section>
+
+  <section class="px-4 py-10 sm:px-6">
+    <div class="prose-newagri mx-auto max-w-3xl space-y-8 text-base leading-relaxed">
+      <div class="rounded-(--radius-lg) border border-(--color-primary)/30 bg-(--color-primary)/5 p-5">
+        <h2 class="m-0 text-lg font-bold text-(--color-primary)">L'essentiel en 4 points</h2>
+        <ul class="m-0 mt-3 list-disc space-y-1 pl-5 text-sm">
+          <li>Vos données sont hébergées <strong>en Suisse uniquement</strong> (Plan-les-Ouates, Genève).</li>
+          <li>Nous ne les vendons pas, nous ne les utilisons pas pour de la publicité.</li>
+          <li>Vous pouvez à tout moment exporter vos données ou demander leur suppression complète.</li>
+          <li>L'accès est strictement limité aux membres de votre exploitation que vous invitez.</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">1. Responsable du traitement</h2>
+        <p class="mt-2">
+          <strong>Qodo Digital Sàrl</strong>, Ch. des Halles 3, 1510 Moudon (VD), Suisse —
+          <a href="mailto:info@qodo.ch" class="text-(--color-primary) hover:underline">info@qodo.ch</a>.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">2. Données collectées</h2>
+        <p class="mt-2">Trois catégories de données sont stockées :</p>
+        <h3 class="mt-4 text-lg font-semibold">a) Données de compte</h3>
+        <ul class="m-0 mt-2 list-disc space-y-1 pl-5 text-sm">
+          <li>Adresse email (pour la connexion et les notifications)</li>
+          <li>Mot de passe (haché avec bcrypt, jamais stocké en clair)</li>
+          <li>Nom et prénom (facultatif)</li>
+          <li>Adresse IP et date de dernière connexion (logs de sécurité, conservés 90 jours)</li>
+        </ul>
+        <h3 class="mt-4 text-lg font-semibold">b) Données d'exploitation</h3>
+        <ul class="m-0 mt-2 list-disc space-y-1 pl-5 text-sm">
+          <li>Parcelles (nom, surface, géométrie, cultures)</li>
+          <li>Carnet des champs (interventions, produits utilisés, dates)</li>
+          <li>Équipe (noms, rôles)</li>
+          <li>Catalogue de produits propre à l'exploitation</li>
+        </ul>
+        <h3 class="mt-4 text-lg font-semibold">c) Données techniques anonymes</h3>
+        <ul class="m-0 mt-2 list-disc space-y-1 pl-5 text-sm">
+          <li>Logs d'erreur (sans contenu personnel) pour améliorer la stabilité</li>
+          <li>
+            Pas de cookies de tracking ni de Google Analytics. Le seul cookie utilisé est celui
+            qui maintient votre session ouverte.
+          </li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">3. Finalités</h2>
+        <p class="mt-2">Vos données sont utilisées exclusivement pour :</p>
+        <ul class="m-0 mt-2 list-disc space-y-1 pl-5 text-sm">
+          <li>Vous fournir le service NewagriQodo (afficher vos parcelles, gérer votre carnet, etc.)</li>
+          <li>Vous envoyer des emails transactionnels (confirmation, réinitialisation de mot de passe, invitations)</li>
+          <li>Vous contacter pour le support technique si vous le demandez</li>
+        </ul>
+        <p class="mt-3">
+          Nous <strong>n'utilisons jamais</strong> vos données à des fins commerciales, statistiques
+          publiques, ou pour entraîner un modèle d'IA.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">4. Hébergement et sécurité</h2>
+        <p class="mt-2">
+          Les données sont stockées sur un serveur dédié chez
+          <a href="https://www.infomaniak.com/fr/hebergement/vps-cloud" target="_blank" rel="noopener noreferrer" class="text-(--color-primary) hover:underline">Infomaniak</a>
+          à Plan-les-Ouates (Genève, Suisse). Aucune réplication n'est effectuée à l'étranger.
+        </p>
+        <p class="mt-3">Mesures techniques :</p>
+        <ul class="m-0 mt-2 list-disc space-y-1 pl-5 text-sm">
+          <li>HTTPS obligatoire (chiffrement TLS 1.3, certificat Let's Encrypt renouvelé automatiquement)</li>
+          <li>Base de données Postgres avec Row-Level Security : chaque exploitation ne voit que ses propres données</li>
+          <li>Mots de passe hachés (bcrypt)</li>
+          <li>Sauvegardes quotidiennes chiffrées, conservées 14 jours</li>
+          <li>Pare-feu strict, accès SSH par clé uniquement, fail2ban actif</li>
+        </ul>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">5. Sous-traitants</h2>
+        <p class="mt-2">Nous utilisons les services suivants :</p>
+        <table class="mt-3 w-full text-sm">
+          <thead>
+            <tr class="border-b border-(--color-border) text-left text-xs uppercase text-(--color-muted)">
+              <th class="py-2">Fournisseur</th>
+              <th class="py-2">Service</th>
+              <th class="py-2">Pays</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-(--color-border)">
+            <tr><td class="py-2">Infomaniak</td><td>Hébergement serveur</td><td>Suisse</td></tr>
+            <tr><td class="py-2">Resend</td><td>Envoi d'emails transactionnels</td><td>Allemagne (UE)</td></tr>
+            <tr><td class="py-2">Let's Encrypt</td><td>Certificats TLS</td><td>États-Unis (sans données utilisateur)</td></tr>
+          </tbody>
+        </table>
+        <p class="mt-3 text-sm">
+          Resend reçoit uniquement votre adresse email et le contenu des emails que nous vous
+          envoyons (confirmation, reset password). Aucune donnée d'exploitation ne transite.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">6. Vos droits (RGPD + LPD)</h2>
+        <p class="mt-2">Vous avez à tout moment le droit :</p>
+        <ul class="m-0 mt-2 list-disc space-y-1 pl-5 text-sm">
+          <li><strong>Accès</strong> : obtenir une copie de toutes vos données</li>
+          <li><strong>Rectification</strong> : corriger toute donnée inexacte (directement dans l'app)</li>
+          <li><strong>Suppression</strong> : faire effacer votre compte et toutes vos données associées</li>
+          <li><strong>Portabilité</strong> : exporter vos données dans un format standard (CSV, Excel, GeoJSON)</li>
+          <li><strong>Opposition</strong> : refuser certains traitements (ex. réception d'emails)</li>
+        </ul>
+        <p class="mt-3">
+          Pour exercer ces droits, écrivez à
+          <a href="mailto:info@qodo.ch" class="text-(--color-primary) hover:underline">info@qodo.ch</a>.
+          Nous répondons sous 30 jours maximum (sauf demande complexe — nous vous prévenons alors
+          du délai).
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">7. Conservation</h2>
+        <p class="mt-2">
+          Vos données sont conservées tant que votre compte est actif. Après suppression, elles
+          sont effacées sous 30 jours (sauf logs de sécurité conservés 90 jours pour traçabilité
+          incident).
+        </p>
+        <p class="mt-3">
+          Les sauvegardes contenant vos données expirent au bout de 14 jours.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">8. Modifications</h2>
+        <p class="mt-2">
+          Cette politique peut évoluer. Toute modification substantielle vous sera notifiée par
+          email au moins 30 jours avant son entrée en vigueur.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">9. Réclamations</h2>
+        <p class="mt-2">
+          Si vous estimez que vos droits ne sont pas respectés, vous pouvez contacter le
+          <a href="https://www.edoeb.admin.ch/edoeb/fr/home.html" target="_blank" rel="noopener noreferrer" class="text-(--color-primary) hover:underline">
+            Préposé fédéral à la protection des données et à la transparence (PFPDT)
+          </a>, autorité de référence en Suisse.
+        </p>
+      </div>
+
+      <p class="text-sm text-(--color-muted)">
+        Une question avant de commencer ? Écrivez-nous à
+        <a href="mailto:info@qodo.ch" class="text-(--color-primary) hover:underline">info@qodo.ch</a>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

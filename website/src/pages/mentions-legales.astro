@@ -1,0 +1,102 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+---
+
+<BaseLayout
+  title="Mentions légales"
+  description="Mentions légales de NewagriQodo — éditeur Qodo Digital, hébergement Infomaniak (Suisse)."
+>
+  <section class="border-b border-(--color-border) bg-gradient-to-b from-(--color-bg) to-(--color-surface)/40 px-4 py-12 sm:px-6">
+    <div class="mx-auto max-w-3xl">
+      <h1 class="m-0 text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
+        Mentions légales
+      </h1>
+      <p class="m-0 mt-3 text-sm text-(--color-muted)">Dernière mise à jour : 16 mai 2026</p>
+    </div>
+  </section>
+
+  <section class="px-4 py-10 sm:px-6">
+    <div class="prose-newagri mx-auto max-w-3xl space-y-8 text-base leading-relaxed">
+      <div>
+        <h2 class="m-0 text-2xl font-bold">Éditeur</h2>
+        <p class="mt-2">
+          <strong>Qodo Digital Sàrl</strong><br />
+          Ch. des Halles 3<br />
+          1510 Moudon<br />
+          Vaud, Suisse
+        </p>
+        <p>
+          Email :
+          <a href="mailto:info@qodo.ch" class="text-(--color-primary) hover:underline">info@qodo.ch</a><br />
+          Téléphone :
+          <a href="tel:+41219000479" class="text-(--color-primary) hover:underline">+41 21 900 04 79</a>
+        </p>
+        <p>
+          Représentant légal : Fabien Cossy, fondateur.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">Hébergement</h2>
+        <p class="mt-2">
+          L'application <strong>NewagriQodo</strong> (newagri.qodo.ch) et l'instance Supabase
+          associée (supabase.newagri.qodo.ch) sont hébergées sur les serveurs de :
+        </p>
+        <p>
+          <strong>Infomaniak Network SA</strong><br />
+          Rue Eugène-Marziano 25<br />
+          1227 Les Acacias / Genève<br />
+          Suisse
+        </p>
+        <p>
+          Le centre de données utilisé se trouve à <strong>Plan-les-Ouates (GE), Suisse</strong>.
+          Aucune donnée n'est répliquée hors du territoire suisse.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">Propriété intellectuelle</h2>
+        <p class="mt-2">
+          L'ensemble du contenu de ce site (textes, images, code source, design) est la propriété
+          exclusive de Qodo Digital Sàrl, sauf mention contraire. Toute reproduction, même
+          partielle, est interdite sans autorisation écrite préalable.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">Données des exploitations</h2>
+        <p class="mt-2">
+          Les données saisies dans NewagriQodo (parcelles, interventions, employés, produits)
+          restent la propriété de l'exploitation cliente. Qodo Digital n'en fait aucun usage
+          commercial et ne les transmet à aucun tiers, sauf sur demande explicite de l'exploitation
+          ou obligation légale (cf.
+          <a href="/confidentialite" class="text-(--color-primary) hover:underline">politique de confidentialité</a>).
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">Responsabilité</h2>
+        <p class="mt-2">
+          NewagriQodo est un outil d'aide à la gestion. Les décisions agronomiques, sanitaires et
+          réglementaires (utilisation de produits phytosanitaires, déclarations administratives,
+          contrôles cantonaux) restent sous la responsabilité de l'exploitation cliente. Qodo
+          Digital décline toute responsabilité en cas d'erreur de saisie, de non-conformité d'un
+          produit utilisé ou d'omission dans une déclaration administrative.
+        </p>
+      </div>
+
+      <div>
+        <h2 class="m-0 text-2xl font-bold">Droit applicable</h2>
+        <p class="mt-2">
+          Le présent site et l'application NewagriQodo sont régis par le droit suisse. Tout litige
+          relève de la juridiction des tribunaux du canton de Vaud.
+        </p>
+      </div>
+
+      <p class="text-sm text-(--color-muted)">
+        Pour toute question, contactez-nous à
+        <a href="mailto:info@qodo.ch" class="text-(--color-primary) hover:underline">info@qodo.ch</a>.
+      </p>
+    </div>
+  </section>
+</BaseLayout>

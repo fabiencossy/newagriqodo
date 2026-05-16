@@ -136,6 +136,30 @@ export async function sendPasswordReset(email: string): Promise<AuthResult> {
   return { ok: true };
 }
 
+/**
+ * Accepter une invitation : l'utilisateur arrive depuis le mail d'invitation
+ * (GoTrue a déjà ouvert une session de récupération via le hash dans l'URL).
+ * Il choisit son mot de passe + nom, ce qui finalise son inscription.
+ */
+export async function acceptInvitation(newPassword: string, fullName: string): Promise<AuthResult> {
+  if (!supabase) {
+    return { ok: false, error: "Le serveur d'authentification n'est pas configuré." };
+  }
+  const { data, error } = await supabase.auth.updateUser({
+    password: newPassword,
+    data: { full_name: fullName.trim() },
+  });
+  if (error) return { ok: false, error: mapError(error.message) };
+  if (data.user) {
+    setState({
+      mode: 'authenticated',
+      email: data.user.email ?? state.email,
+      userId: data.user.id,
+    });
+  }
+  return { ok: true };
+}
+
 export async function updatePassword(newPassword: string): Promise<AuthResult> {
   if (!supabase) {
     return { ok: false, error: "Le serveur d'authentification n'est pas configuré." };

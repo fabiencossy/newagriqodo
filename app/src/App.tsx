@@ -14,6 +14,7 @@ import MesCongesPage from './modules/rh/MesCongesPage';
 import ParametresPage from './modules/parametres/ParametresPage';
 import LoginPage from './modules/auth/LoginPage';
 import ResetPasswordPage from './modules/auth/ResetPasswordPage';
+import AcceptInvitePage from './modules/auth/AcceptInvitePage';
 import { initAuthListener, useAuth } from './modules/auth/auth.store';
 
 export default function App() {
@@ -21,12 +22,13 @@ export default function App() {
 
   useEffect(() => initAuthListener(), []);
 
-  // Pas connecté : login + reset password accessibles.
+  // Pas connecté : login + reset password + accept invite accessibles.
   if (mode === 'logged-out') {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/accept-invite" element={<AcceptInvitePage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -56,8 +58,9 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/parcellaire" replace />} />
         <Route path="*" element={<Navigate to="/parcellaire" replace />} />
       </Route>
-      {/* Reset password reste accessible même connecté (rare, mais utile). */}
+      {/* Reset password + accept invite accessibles aussi en mode connecté (rare). */}
       <Route path="/reset-password" element={<ResetPasswordPage />} />
+      <Route path="/accept-invite" element={<AcceptInvitePage />} />
     </Routes>
   );
 }

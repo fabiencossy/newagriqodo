@@ -95,9 +95,16 @@ services:
       GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/confirm
       GOTRUE_MAILER_URLPATHS_RECOVERY: /reset-password
       GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/email-change
-      GOTRUE_MAILER_URLPATHS_INVITE: /auth/invite
+      GOTRUE_MAILER_URLPATHS_INVITE: /accept-invite
+
+      # Templates HTML français — montés depuis ./email-templates
+      GOTRUE_MAILER_TEMPLATES_CONFIRMATION: file:///etc/gotrue/templates/confirm-signup.html
+      GOTRUE_MAILER_TEMPLATES_RECOVERY: file:///etc/gotrue/templates/recover-password.html
+      GOTRUE_MAILER_TEMPLATES_INVITE: file:///etc/gotrue/templates/invite-member.html
 
       GOTRUE_PASSWORD_MIN_LENGTH: 8
+    volumes:
+      - ./email-templates:/etc/gotrue/templates:ro
 
   # --------------------------------------------------------------------------
   # 3. PostgREST — API REST auto-générée + RLS

@@ -116,6 +116,21 @@ export function cultureByLabel(label: string | undefined): CultureInfo | undefin
   return CULTURES.find((c) => c.label.toLowerCase() === norm);
 }
 
+export function cultureByKey(key: string | undefined): CultureInfo | undefined {
+  if (!key) return undefined;
+  return CULTURES.find((c) => c.key === key);
+}
+
+/** Conversion label FR -> key stable (pour persistance DB). */
+export function cultureKeyByLabel(label: string | undefined): string | undefined {
+  return cultureByLabel(label)?.key;
+}
+
+/** Conversion key DB -> label FR (pour affichage UI). */
+export function cultureLabelByKey(key: string | undefined): string | undefined {
+  return cultureByKey(key)?.label;
+}
+
 export function cultureColor(label: string | undefined): string {
   return cultureByLabel(label)?.color ?? DEFAULT_COLOR;
 }

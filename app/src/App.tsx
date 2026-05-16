@@ -18,6 +18,8 @@ import AcceptInvitePage from './modules/auth/AcceptInvitePage';
 import { initAuthListener, useAuth } from './modules/auth/auth.store';
 import { initFarmsBootstrap } from './modules/farms/farms.store';
 import { initProductsBootstrap } from './modules/products/products.store';
+import { initUsersBootstrap } from './modules/users/users.store';
+import { initParcelsBootstrap } from './modules/parcellaire/parcellaire.store';
 
 export default function App() {
   const { mode } = useAuth();
@@ -25,6 +27,8 @@ export default function App() {
   useEffect(() => {
     initFarmsBootstrap();
     initProductsBootstrap();
+    initUsersBootstrap();
+    initParcelsBootstrap();
     return initAuthListener();
   }, []);
 

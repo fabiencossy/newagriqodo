@@ -429,7 +429,7 @@ function TimelineView({
           <div
             key={p.id}
             className={[
-              'flex items-stretch gap-3 px-3 py-3 transition-colors hover:bg-[#fbfbf9]',
+              'flex items-center gap-3 px-3 py-3 transition-colors hover:bg-[#fbfbf9]',
               idx > 0 ? 'border-t border-(--color-border)' : '',
               selectedId === p.id ? 'bg-(--color-primary)/5' : '',
             ].join(' ')}
@@ -437,7 +437,7 @@ function TimelineView({
             <button
               type="button"
               onClick={() => onSelectParcel(p.id)}
-              className="w-40 shrink-0 text-left"
+              className="w-40 shrink-0 self-center text-left"
             >
               <div className="truncate text-sm font-medium">{p.name}</div>
               <div className="font-mono text-[11px] text-(--color-muted)">
@@ -445,7 +445,7 @@ function TimelineView({
                 {dominant ? ` · ${dominant.culture}` : ''}
               </div>
             </button>
-            <div className="min-w-0 flex-1">
+            <div className="min-w-0 flex-1 self-center">
               <AssolementTimeline
                 segments={parcelSegments}
                 year={year}
@@ -458,7 +458,7 @@ function TimelineView({
               onClick={() => onAddSegment(p.id)}
               aria-label={`Ajouter un segment sur ${p.name}`}
               title="Ajouter un segment"
-              className="inline-flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-(--radius-sm) border border-dashed border-(--color-border) text-(--color-muted) hover:border-(--color-primary) hover:bg-(--color-primary)/5 hover:text-(--color-primary)"
+              className="inline-flex h-7 w-7 shrink-0 items-center justify-center self-center rounded-(--radius-sm) border border-dashed border-(--color-border) text-(--color-muted) hover:border-(--color-primary) hover:bg-(--color-primary)/5 hover:text-(--color-primary)"
             >
               <svg
                 viewBox="0 0 24 24"
@@ -467,8 +467,8 @@ function TimelineView({
                 strokeWidth={1.75}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                width={16}
-                height={16}
+                width={14}
+                height={14}
                 aria-hidden="true"
               >
                 <path d="M12 5v14M5 12h14" />

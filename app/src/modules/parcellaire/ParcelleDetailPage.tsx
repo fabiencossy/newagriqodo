@@ -438,25 +438,13 @@ export default function ParcelleDetailPage() {
         />
       )}
 
-      {/* Sticky footer save — z-[1000] pour passer au-dessus des panes Leaflet (400-700) */}
-      <footer className="sticky bottom-0 z-[1000] mt-6 -mx-4 flex items-center gap-3 border-t border-(--color-border) bg-(--color-surface) px-4 py-3 sm:-mx-6">
-        {savedAt && !dirty && (
-          <span className="text-xs text-(--color-success)">
-            ✓ Enregistré {savedAt.toLocaleTimeString('fr-CH')}
-          </span>
-        )}
-        {dirty && (
-          <span className="text-xs text-(--color-warning)">Modifications non enregistrées</span>
-        )}
-        <div className="ml-auto flex gap-2">
-          <button
-            type="button"
-            onClick={() => setDraft(initial)}
-            disabled={!dirty || saving}
-            className="h-10 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-4 text-sm font-medium hover:bg-[#f8f8f5] disabled:opacity-50"
-          >
-            Annuler
-          </button>
+      {/* Sticky footer save — visible UNIQUEMENT sur l'onglet Aperçu (seul onglet avec
+       * champs éditables directs : identification, statut, notes). Les autres onglets
+       * (Carnet, Assolement, Fumure, Stats, Localisation) sont des vues / éditeurs
+       * spécialisés qui gèrent leur propre persistance via stores.
+       * Boutons inversés : Enregistrer à gauche (action principale), Annuler juste à droite. */}
+      {activeTab === 'overview' && (
+        <footer className="sticky bottom-0 z-[1000] mt-6 -mx-4 flex items-center gap-2 border-t border-(--color-border) bg-(--color-surface) px-4 py-3 sm:-mx-6">
           <button
             type="button"
             onClick={handleSave}
@@ -465,8 +453,26 @@ export default function ParcelleDetailPage() {
           >
             {saving ? 'Enregistrement…' : 'Enregistrer'}
           </button>
-        </div>
-      </footer>
+          <button
+            type="button"
+            onClick={() => setDraft(initial)}
+            disabled={!dirty || saving}
+            className="h-10 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-4 text-sm font-medium hover:bg-[#f8f8f5] disabled:opacity-50"
+          >
+            Annuler
+          </button>
+          {savedAt && !dirty && (
+            <span className="ml-auto text-xs text-(--color-success)">
+              ✓ Enregistré {savedAt.toLocaleTimeString('fr-CH')}
+            </span>
+          )}
+          {dirty && (
+            <span className="ml-auto text-xs text-(--color-warning)">
+              Modifications non enregistrées
+            </span>
+          )}
+        </footer>
+      )}
     </PageContainer>
   );
 }

@@ -1,4 +1,4 @@
-import { cultureColor } from './cultures';
+import { contrastTextColor, cultureColor } from './cultures';
 import type { AssolementSegment } from './assolement.types';
 
 const MONTH_LABELS_SHORT = ['J', 'F', 'M', 'A', 'M', 'J', 'J', 'A', 'S', 'O', 'N', 'D'];
@@ -93,38 +93,43 @@ export function AssolementTimeline({
           ))}
         </div>
 
-        {/* Segments (positionnés en absolu sur la track) */}
-        {bars.map(({ segment, left, width }) => (
-          <button
-            key={segment.id}
-            type="button"
-            disabled={!onSegmentClick}
-            onClick={() => onSegmentClick?.(segment)}
-            title={`${segment.culture}${segment.varietyName ? ' · ' + segment.varietyName : ''} (${fmt(segment.startDate)} → ${fmt(segment.endDate)})`}
-            className={[
-              'absolute top-0 flex items-center overflow-hidden px-1.5 text-[11px] font-medium text-white/95',
-              trackHeight,
-              onSegmentClick
-                ? 'cursor-pointer transition-opacity hover:opacity-90'
-                : 'cursor-default',
-            ].join(' ')}
-            style={{
-              left: `${left}%`,
-              width: `max(${width}%, 4px)`,
-              background: cultureColor(segment.culture),
-              border: '1px solid rgba(0,0,0,0.1)',
-              borderRadius: 'var(--radius-sm)',
-              // Ombre subtile sur le texte pour lisibilité sur fonds clairs (jaune/vert clair).
-              textShadow: '0 1px 1px rgba(0,0,0,0.25)',
-            }}
-          >
-            <span className="truncate whitespace-nowrap">
-              {isDetail
-                ? `${segment.culture}${segment.varietyName ? ' · ' + segment.varietyName : ''}`
-                : segment.culture}
-            </span>
-          </button>
-        ))}
+        {/* Segments (positionnés en absolu sur la track).
+         * Couleur du texte calculée selon la luminosité du fond (YIQ) :
+         * fond clair → noir, fond foncé → blanc. Pas d'ombre. */}
+        {bars.map(({ segment, left, width }) => {
+          const bg = cultureColor(segment.culture);
+          const textColor = contrastTextColor(bg);
+          return (
+            <button
+              key={segment.id}
+              type="button"
+              disabled={!onSegmentClick}
+              onClick={() => onSegmentClick?.(segment)}
+              title={`${segment.culture}${segment.varietyName ? ' · ' + segment.varietyName : ''} (${fmt(segment.startDate)} → ${fmt(segment.endDate)})`}
+              className={[
+                'absolute top-0 flex items-center overflow-hidden px-1.5 text-[11px] font-semibold',
+                trackHeight,
+                onSegmentClick
+                  ? 'cursor-pointer transition-opacity hover:opacity-90'
+                  : 'cursor-default',
+              ].join(' ')}
+              style={{
+                left: `${left}%`,
+                width: `max(${width}%, 4px)`,
+                background: bg,
+                border: '1px solid rgba(0,0,0,0.2)',
+                borderRadius: 'var(--radius-sm)',
+                color: textColor,
+              }}
+            >
+              <span className="truncate whitespace-nowrap">
+                {isDetail
+                  ? `${segment.culture}${segment.varietyName ? ' · ' + segment.varietyName : ''}`
+                  : segment.culture}
+              </span>
+            </button>
+          );
+        })}
 
         {/* Marqueur "aujourd'hui" */}
         {todayPct !== undefined && (

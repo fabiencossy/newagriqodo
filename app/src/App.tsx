@@ -33,6 +33,7 @@ const TarifsPage = lazy(() => import('./modules/marketing/TarifsPage'));
 const ContactPage = lazy(() => import('./modules/marketing/ContactPage'));
 const MentionsLegalesPage = lazy(() => import('./modules/marketing/MentionsLegalesPage'));
 const ConfidentialitePage = lazy(() => import('./modules/marketing/ConfidentialitePage'));
+const OpenSourcePage = lazy(() => import('./modules/marketing/OpenSourcePage'));
 
 function MarketingFallback() {
   return (
@@ -72,6 +73,7 @@ export default function App() {
         <Route path="/contact" element={<ContactPage />} />
         <Route path="/mentions-legales" element={<MentionsLegalesPage />} />
         <Route path="/confidentialite" element={<ConfidentialitePage />} />
+        <Route path="/open-source" element={<OpenSourcePage />} />
       </Route>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/reset-password" element={<ResetPasswordPage />} />

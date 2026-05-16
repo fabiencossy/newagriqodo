@@ -11,6 +11,7 @@ import { useState } from 'react';
 
 const NAV = [
   { path: '/fonctionnalites', label: 'Fonctionnalités' },
+  { path: '/open-source', label: 'Open source' },
   { path: '/tarifs', label: 'Tarifs' },
   { path: '/contact', label: 'Contact' },
 ];
@@ -145,6 +146,11 @@ export default function MarketingLayout() {
                 </Link>
               </li>
               <li>
+                <Link to="/open-source" className="hover:text-(--color-primary)">
+                  Open source
+                </Link>
+              </li>
+              <li>
                 <Link to="/login" className="hover:text-(--color-primary)">
                   Essayer la démo
                 </Link>
@@ -153,6 +159,16 @@ export default function MarketingLayout() {
                 <Link to="/tarifs" className="hover:text-(--color-primary)">
                   Tarifs
                 </Link>
+              </li>
+              <li>
+                <a
+                  href="https://github.com/fabiencossy/newagriqodo"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-(--color-primary)"
+                >
+                  GitHub
+                </a>
               </li>
             </ul>
           </div>

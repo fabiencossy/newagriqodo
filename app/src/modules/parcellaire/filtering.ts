@@ -1,4 +1,5 @@
 import type { SearchState } from '../../components/SearchBar';
+import { cultureGroup } from '../assolement/cultures';
 import type { ParcelDetail } from './parcellaire.mocks';
 
 /**
@@ -37,8 +38,17 @@ function facetMatches(
   const values = facet.values;
   if (values.length === 0) return true;
   switch (facet.fieldId) {
-    case 'culture':
-      return values.some((v) => parcel.culture?.toLowerCase() === String(v).toLowerCase());
+    case 'culture': {
+      // Les facets culture sont des GROUPES (Blé, Maïs, Prairie, etc.),
+      // alors que parcel.culture est une culture précise (Blé d'automne, etc.).
+      // On compare donc le groupe de la culture de la parcelle au filtre.
+      if (!parcel.culture) return false;
+      const parcelGroup = cultureGroup(parcel.culture);
+      return values.some((v) => {
+        const fv = String(v);
+        return parcelGroup === fv || parcel.culture === fv;
+      });
+    }
     case 'status':
       return values.some((v) => parcel.status === v);
     case 'year':

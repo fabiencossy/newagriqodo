@@ -39,6 +39,8 @@ export interface HoursTableMonthProps {
   loading?: boolean;
   hoursFormat?: 'hhmm' | 'decimal';
   layout?: 'auto' | 'table' | 'cards';
+  /** Affiche un cadre/wrapper autour du composant. Défaut true (rétrocompat). */
+  bordered?: boolean;
   ariaLabel?: string;
   className?: string;
 }

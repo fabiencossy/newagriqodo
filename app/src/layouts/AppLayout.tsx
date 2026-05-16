@@ -3,6 +3,7 @@ import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useIsDesktop } from '../hooks/useMediaQuery';
 import { Fab } from './Fab';
 import { FabProvider } from './FabContext';
+import { InterventionFormProvider } from './InterventionFormProvider';
 import { NAV_ITEMS, type NavItem } from './nav-items';
 
 const BASE_SVG = {
@@ -40,52 +41,54 @@ export function AppLayout() {
 
   return (
     <FabProvider>
-      <div className="grid h-screen grid-cols-1 md:grid-cols-[256px_1fr]">
-        {/* Sidebar desktop (toujours visible) */}
-        {isDesktop && <Sidebar />}
+      <InterventionFormProvider>
+        <div className="grid h-screen grid-cols-1 md:grid-cols-[256px_1fr]">
+          {/* Sidebar desktop (toujours visible) */}
+          {isDesktop && <Sidebar />}
 
-        {/* Drawer mobile (overlay) — z-[1100] pour passer au-dessus de Leaflet (panes ~700). */}
-        {!isDesktop && drawerOpen && (
-          <div className="fixed inset-0 z-[1100] flex">
-            <div
-              className="absolute inset-0 bg-black/40"
-              onClick={() => setDrawerOpen(false)}
-              aria-hidden="true"
-            />
-            <div className="relative h-full w-64 bg-(--color-surface) shadow-(--shadow-popup)">
-              <Sidebar onNavigate={() => setDrawerOpen(false)} />
+          {/* Drawer mobile (overlay) — z-[1100] pour passer au-dessus de Leaflet (panes ~700). */}
+          {!isDesktop && drawerOpen && (
+            <div className="fixed inset-0 z-[1100] flex">
+              <div
+                className="absolute inset-0 bg-black/40"
+                onClick={() => setDrawerOpen(false)}
+                aria-hidden="true"
+              />
+              <div className="relative h-full w-64 bg-(--color-surface) shadow-(--shadow-popup)">
+                <Sidebar onNavigate={() => setDrawerOpen(false)} />
+              </div>
             </div>
-          </div>
-        )}
-
-        <div className="flex h-screen flex-col overflow-hidden">
-          {/* Header mobile (avec burger) */}
-          {!isDesktop && (
-            <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-(--color-border) bg-(--color-surface) px-4">
-              <button
-                type="button"
-                onClick={() => setDrawerOpen(true)}
-                aria-label="Ouvrir le menu"
-                className="inline-flex h-10 w-10 items-center justify-center rounded-(--radius-sm) text-(--color-text) hover:bg-[#f1f1ee]"
-              >
-                <MenuIcon />
-              </button>
-              <h1 className="m-0 flex-1 text-base font-semibold">
-                {activeItem?.label ?? 'NewagriQodo'}
-              </h1>
-              <img src="/qodo-mark.svg" alt="Qodo" className="h-7 w-7" />
-            </header>
           )}
 
-          {/* Contenu principal */}
-          <main className="flex-1 overflow-y-auto bg-(--color-bg)">
-            <Outlet />
-          </main>
-        </div>
+          <div className="flex h-screen flex-col overflow-hidden">
+            {/* Header mobile (avec burger) */}
+            {!isDesktop && (
+              <header className="flex h-14 flex-shrink-0 items-center gap-3 border-b border-(--color-border) bg-(--color-surface) px-4">
+                <button
+                  type="button"
+                  onClick={() => setDrawerOpen(true)}
+                  aria-label="Ouvrir le menu"
+                  className="inline-flex h-10 w-10 items-center justify-center rounded-(--radius-sm) text-(--color-text) hover:bg-[#f1f1ee]"
+                >
+                  <MenuIcon />
+                </button>
+                <h1 className="m-0 flex-1 text-base font-semibold">
+                  {activeItem?.label ?? 'NewagriQodo'}
+                </h1>
+                <img src="/qodo-mark.svg" alt="Qodo" className="h-7 w-7" />
+              </header>
+            )}
 
-        {/* FAB global (speed dial) — key au pathname pour reset à chaque navigation */}
-        <Fab key={location.pathname} />
-      </div>
+            {/* Contenu principal */}
+            <main className="flex-1 overflow-y-auto bg-(--color-bg)">
+              <Outlet />
+            </main>
+          </div>
+
+          {/* FAB global (speed dial) — key au pathname pour reset à chaque navigation */}
+          <Fab key={location.pathname} />
+        </div>
+      </InterventionFormProvider>
     </FabProvider>
   );
 }

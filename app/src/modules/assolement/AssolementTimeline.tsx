@@ -114,14 +114,15 @@ export function AssolementTimeline({
               background: cultureColor(segment.culture),
               border: '1px solid rgba(0,0,0,0.1)',
               borderRadius: 'var(--radius-sm)',
+              // Ombre subtile sur le texte pour lisibilité sur fonds clairs (jaune/vert clair).
+              textShadow: '0 1px 1px rgba(0,0,0,0.25)',
             }}
           >
-            {isDetail && (
-              <span className="truncate">
-                {segment.culture}
-                {segment.varietyName ? ` · ${segment.varietyName}` : ''}
-              </span>
-            )}
+            <span className="truncate whitespace-nowrap">
+              {isDetail
+                ? `${segment.culture}${segment.varietyName ? ' · ' + segment.varietyName : ''}`
+                : segment.culture}
+            </span>
           </button>
         ))}
 

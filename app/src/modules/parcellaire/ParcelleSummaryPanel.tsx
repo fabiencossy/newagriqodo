@@ -1,9 +1,12 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { DetailPanel } from '../../components/DetailPanel';
 import type { ParcelDetail } from './parcellaire.mocks';
 import { AssolementTimeline } from '../assolement/AssolementTimeline';
+import { AssolementSegmentModal } from '../assolement/AssolementSegmentModal';
 import { getActiveSegment, getSegmentsForParcelYear } from '../assolement/assolement.helpers';
+import { useSegments } from '../assolement/assolement.store';
 import { cultureColor } from '../assolement/cultures';
+import type { AssolementSegment } from '../assolement/assolement.types';
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -16,11 +19,12 @@ interface ParcelleSummaryPanelProps {
 
 /**
  * Panneau riche affiché au clic sur une parcelle dans la carte du Parcellaire.
- * Synthèse complète : assolement, stade phéno, bilan de fumure, dernières
- * interventions, notes. Footer avec bouton pour ouvrir la fiche complète.
+ * Synthèse : assolement courant, dernières interventions (mock), notes.
+ * Footer avec bouton pour ouvrir la fiche complète.
  *
- * Les sections "Stade", "Fumure" et "Interventions" sont des mocks Phase 2.5
- * en attente du Carnet des champs et de l'intégration Odoo.
+ * Les blocs "Stade phénologique" et "Bilan de fumure" mock ont été retirés —
+ * le bilan de fumure réel est dans la fiche parcelle (FumureSection branchée
+ * au Carnet via fertilizerSummary).
  */
 export function ParcelleSummaryPanel({
   parcel,
@@ -29,12 +33,20 @@ export function ParcelleSummaryPanel({
   onOpenAssolement,
 }: ParcelleSummaryPanelProps) {
   const year = parcel.year;
-  const segments = useMemo(() => getSegmentsForParcelYear(parcel.id, year), [parcel.id, year]);
-  const active = useMemo(() => getActiveSegment(parcel.id, TODAY), [parcel.id]);
+  const allSegments = useSegments();
+  const segments = useMemo(
+    () => getSegmentsForParcelYear(parcel.id, year, allSegments),
+    [parcel.id, year, allSegments],
+  );
+  const active = useMemo(
+    () => getActiveSegment(parcel.id, TODAY, allSegments),
+    [parcel.id, allSegments],
+  );
+  const [editingSegment, setEditingSegment] = useState<
+    AssolementSegment | { draft: true; parcelId: string; year: number } | null
+  >(null);
 
-  // Mocks Phase 2.5
-  const stade = mockStade(active?.culture);
-  const fumure = mockFumure(active?.culture);
+  // Mocks Phase 2.5 (interventions à brancher au Carnet réel — Phase 3)
   const interventions = mockInterventions(parcel.id);
 
   return (
@@ -54,7 +66,7 @@ export function ParcelleSummaryPanel({
       }
     >
       {/* Assolement */}
-      <Section title="Plan d'assolement" actionLabel="Voir le plan" onAction={onOpenAssolement}>
+      <Section title="Plan d'assolement">
         {/* Culture EN PLACE aujourd'hui — pas de "dominant" inutile. */}
         <div className="mb-3 rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-2.5">
           {active ? (
@@ -76,41 +88,62 @@ export function ParcelleSummaryPanel({
             <p className="m-0 text-sm text-(--color-muted)">Aucune culture en place aujourd'hui.</p>
           )}
         </div>
-        <AssolementTimeline segments={segments} year={year} variant="detail" today={TODAY} />
+
+        {/* Timeline cliquable + gros bouton "Ajouter un segment" via onAdd (variant detail) */}
+        <AssolementTimeline
+          segments={segments}
+          year={year}
+          variant="detail"
+          today={TODAY}
+          onSegmentClick={(s) => setEditingSegment(s)}
+          onAdd={() => setEditingSegment({ draft: true, parcelId: parcel.id, year })}
+        />
+
+        {/* Liste des segments éditables (pattern de l'éditeur d'assolement) */}
+        {segments.length > 0 && (
+          <div className="mt-4">
+            <h3 className="m-0 mb-2 text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
+              Segments
+            </h3>
+            <ul className="m-0 space-y-1.5 list-none p-0">
+              {segments.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => setEditingSegment(s)}
+                    className="flex w-full items-center gap-2 rounded-(--radius-sm) border border-(--color-border) bg-(--color-surface) px-2.5 py-2 text-left text-sm hover:bg-[#fbfbf9]"
+                  >
+                    <span
+                      aria-hidden="true"
+                      className="inline-block h-3 w-3 shrink-0 rounded-(--radius-pill)"
+                      style={{ background: cultureColor(s.culture) }}
+                    />
+                    <span className="min-w-0 flex-1 truncate">
+                      <span className="font-medium">{s.culture}</span>
+                      {s.varietyName && (
+                        <span className="text-(--color-muted)"> · {s.varietyName}</span>
+                      )}
+                    </span>
+                    <span className="shrink-0 font-mono text-[11px] text-(--color-muted)">
+                      {fmtDate(s.startDate)} → {fmtDate(s.endDate)}
+                    </span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <div className="mt-2 text-right">
+          <button
+            type="button"
+            onClick={onOpenAssolement}
+            className="text-[11px] font-medium text-(--color-primary) hover:underline"
+          >
+            Voir le plan complet →
+          </button>
+        </div>
       </Section>
-
-      {/* Stade phénologique — masqué si pas de donnée pour la culture courante */}
-      {stade && (
-        <Section title="Stade phénologique">
-          <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <span className="text-sm font-medium">{stade.label}</span>
-              <span className="font-mono text-[11px] text-(--color-muted)">{stade.progress} %</span>
-            </div>
-            <div className="mt-2 h-2 overflow-hidden rounded-(--radius-pill) bg-[#f1f1ee]">
-              <div
-                className="h-full"
-                style={{
-                  width: `${stade.progress}%`,
-                  background: active ? cultureColor(active.culture) : '#9ca3af',
-                }}
-              />
-            </div>
-            <p className="m-0 mt-2 text-xs text-(--color-muted)">{stade.note}</p>
-          </div>
-        </Section>
-      )}
-
-      {/* Bilan de fumure — masqué si pas de données */}
-      {fumure && (
-        <Section title="Bilan de fumure">
-          <div className="grid grid-cols-3 gap-2">
-            {fumure.map((f) => (
-              <NutrientCard key={f.element} {...f} />
-            ))}
-          </div>
-        </Section>
-      )}
 
       {/* Dernières interventions */}
       <Section title="Dernières interventions" actionLabel="Carnet" onAction={onOpenFiche}>
@@ -153,6 +186,11 @@ export function ParcelleSummaryPanel({
           </p>
         </Section>
       )}
+
+      {/* Modal d'édition de segment — accessible depuis le panel sans quitter la carte. */}
+      {editingSegment && (
+        <AssolementSegmentModal target={editingSegment} onClose={() => setEditingSegment(null)} />
+      )}
     </DetailPanel>
   );
 }
@@ -191,37 +229,6 @@ function Section({
   );
 }
 
-function NutrientCard({
-  element,
-  applied,
-  needed,
-  unit,
-}: {
-  element: string;
-  applied: number;
-  needed: number;
-  unit: string;
-}) {
-  const ratio = needed > 0 ? Math.min(1, applied / needed) : 0;
-  const overshoot = needed > 0 && applied > needed;
-  const color = overshoot ? '#ef4444' : applied < needed * 0.6 ? '#f59e0b' : '#16a34a';
-  return (
-    <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-2.5">
-      <div className="text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
-        {element}
-      </div>
-      <div className="mt-1 font-mono text-sm tabular-nums">
-        {applied}
-        <span className="text-(--color-muted)">/{needed}</span>
-        <span className="ml-0.5 text-[10px] text-(--color-muted)">{unit}</span>
-      </div>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-(--radius-pill) bg-[#f1f1ee]">
-        <div className="h-full" style={{ width: `${ratio * 100}%`, background: color }} />
-      </div>
-    </div>
-  );
-}
-
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="m-0 text-xs text-(--color-muted)">{children}</p>;
 }
@@ -249,66 +256,7 @@ function fmtDate(date: string): string {
   return `${d}/${m}/${y!.slice(2)}`;
 }
 
-/* ============ Mocks Phase 2.5 ============ */
-
-function mockStade(
-  culture: string | undefined,
-): { label: string; progress: number; note: string } | null {
-  if (!culture) return null;
-  // On ne montre un stade phéno QUE pour les cultures dont on a un BBCH précis ;
-  // sinon la section est masquée (plutôt qu'un "Suivi standard" générique).
-  const map: Record<string, { label: string; progress: number; note: string }> = {
-    "Blé d'automne": {
-      label: 'Tallage / Montaison',
-      progress: 55,
-      note: 'BBCH ~31. Surveiller maladies foliaires (septoriose).',
-    },
-    'Maïs ensilage': {
-      label: 'Levée',
-      progress: 15,
-      note: 'BBCH ~10. Stade 2-3 feuilles attendu sous 10 jours.',
-    },
-    "Colza d'automne": {
-      label: 'Floraison',
-      progress: 75,
-      note: 'BBCH ~65. Pleine floraison, attention méligèthes.',
-    },
-    "Orge d'automne": {
-      label: 'Épiaison',
-      progress: 70,
-      note: 'BBCH ~55. Approche de la floraison.',
-    },
-  };
-  return map[culture] ?? null;
-}
-
-function mockFumure(
-  culture: string | undefined,
-): Array<{ element: string; applied: number; needed: number; unit: string }> | null {
-  if (!culture) return null;
-  const needs: Record<string, [number, number, number]> = {
-    "Blé d'automne": [180, 60, 90],
-    'Blé de printemps': [160, 60, 80],
-    'Maïs ensilage': [200, 70, 200],
-    'Maïs grain': [200, 70, 200],
-    "Colza d'automne": [220, 60, 110],
-    "Orge d'automne": [150, 50, 80],
-    'Orge de printemps': [130, 50, 70],
-  };
-  const need = needs[culture];
-  if (!need) return null;
-  // Apports simulés (faits jusqu'à présent)
-  const applied: [number, number, number] = [
-    Math.round(need[0] * 0.7),
-    Math.round(need[1] * 0.9),
-    Math.round(need[2] * 0.5),
-  ];
-  return [
-    { element: 'N', applied: applied[0], needed: need[0], unit: 'kg/ha' },
-    { element: 'P₂O₅', applied: applied[1], needed: need[1], unit: 'kg/ha' },
-    { element: 'K₂O', applied: applied[2], needed: need[2], unit: 'kg/ha' },
-  ];
-}
+/* ============ Mocks à brancher au Carnet réel (Phase 3) ============ */
 
 function mockInterventions(parcelId: string): Array<{
   id: string;

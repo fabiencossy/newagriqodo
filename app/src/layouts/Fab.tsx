@@ -103,39 +103,49 @@ export function Fab() {
               aria-label="Actions"
               className="m-0 list-none p-0 pb-[max(env(safe-area-inset-bottom),12px)]"
             >
-              {actions.map((action) => (
-                <li key={action.id} className="border-t border-(--color-border)/60">
-                  <button
-                    type="button"
-                    role="menuitem"
-                    onClick={() => {
-                      action.onClick();
-                      setOpen(false);
-                    }}
-                    className={[
-                      'flex w-full items-center gap-3 px-4 py-4 text-left text-sm',
-                      action.variant === 'danger'
-                        ? 'text-(--color-error) hover:bg-[#fef2f2]'
-                        : 'text-(--color-text) hover:bg-[#fbfbf9]',
-                    ].join(' ')}
-                  >
-                    <span
+              {actions.map((action) => {
+                const isPrimary = action.variant === 'primary';
+                const isDanger = action.variant === 'danger';
+                return (
+                  <li key={action.id} className="border-t border-(--color-border)/60">
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        action.onClick();
+                        setOpen(false);
+                      }}
                       className={[
-                        'inline-flex h-9 w-9 items-center justify-center rounded-(--radius-pill)',
-                        action.variant === 'danger'
-                          ? 'bg-(--color-error)/10 text-(--color-error)'
-                          : 'bg-(--color-primary)/10 text-(--color-primary)',
+                        'flex w-full items-center gap-3 px-4 py-4 text-left text-sm',
+                        isDanger
+                          ? 'text-(--color-error) hover:bg-[#fef2f2]'
+                          : isPrimary
+                            ? 'bg-(--color-primary)/6 font-semibold text-(--color-primary) hover:bg-(--color-primary)/10'
+                            : 'text-(--color-text) hover:bg-[#fbfbf9]',
                       ].join(' ')}
                     >
-                      {action.icon ?? <PlusIcon size={16} />}
-                    </span>
-                    <span className="flex-1 font-medium">{action.label}</span>
-                    <span className="text-(--color-muted)">
-                      <ChevronRightIcon />
-                    </span>
-                  </button>
-                </li>
-              ))}
+                      <span
+                        className={[
+                          'inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-(--radius-pill)',
+                          isDanger
+                            ? 'bg-(--color-error)/10 text-(--color-error)'
+                            : isPrimary
+                              ? 'bg-(--color-primary) text-white'
+                              : 'bg-[#f1f1ee] text-(--color-muted)',
+                        ].join(' ')}
+                      >
+                        {action.icon ?? <PlusIcon size={16} />}
+                      </span>
+                      <span className="flex-1">{action.label}</span>
+                      <span
+                        className={isPrimary ? 'text-(--color-primary)' : 'text-(--color-muted)'}
+                      >
+                        <ChevronRightIcon />
+                      </span>
+                    </button>
+                  </li>
+                );
+              })}
             </ul>
           </div>
         </>

@@ -1,7 +1,6 @@
-import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { PageHeader } from '../_shared/PageHeader';
 import { useFabActions } from '../../layouts/useFab';
+import { useStandardFabActions } from '../../layouts/useStandardFabActions';
 import { HoursTableMonth, type HoursMonthRow } from '../../components/HoursTableMonth';
 
 const HOURS_DATA: HoursMonthRow[] = [
@@ -21,25 +20,13 @@ const HOURS_DATA: HoursMonthRow[] = [
 ];
 
 export default function MesHeuresPage() {
-  const navigate = useNavigate();
-
-  useFabActions(
-    useMemo(
-      () => [
-        {
-          id: 'saisir-presence',
-          label: 'Saisir une présence',
-          onClick: () => navigate('/rh/saisir'),
-        },
-      ],
-      [navigate],
-    ),
-  );
+  // FAB unifié : "Saisir une présence" est l'action mise en avant sur MesHeures.
+  useFabActions(useStandardFabActions({ highlight: 'horaires' }));
 
   return (
     <>
       <PageHeader title="Mes heures" />
-      <HoursTableMonth employeeId="emp-1" year={2026} rows={HOURS_DATA} />
+      <HoursTableMonth employeeId="emp-1" year={2026} rows={HOURS_DATA} bordered={false} />
     </>
   );
 }

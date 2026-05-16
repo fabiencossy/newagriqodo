@@ -1,14 +1,21 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import shp from 'shpjs';
-import type { Feature, Polygon, MultiPolygon } from 'geojson';
+import type { Polygon } from 'geojson';
 import { useFabActions, useHideFab } from '../../layouts/useFab';
+import { openFicheAction, useStandardFabActions } from '../../layouts/useStandardFabActions';
 import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { SearchBar, type FieldDescriptor, type SearchState } from '../../components/SearchBar';
 import { ViewSwitcher, type ViewKey } from '../../components/ViewSwitcher';
 import { ExportButton, type ExportColumn } from '../../components/ExportButton';
 import { MapView, type MapTool } from '../../components/MapView';
-import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
+import type { ParcelDetail } from './parcellaire.mocks';
+import { addParcels, useParcels } from './parcellaire.store';
+import {
+  estimateSurfaceHa,
+  featuresToParcels,
+  parseGeojsonFile,
+  parseShapefile,
+} from './parcellaire.import';
 import { ParcelleSummaryPanel } from './ParcelleSummaryPanel';
 import { filterParcels } from './filtering';
 import { ParcellaireTable } from './ParcellaireTable';
@@ -16,28 +23,6 @@ import { getActiveSegment } from '../assolement/assolement.helpers';
 import { cultureColor, listCultureGroups } from '../assolement/cultures';
 
 const TODAY = new Date().toISOString().slice(0, 10);
-
-/** Surface (ha) approximée d'un polygon lat/lng via shoelace + correction latitude. */
-function estimateSurfaceHa(geom: Polygon | MultiPolygon): number {
-  const polygons = geom.type === 'Polygon' ? [geom.coordinates] : geom.coordinates;
-  let total = 0;
-  for (const polygon of polygons) {
-    const outer = polygon[0];
-    if (!outer || outer.length < 4) continue;
-    let area = 0;
-    for (let i = 0; i < outer.length - 1; i++) {
-      const [x1, y1] = outer[i]!;
-      const [x2, y2] = outer[i + 1]!;
-      area += x1! * y2! - x2! * y1!;
-    }
-    area = Math.abs(area) / 2;
-    const meanLat = outer.reduce((s, p) => s + p[1]!, 0) / outer.length;
-    const mPerDegLat = 111_320;
-    const mPerDegLng = 111_320 * Math.cos((meanLat * Math.PI) / 180);
-    total += (area * mPerDegLat * mPerDegLng) / 10_000;
-  }
-  return total;
-}
 
 const FIELDS: FieldDescriptor[] = [
   { id: 'name', label: 'Nom', type: 'text' },
@@ -77,6 +62,13 @@ const FIELDS: FieldDescriptor[] = [
   },
 ];
 
+/** Libellés FR des statuts pour les exports (le code interne reste 'active'/'fallow'/'archived'). */
+const STATUS_FR: Record<NonNullable<ParcelDetail['status']>, string> = {
+  active: 'Actif',
+  fallow: 'Jachère',
+  archived: 'Archivé',
+};
+
 const EXPORT_COLUMNS: ExportColumn[] = [
   { key: 'id', label: 'Code' },
   { key: 'name', label: 'Nom' },
@@ -94,52 +86,22 @@ export default function ParcellairePage() {
   const [activeTool, setActiveTool] = useState<MapTool>('select');
   const [searchState, setSearchState] = useState<SearchState>({ facets: [], groupBy: [] });
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
-  const [parcels, setParcels] = useState<ParcelDetail[]>(PARCELLES);
+  const parcels = useParcels();
   const geojsonInputRef = useRef<HTMLInputElement>(null);
   const shapefileInputRef = useRef<HTMLInputElement>(null);
   // Polygon dessiné en attente de configuration (dialog post draw-parcel).
   const [drawnDraft, setDrawnDraft] = useState<Polygon | null>(null);
 
-  const importFeatures = (features: ReadonlyArray<Feature>) => {
-    const additions: ParcelDetail[] = [];
-    const year = new Date().getFullYear();
-    for (const f of features) {
-      if (!f.geometry) continue;
-      if (f.geometry.type !== 'Polygon' && f.geometry.type !== 'MultiPolygon') continue;
-      const props = (f.properties ?? {}) as Record<string, unknown>;
-      const id = String(
-        props.id ?? props.code ?? props.ID ?? `IMP-${Date.now()}-${additions.length}`,
-      );
-      const name = String(props.name ?? props.nom ?? props.Name ?? props.NAME ?? `Parcelle ${id}`);
-      const provided = Number(props.surfaceHa ?? props.surface ?? props.area_ha ?? 0);
-      const surfaceHa =
-        Number.isFinite(provided) && provided > 0
-          ? provided
-          : estimateSurfaceHa(f.geometry as Polygon | MultiPolygon);
-      additions.push({
-        id,
-        name,
-        surfaceHa,
-        status: 'active',
-        year,
-        geometry: f.geometry as Polygon | MultiPolygon,
-      });
-    }
-    if (additions.length === 0) {
-      alert('Aucune parcelle exploitable (polygones requis) dans le fichier.');
-      return;
-    }
-    setParcels((curr) => [...curr, ...additions]);
-    alert(`${additions.length} parcelle(s) importée(s).`);
-  };
-
   const handleGeojsonFile = async (file: File) => {
     try {
-      const text = await file.text();
-      const json = JSON.parse(text);
-      const features: Feature[] =
-        json?.type === 'FeatureCollection' ? json.features : json?.type === 'Feature' ? [json] : [];
-      importFeatures(features);
+      const features = await parseGeojsonFile(file);
+      const additions = featuresToParcels(features);
+      if (additions.length === 0) {
+        alert('Aucune parcelle exploitable (polygones requis) dans le fichier.');
+        return;
+      }
+      addParcels(additions);
+      alert(`${additions.length} parcelle(s) importée(s).`);
     } catch (err) {
       console.error(err);
       alert('Fichier GeoJSON invalide.');
@@ -148,11 +110,14 @@ export default function ParcellairePage() {
 
   const handleShapefile = async (file: File) => {
     try {
-      const buffer = await file.arrayBuffer();
-      const result = await shp(buffer);
-      const collections = Array.isArray(result) ? result : [result];
-      const features = collections.flatMap((c) => c.features as Feature[]);
-      importFeatures(features);
+      const features = await parseShapefile(file);
+      const additions = featuresToParcels(features);
+      if (additions.length === 0) {
+        alert('Aucune parcelle exploitable (polygones requis) dans le fichier.');
+        return;
+      }
+      addParcels(additions);
+      alert(`${additions.length} parcelle(s) importée(s).`);
     } catch (err) {
       console.error(err);
       alert('Shapefile invalide. Fournir une archive .zip contenant .shp/.dbf/.shx.');
@@ -193,67 +158,44 @@ export default function ParcellairePage() {
   const totalSurface = filtered.reduce((s, p) => s + p.surfaceHa, 0);
   const summary = `${filtered.length} parcelles · ${totalSurface.toFixed(1)} ha`;
 
-  // FAB contextuel : actions changent selon qu'une parcelle est sélectionnée ou non
+  // FAB unifié : 5 actions standards toujours présentes, avec mise en avant
+  // contextuelle. Quand une parcelle est sélectionnée, "Ouvrir la fiche" est
+  // ajoutée en tête de liste avec variant primary.
+  const extraActions = useMemo(
+    () =>
+      selectedId ? [openFicheAction(selectedId, () => navigate(`/parcellaire/${selectedId}`))] : [],
+    [selectedId, navigate],
+  );
+  const onNewParcel = useMemo(
+    () => () => {
+      setView('map');
+      setActiveTool('draw-parcel');
+    },
+    [],
+  );
   useFabActions(
-    useMemo(() => {
-      if (selectedId) {
-        // Actions contextuelles à la parcelle sélectionnée
-        return [
-          {
-            id: 'open-fiche',
-            label: 'Ouvrir la fiche',
-            onClick: () => navigate(`/parcellaire/${selectedId}`),
-          },
-          {
-            id: 'add-intervention',
-            label: 'Ajouter une intervention',
-            onClick: () => {
-              alert(`Ajouter une intervention sur ${selectedId} (Carnet des champs — Phase 2.5).`);
-            },
-          },
-          {
-            id: 'view-carnet',
-            label: 'Voir le Carnet des champs',
-            onClick: () => {
-              alert(`Carnet des champs pour ${selectedId} (Phase 2.5).`);
-            },
-          },
-          {
-            id: 'add-observation',
-            label: 'Ajouter une observation',
-            onClick: () => {
-              alert(`Marker observation sur ${selectedId} (Phase 2.5).`);
-            },
-          },
-        ];
-      }
-      // Pas de sélection : actions de création
-      return [
-        {
-          id: 'nouvelle-parcelle',
-          label: 'Nouvelle parcelle (dessin)',
-          onClick: () => {
-            setView('map');
-            setActiveTool('draw-parcel');
-          },
-        },
-        {
-          id: 'import-geojson',
-          label: 'Importer GeoJSON',
-          onClick: () => geojsonInputRef.current?.click(),
-        },
-        {
-          id: 'import-shapefile',
-          label: 'Importer Shapefile (.zip)',
-          onClick: () => shapefileInputRef.current?.click(),
-        },
-      ];
-    }, [selectedId, navigate]),
+    useStandardFabActions({
+      highlight: selectedId ? 'intervention' : 'parcelle',
+      parcelId: selectedId,
+      onNewParcel,
+      extraActions,
+    }),
+  );
+
+  // Données d'export : statuts traduits en FR (les colonnes sont juste des accesseurs,
+  // donc le label sera bien rendu en français dans le PDF/Excel/CSV).
+  const exportData = useMemo(
+    () =>
+      filtered.map((p) => ({
+        ...p,
+        status: STATUS_FR[p.status ?? 'active'] ?? p.status,
+      })),
+    [filtered],
   );
 
   const exportBtn = (
     <ExportButton
-      data={filtered as unknown as ReadonlyArray<Record<string, unknown>>}
+      data={exportData as unknown as ReadonlyArray<Record<string, unknown>>}
       columns={EXPORT_COLUMNS}
       filenameBase="parcelles"
       pdfMeta={{ title: 'Parcelles — Domaine Darval' }}
@@ -381,7 +323,7 @@ export default function ParcellairePage() {
               existingCount={parcels.length}
               onCancel={() => setDrawnDraft(null)}
               onCreate={(parcel) => {
-                setParcels((curr) => [...curr, parcel]);
+                addParcels([parcel]);
                 setDrawnDraft(null);
                 setSelectedId(parcel.id);
               }}

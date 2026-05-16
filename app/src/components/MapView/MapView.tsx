@@ -395,9 +395,16 @@ export function MapView({
     }
 
     if (activeTool === 'draw-parcel') {
-      setHint('Cliquez pour ajouter des sommets. Double-clic pour fermer la parcelle.');
+      setHint(
+        'Cliquez pour ajouter des sommets. Faites glisser un point pour le repositionner. Revenez sur le 1er point pour fermer.',
+      );
       let vertices: L.LatLng[] = [];
+      // Marker draggable par sommet, parallèle à `vertices` (même index).
+      let vertexMarkers: L.Marker[] = [];
       let previewLine: L.Polyline | null = null;
+      let firstVertexHalo: L.CircleMarker | null = null;
+      // Seuil de snap au 1er sommet — en pixels écran (indépendant du zoom).
+      const SNAP_THRESHOLD_PX = 18;
       map.doubleClickZoom.disable();
 
       const renderPreview = () => {
@@ -411,26 +418,32 @@ export function MapView({
           previewLine.addTo(draftLayer);
         }
       };
-      const onClick = (e: L.LeafletMouseEvent) => {
-        vertices.push(e.latlng);
-        L.circleMarker(e.latlng, {
-          radius: 5,
-          color: '#a855f7',
-          fillColor: '#a855f7',
-          fillOpacity: 1,
-        }).addTo(draftLayer);
-        renderPreview();
+
+      const renderFirstVertexHalo = () => {
+        if (firstVertexHalo) {
+          draftLayer.removeLayer(firstVertexHalo);
+          firstVertexHalo = null;
+        }
+        // Halo "clic ici pour fermer" sur le 1er sommet, dès qu'on en a 3+.
+        const first = vertices[0];
+        if (vertices.length >= 3 && first) {
+          firstVertexHalo = L.circleMarker(first, {
+            radius: 10,
+            color: '#a855f7',
+            fillColor: '#ffffff',
+            fillOpacity: 0.6,
+            weight: 2.5,
+            interactive: false, // ne capte pas les events — laisse le marker dessous draggable
+          });
+          firstVertexHalo.addTo(draftLayer);
+        }
       };
-      const onDblClick = (e: L.LeafletMouseEvent) => {
-        L.DomEvent.stop(e as unknown as L.LeafletEvent);
+
+      const closePolygon = () => {
         if (vertices.length < 3) return;
-        // Coordonnées GeoJSON Polygon : [lng, lat] et ring fermé.
         const ring: Array<[number, number]> = vertices.map((v) => [v.lng, v.lat]);
         ring.push(ring[0]!);
         const polygon: GeoJSON.Polygon = { type: 'Polygon', coordinates: [ring] };
-        // Si le parent gère la complétion, on lui laisse la suite (dialog
-        // de configuration). Sinon, fallback : on garde le polygon comme
-        // dessin local pour visualisation.
         if (onDrawCompleteRef.current) {
           onDrawCompleteRef.current({ tool: 'draw-parcel', geometry: polygon });
         } else {
@@ -439,9 +452,67 @@ export function MapView({
           setDrawnPolygons((curr) => [...curr, { id: `poly-${Date.now()}`, coords: coordsLatLng }]);
         }
         vertices = [];
+        vertexMarkers = [];
         draftLayer.clearLayers();
         previewLine = null;
+        firstVertexHalo = null;
       };
+
+      /** Icône divIcon — cercle violet plein (8px) avec liseré blanc. */
+      const vertexIcon = L.divIcon({
+        className: 'qodo-vertex-marker',
+        html: '<span style="display:block;width:12px;height:12px;border-radius:50%;background:#a855f7;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);"></span>',
+        iconSize: [12, 12],
+        iconAnchor: [6, 6],
+      });
+
+      /** Ajoute un sommet à la fin et crée le marker draggable associé. */
+      const addVertex = (latlng: L.LatLng) => {
+        const idx = vertices.length;
+        vertices.push(latlng);
+        const marker = L.marker(latlng, { icon: vertexIcon, draggable: true });
+        marker.addTo(draftLayer);
+        // Drag → met à jour le sommet correspondant et redessine la preview.
+        marker.on('drag', (ev) => {
+          const m = ev.target as L.Marker;
+          vertices[idx] = m.getLatLng();
+          renderPreview();
+          renderFirstVertexHalo();
+        });
+        // Empêcher la propagation du click sur le marker (sinon clic ajoute
+        // un nouveau sommet par-dessus, ou ferme le polygon).
+        marker.on('click', (ev) => {
+          L.DomEvent.stop(ev as unknown as L.LeafletEvent);
+          // Si on a ≥ 3 sommets et qu'on clique sur le 1er marker → ferme.
+          if (idx === 0 && vertices.length >= 3) closePolygon();
+        });
+        vertexMarkers.push(marker);
+      };
+
+      const onClick = (e: L.LeafletMouseEvent) => {
+        // Si on a déjà ≥ 3 sommets et que le clic est proche du 1er → ferme auto.
+        const first = vertices[0];
+        if (vertices.length >= 3 && first) {
+          const clickPx = map.latLngToContainerPoint(e.latlng);
+          const firstPx = map.latLngToContainerPoint(first);
+          const dist = clickPx.distanceTo(firstPx);
+          if (dist <= SNAP_THRESHOLD_PX) {
+            L.DomEvent.stop(e as unknown as L.LeafletEvent);
+            closePolygon();
+            return;
+          }
+        }
+        addVertex(e.latlng);
+        renderPreview();
+        renderFirstVertexHalo();
+      };
+
+      // Dblclick reste accepté comme alternative (utile si snap pas évident).
+      const onDblClick = (e: L.LeafletMouseEvent) => {
+        L.DomEvent.stop(e as unknown as L.LeafletEvent);
+        closePolygon();
+      };
+
       map.on('click', onClick);
       map.on('dblclick', onDblClick);
       return () => {

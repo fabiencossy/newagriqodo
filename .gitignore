@@ -1,0 +1,25 @@
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editor
+.vscode/*
+!.vscode/extensions.json
+.idea
+
+# Logs
+*.log
+
+# Local env
+.env
+.env.local
+
+# Dependencies (sécurité — devraient être ignorés par sous-projets aussi)
+node_modules/
+
+# Build artifacts
+dist/
+build/
+
+# Claude Code local overrides (settings.local.json reste local par convention)
+.claude/settings.local.json

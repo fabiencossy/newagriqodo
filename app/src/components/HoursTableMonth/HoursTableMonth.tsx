@@ -51,9 +51,13 @@ export function HoursTableMonth({
   loading = false,
   hoursFormat = HOURS_TABLE_DEFAULTS.hoursFormat,
   layout = HOURS_TABLE_DEFAULTS.layout,
+  bordered = true,
   ariaLabel,
   className,
 }: HoursTableMonthProps) {
+  const wrapperClass = bordered
+    ? 'rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5'
+    : '';
   const isDesktop = useIsDesktop();
   const resolvedLayout: 'table' | 'cards' =
     layout === 'table' ? 'table' : layout === 'cards' ? 'cards' : isDesktop ? 'table' : 'cards';
@@ -104,13 +108,7 @@ export function HoursTableMonth({
 
   if (loading) {
     return (
-      <div
-        aria-busy="true"
-        className={[
-          'rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5',
-          className ?? '',
-        ].join(' ')}
-      >
+      <div aria-busy="true" className={[wrapperClass, className ?? ''].join(' ').trim()}>
         <header className="mb-3 flex items-center gap-3">
           <h3 className="m-0 flex-1 text-base font-semibold">Bilan heures</h3>
           {yearPicker}
@@ -126,12 +124,7 @@ export function HoursTableMonth({
 
   if (rows.length === 0) {
     return (
-      <div
-        className={[
-          'rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5',
-          className ?? '',
-        ].join(' ')}
-      >
+      <div className={[wrapperClass, className ?? ''].join(' ').trim()}>
         <header className="mb-3 flex items-center gap-3">
           <h3 className="m-0 flex-1 text-base font-semibold">Bilan heures</h3>
           {yearPicker}

@@ -3,10 +3,29 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { PageContainer } from '../_shared/PageContainer';
 import { MapView } from '../../components/MapView';
 import { useFabActions, useHideFab } from '../../layouts/useFab';
-import { PARCELLES, type ParcelDetail } from './parcellaire.mocks';
+import { useStandardFabActions } from '../../layouts/useStandardFabActions';
+import { type ParcelDetail } from './parcellaire.mocks';
+import { useParcels } from './parcellaire.store';
 import { AssolementTimeline } from '../assolement/AssolementTimeline';
+import { AssolementSegmentModal } from '../assolement/AssolementSegmentModal';
 import { getActiveSegment, getSegmentsForParcelYear } from '../assolement/assolement.helpers';
+import { useSegments } from '../assolement/assolement.store';
 import { cultureColor } from '../assolement/cultures';
+import type { AssolementSegment } from '../assolement/assolement.types';
+import { Tabs, TabPanel, type TabDescriptor } from '../../components/Tabs';
+import { ParcelleStats } from './ParcelleStats';
+import { FumurePanel } from '../fumure/FumurePanel';
+import { computeFumureBalance } from '../fumure/fumure.helpers';
+import { InterventionList } from '../carnet/InterventionList';
+import { InterventionForm } from '../carnet/InterventionForm';
+import {
+  addInterventions,
+  removeIntervention,
+  updateIntervention,
+  useInterventions,
+} from '../carnet/carnet.store';
+import { getInterventionsForParcel } from '../carnet/carnet.helpers';
+import type { Intervention } from '../carnet/carnet.types';
 
 const TODAY = new Date().toISOString().slice(0, 10);
 
@@ -40,6 +59,18 @@ const STATUS_LABELS: Record<NonNullable<ParcelDetail['status']>, string> = {
   archived: 'Archivé',
 };
 
+/** Liste des onglets de la fiche parcelle. Ordre = priorité d'usage. */
+function parcelleTabs(_parcelId: string): ReadonlyArray<TabDescriptor> {
+  return [
+    { key: 'overview', label: 'Aperçu' },
+    { key: 'carnet', label: 'Carnet' },
+    { key: 'assolement', label: 'Assolement' },
+    { key: 'fumure', label: 'Fumure' },
+    { key: 'stats', label: 'Statistiques' },
+    { key: 'map', label: 'Localisation' },
+  ];
+}
+
 const STATUS_STYLES: Record<NonNullable<ParcelDetail['status']>, string> = {
   active: 'bg-(--color-success)/12 text-[#166534]',
   fallow: 'bg-(--color-warning)/12 text-[#92400e]',
@@ -50,40 +81,36 @@ export default function ParcelleDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
 
-  const initial = useMemo(() => PARCELLES.find((p) => p.id === id), [id]);
+  const parcels = useParcels();
+  const initial = useMemo(() => parcels.find((p) => p.id === id), [parcels, id]);
   const [draft, setDraft] = useState<ParcelDetail | undefined>(initial);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [editingIntervention, setEditingIntervention] = useState<
+    Intervention | 'new' | 'observation' | null
+  >(null);
+  const [activeTab, setActiveTab] = useState<string>('overview');
 
-  // FAB principal : "Créer une intervention" (et observation).
-  // Masqué quand le footer sticky d'enregistrement est visible (dirty).
+  // FAB unifié — la fiche met en avant "Créer une intervention" (action principale
+  // sur une parcelle). Les overrides ouvrent le formulaire inline plutôt que de
+  // naviguer vers /carnet, et la création de segment ouvre l'éditeur inline aussi.
+  const onAddIntervention = useMemo(() => () => setEditingIntervention('new'), []);
+  const onAddObservation = useMemo(() => () => setEditingIntervention('observation'), []);
   useFabActions(
-    useMemo(
-      () => [
-        {
-          id: 'add-intervention',
-          label: 'Créer une intervention',
-          onClick: () => {
-            alert("Création d'une intervention (à brancher Phase 2.5 avec le Carnet).");
-          },
-        },
-        {
-          id: 'add-observation',
-          label: 'Ajouter une observation',
-          onClick: () => {
-            alert('Marker observation (à brancher Phase 2.5).');
-          },
-        },
-      ],
-      [],
-    ),
+    useStandardFabActions({
+      highlight: 'intervention',
+      parcelId: id,
+      onAddIntervention,
+      onAddObservation,
+    }),
   );
 
   const dirty = JSON.stringify(draft) !== JSON.stringify(initial);
 
   // Le FAB ("Créer une intervention") cède la place au footer sticky d'enregistrement
   // quand il y a des modifications à sauvegarder (sinon ils se chevauchent).
-  useHideFab(dirty);
+  // Aussi masqué quand le formulaire d'intervention est ouvert.
+  useHideFab(dirty || editingIntervention !== null);
 
   if (!initial || !draft) {
     return (
@@ -186,90 +213,141 @@ export default function ParcelleDetailPage() {
         />
       </header>
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-        {/* Identification */}
-        <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-2">
-          <h2 className="m-0 mb-4 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
-            Identification
-          </h2>
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-            <Field label="Code" htmlFor="f-code">
-              <input id="f-code" type="text" value={draft.id} readOnly className={readonlyClass} />
-            </Field>
-            <Field label="Nom" htmlFor="f-name">
-              <input
-                id="f-name"
-                type="text"
-                value={draft.name}
-                onChange={(e) => setField('name', e.target.value)}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Surface (ha)" htmlFor="f-surf">
-              <input
-                id="f-surf"
-                type="number"
-                step="0.01"
-                value={draft.surfaceHa}
-                onChange={(e) => setField('surfaceHa', Number(e.target.value))}
-                className={inputClass}
-              />
-            </Field>
-            <Field label="Année" htmlFor="f-year">
-              <input
-                id="f-year"
-                type="number"
-                value={draft.year}
-                onChange={(e) => setField('year', Number(e.target.value))}
-                className={inputClass}
-              />
-            </Field>
-          </div>
-        </section>
+      <Tabs
+        tabs={parcelleTabs(draft.id)}
+        activeKey={activeTab}
+        onChange={setActiveTab}
+        className="mb-5"
+        ariaLabel="Sections de la parcelle"
+      />
 
-        {/* Status card */}
-        <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5">
-          <h2 className="m-0 mb-4 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
-            Statut
-          </h2>
-          <div className="space-y-3">
-            <Field label="Statut" htmlFor="f-status">
-              <select
-                id="f-status"
-                value={draft.status ?? 'active'}
-                onChange={(e) => setField('status', e.target.value as ParcelDetail['status'])}
-                className={inputClass}
+      <TabPanel tabKey="overview" active={activeTab}>
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          {/* Identification */}
+          <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-2">
+            <h2 className="m-0 mb-4 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
+              Identification
+            </h2>
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label="Code" htmlFor="f-code">
+                <input
+                  id="f-code"
+                  type="text"
+                  value={draft.id}
+                  readOnly
+                  className={readonlyClass}
+                />
+              </Field>
+              <Field label="Nom" htmlFor="f-name">
+                <input
+                  id="f-name"
+                  type="text"
+                  value={draft.name}
+                  onChange={(e) => setField('name', e.target.value)}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Surface (ha)" htmlFor="f-surf">
+                <input
+                  id="f-surf"
+                  type="number"
+                  step="0.01"
+                  value={draft.surfaceHa}
+                  onChange={(e) => setField('surfaceHa', Number(e.target.value))}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Année" htmlFor="f-year">
+                <input
+                  id="f-year"
+                  type="number"
+                  value={draft.year}
+                  onChange={(e) => setField('year', Number(e.target.value))}
+                  className={inputClass}
+                />
+              </Field>
+              <Field label="Statut" htmlFor="f-status">
+                <select
+                  id="f-status"
+                  value={draft.status ?? 'active'}
+                  onChange={(e) => setField('status', e.target.value as ParcelDetail['status'])}
+                  className={inputClass}
+                >
+                  <option value="active">Actif</option>
+                  <option value="fallow">Jachère</option>
+                  <option value="archived">Archivé</option>
+                </select>
+              </Field>
+            </div>
+          </section>
+
+          {/* Mini-carte */}
+          <section className="overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface)">
+            <div className="flex items-center justify-between gap-2 border-b border-(--color-border) px-4 py-2">
+              <h2 className="m-0 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
+                Localisation
+              </h2>
+              <button
+                type="button"
+                onClick={() => setActiveTab('map')}
+                className="text-[11px] font-medium text-(--color-primary) hover:underline"
               >
-                <option value="active">Actif</option>
-                <option value="fallow">Jachère</option>
-                <option value="archived">Archivé</option>
-              </select>
-            </Field>
-          </div>
-        </section>
+                Agrandir →
+              </button>
+            </div>
+            <MapView
+              parcels={[draft]}
+              selectedId={draft.id}
+              onSelectionChange={() => {
+                /* lecture seule */
+              }}
+              center={computeCentroid(draft)}
+              zoom={16}
+              enabledTools={[]}
+              showBasemapToggle={false}
+              showLegend={false}
+              height="260px"
+              className="!rounded-none !border-0"
+            />
+          </section>
 
-        {/* Assolement — timeline + segments de la campagne */}
+          {/* Résumés cliquables — naviguent vers l'onglet correspondant */}
+          <OverviewSummaries parcel={draft} onNavigate={setActiveTab} />
+
+          {/* Notes */}
+          <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-3">
+            <h2 className="m-0 mb-4 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
+              Notes
+            </h2>
+            <textarea
+              value={draft.notes ?? ''}
+              onChange={(e) => setField('notes', e.target.value)}
+              placeholder="Observations, contexte, voisins…"
+              rows={4}
+              className={inputClass.replace('h-10', 'min-h-[96px] py-2')}
+            />
+          </section>
+        </div>
+      </TabPanel>
+
+      <TabPanel tabKey="carnet" active={activeTab}>
+        <CarnetSection parcelId={draft.id} onEdit={setEditingIntervention} />
+      </TabPanel>
+
+      <TabPanel tabKey="assolement" active={activeTab}>
         <AssolementSection parcelId={draft.id} year={draft.year} />
+      </TabPanel>
 
-        {/* Plan de fumure — apports N/P/K + stats */}
-        <FumureSection parcelId={draft.id} surfaceHa={draft.surfaceHa} />
+      <TabPanel tabKey="fumure" active={activeTab}>
+        <FumurePanel parcel={draft} />
+      </TabPanel>
 
-        {/* Notes */}
+      <TabPanel tabKey="stats" active={activeTab}>
+        <ParcelleStats parcel={draft} />
+      </TabPanel>
+
+      <TabPanel tabKey="map" active={activeTab}>
         <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5">
-          <h2 className="m-0 mb-4 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
-            Notes
-          </h2>
-          <textarea
-            value={draft.notes ?? ''}
-            onChange={(e) => setField('notes', e.target.value)}
-            placeholder="Observations, contexte, voisins…"
-            rows={5}
-            className={inputClass.replace('h-10', 'min-h-[120px] py-2')}
-          />
-        </section>
-
-        {/* Localisation — mini-carte avec la parcelle centrée */}
-        <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-3">
           <div className="mb-3 flex items-center justify-between gap-2">
             <h2 className="m-0 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
               Localisation
@@ -295,25 +373,50 @@ export default function ParcelleDetailPage() {
             zoom={16}
             enabledTools={[]}
             showBasemapToggle
-            height="360px"
+            height="480px"
             className="!rounded-(--radius)"
           />
         </section>
+      </TabPanel>
 
-        {/* Interventions placeholder */}
-        <section className="rounded-(--radius) border border-dashed border-(--color-border) bg-(--color-surface) p-5 lg:col-span-3">
-          <h2 className="m-0 mb-2 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
-            Interventions
-          </h2>
-          <p className="m-0 text-sm text-(--color-muted)">
-            Liste des interventions (semis, traitements, récolte…) à brancher en Phase 2.5 avec le
-            Carnet des champs.
-          </p>
-        </section>
-      </div>
+      {/* Formulaire d'intervention (modal) */}
+      {editingIntervention && (
+        <InterventionForm
+          parcels={parcels}
+          lockedParcelId={draft.id}
+          initial={
+            editingIntervention === 'new'
+              ? { parcelId: draft.id }
+              : editingIntervention === 'observation'
+                ? { parcelId: draft.id, category: 'observation' }
+                : editingIntervention
+          }
+          onSave={(intervention) => {
+            if (
+              editingIntervention !== 'new' &&
+              editingIntervention !== 'observation' &&
+              editingIntervention.id === intervention.id
+            ) {
+              updateIntervention(intervention.id, intervention);
+            } else {
+              addInterventions([intervention]);
+            }
+            setEditingIntervention(null);
+          }}
+          onCancel={() => setEditingIntervention(null)}
+          onDelete={
+            editingIntervention !== 'new' && editingIntervention !== 'observation'
+              ? () => {
+                  removeIntervention(editingIntervention.id);
+                  setEditingIntervention(null);
+                }
+              : undefined
+          }
+        />
+      )}
 
-      {/* Sticky footer save */}
-      <footer className="sticky bottom-0 mt-6 -mx-4 flex items-center gap-3 border-t border-(--color-border) bg-(--color-surface) px-4 py-3 sm:-mx-6">
+      {/* Sticky footer save — z-[1000] pour passer au-dessus des panes Leaflet (400-700) */}
+      <footer className="sticky bottom-0 z-[1000] mt-6 -mx-4 flex items-center gap-3 border-t border-(--color-border) bg-(--color-surface) px-4 py-3 sm:-mx-6">
         {savedAt && !dirty && (
           <span className="text-xs text-(--color-success)">
             ✓ Enregistré {savedAt.toLocaleTimeString('fr-CH')}
@@ -345,147 +448,228 @@ export default function ParcelleDetailPage() {
   );
 }
 
-/* ============ Plan de fumure ============ */
+/* ============ Résumés Aperçu — 3 cards cliquables qui ouvrent l'onglet associé ============ */
 
-interface NutrientEntry {
-  element: string;
-  applied: number;
-  needed: number;
-  unit: string;
-}
+function OverviewSummaries({
+  parcel,
+  onNavigate,
+}: {
+  parcel: ParcelDetail;
+  onNavigate: (tab: string) => void;
+}) {
+  const allInterventions = useInterventions();
+  const allSegments = useSegments();
 
-const FUMURE_NEEDS_KG_HA: Record<string, [number, number, number]> = {
-  "Blé d'automne": [180, 60, 90],
-  'Blé de printemps': [160, 60, 80],
-  'Maïs ensilage': [200, 70, 200],
-  'Maïs grain': [200, 70, 200],
-  "Colza d'automne": [220, 60, 110],
-  "Orge d'automne": [150, 50, 80],
-  'Orge de printemps': [130, 50, 70],
-};
+  const interventions = useMemo(
+    () => getInterventionsForParcel(parcel.id, allInterventions),
+    [parcel.id, allInterventions],
+  );
+  const yearInterventions = useMemo(
+    () => interventions.filter((i) => i.date.startsWith(String(parcel.year))),
+    [interventions, parcel.year],
+  );
+  const lastIntervention = interventions[0];
+  const activeSeg = useMemo(
+    () => getActiveSegment(parcel.id, TODAY, allSegments),
+    [parcel.id, allSegments],
+  );
+  const segments = useMemo(
+    () => getSegmentsForParcelYear(parcel.id, parcel.year, allSegments),
+    [parcel.id, parcel.year, allSegments],
+  );
 
-function fumureForCulture(culture: string | undefined): NutrientEntry[] | null {
-  if (!culture) return null;
-  const need = FUMURE_NEEDS_KG_HA[culture];
-  if (!need) return null;
-  return [
-    { element: 'N', applied: Math.round(need[0] * 0.7), needed: need[0], unit: 'kg/ha' },
-    { element: 'P₂O₅', applied: Math.round(need[1] * 0.9), needed: need[1], unit: 'kg/ha' },
-    { element: 'K₂O', applied: Math.round(need[2] * 0.5), needed: need[2], unit: 'kg/ha' },
-  ];
-}
-
-function FumureSection({ parcelId, surfaceHa }: { parcelId: string; surfaceHa: number }) {
-  const active = useMemo(() => getActiveSegment(parcelId, TODAY), [parcelId]);
-  const data = fumureForCulture(active?.culture);
-  if (!data || !active) return null;
-
-  const totalNeeded = data.reduce((s, n) => s + n.needed, 0);
-  const totalApplied = data.reduce((s, n) => s + n.applied, 0);
-  const coverage = totalNeeded > 0 ? Math.round((totalApplied / totalNeeded) * 100) : 0;
-  const remainingPerHa = Math.max(0, totalNeeded - totalApplied);
-  const remainingTotalKg = Math.round(remainingPerHa * surfaceHa);
-  const statusLabel =
-    coverage >= 95 && coverage <= 110
-      ? 'Équilibré'
-      : coverage < 80
-        ? 'Sous-fertilisé'
-        : 'Sur-fertilisé';
-  const statusColor =
-    coverage >= 95 && coverage <= 110 ? '#16a34a' : coverage < 80 ? '#f59e0b' : '#ef4444';
+  // Bilan fumure simplifié (couverture N uniquement, le détail est dans l'onglet Fumure)
+  const fumureBalance = useMemo(
+    () => computeFumureBalance(activeSeg?.culture, parcel.surfaceHa, parcel.year, interventions),
+    [activeSeg, parcel.surfaceHa, parcel.year, interventions],
+  );
 
   return (
-    <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-2">
-      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-2">
-        <h2 className="m-0 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
-          Plan de fumure
-        </h2>
-        <span className="text-xs text-(--color-muted)">{active.culture}</span>
+    <>
+      {/* Assolement */}
+      <SummaryCard title="Assolement" onOpen={() => onNavigate('assolement')}>
+        {activeSeg ? (
+          <>
+            <div className="flex items-center gap-2 text-sm">
+              <span
+                aria-hidden
+                className="inline-block h-3 w-3 shrink-0 rounded-(--radius-pill)"
+                style={{ background: cultureColor(activeSeg.culture) }}
+              />
+              <span className="font-medium">{activeSeg.culture}</span>
+              {activeSeg.varietyName && (
+                <span className="text-(--color-muted)">· {activeSeg.varietyName}</span>
+              )}
+            </div>
+            <p className="m-0 mt-1 font-mono text-[11px] text-(--color-muted)">
+              {fmtDate(activeSeg.startDate)} → {fmtDate(activeSeg.endDate)}
+            </p>
+            <p className="m-0 mt-2 text-[11px] text-(--color-muted)">
+              {segments.length} segment{segments.length > 1 ? 's' : ''} pour la campagne{' '}
+              {parcel.year}
+            </p>
+          </>
+        ) : (
+          <p className="m-0 text-sm text-(--color-muted)">Aucune culture en place aujourd'hui.</p>
+        )}
+      </SummaryCard>
+
+      {/* Carnet */}
+      <SummaryCard title="Carnet" onOpen={() => onNavigate('carnet')}>
+        <div className="text-2xl font-semibold tabular-nums">
+          {yearInterventions.length}
+          <span className="ml-1 text-xs font-normal text-(--color-muted)">
+            intervention{yearInterventions.length > 1 ? 's' : ''} en {parcel.year}
+          </span>
+        </div>
+        {lastIntervention ? (
+          <p className="m-0 mt-2 truncate text-[11px] text-(--color-muted)">
+            Dernière : <strong>{lastIntervention.productName ?? lastIntervention.category}</strong>{' '}
+            ({fmtDate(lastIntervention.date)})
+          </p>
+        ) : (
+          <p className="m-0 mt-2 text-[11px] text-(--color-muted)">
+            Aucune intervention enregistrée.
+          </p>
+        )}
+      </SummaryCard>
+
+      {/* Fumure */}
+      <SummaryCard title="Plan de fumure" onOpen={() => onNavigate('fumure')}>
+        {fumureBalance ? (
+          <>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-semibold tabular-nums">
+                {Math.round(fumureBalance.coverage.n)} %
+              </span>
+              <span className="text-[11px] text-(--color-muted)">couverture N</span>
+            </div>
+            <p
+              className="m-0 mt-1 text-xs font-semibold capitalize"
+              style={{
+                color:
+                  fumureBalance.status === 'équilibré'
+                    ? '#16a34a'
+                    : fumureBalance.status === 'sous-fertilisé'
+                      ? '#f59e0b'
+                      : '#ef4444',
+              }}
+            >
+              {fumureBalance.status}
+            </p>
+            <p className="m-0 mt-1 text-[11px] text-(--color-muted)">
+              Reste : {fumureBalance.remaining.nKg} kg N · {fumureBalance.remaining.pKg} kg P ·{' '}
+              {fumureBalance.remaining.kKg} kg K
+            </p>
+          </>
+        ) : (
+          <p className="m-0 text-sm text-(--color-muted)">
+            Aucun besoin documenté pour cette culture.
+          </p>
+        )}
+      </SummaryCard>
+    </>
+  );
+}
+
+function SummaryCard({
+  title,
+  onOpen,
+  children,
+}: {
+  title: string;
+  onOpen: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-4">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h3 className="m-0 text-[11px] font-semibold tracking-wider text-(--color-muted) uppercase">
+          {title}
+        </h3>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="text-[11px] font-medium text-(--color-primary) hover:underline"
+        >
+          Voir →
+        </button>
       </div>
-      <div className="mb-4 grid grid-cols-3 gap-2">
-        {data.map((n) => (
-          <FumureNutrient key={n.element} {...n} />
-        ))}
-      </div>
-      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-        <FumureStat label="Couverture totale" value={`${coverage} %`} color={statusColor} />
-        <FumureStat
-          label="Reste à apporter"
-          value={`${remainingTotalKg} kg`}
-          sub={`(${remainingPerHa} kg/ha × ${surfaceHa.toFixed(2)} ha)`}
-        />
-        <FumureStat label="Bilan" value={statusLabel} color={statusColor} />
-      </div>
+      <div className="flex-1">{children}</div>
     </section>
   );
 }
 
-function FumureNutrient({ element, applied, needed, unit }: NutrientEntry) {
-  const ratio = needed > 0 ? Math.min(1.2, applied / needed) : 0;
-  const overshoot = needed > 0 && applied > needed;
-  const color = overshoot ? '#ef4444' : applied < needed * 0.6 ? '#f59e0b' : '#16a34a';
-  return (
-    <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-3">
-      <div className="text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
-        {element}
-      </div>
-      <div className="mt-1 font-mono text-base tabular-nums">
-        {applied}
-        <span className="text-(--color-muted)">/{needed}</span>
-        <span className="ml-1 text-[11px] text-(--color-muted)">{unit}</span>
-      </div>
-      <div className="mt-1.5 h-1.5 overflow-hidden rounded-(--radius-pill) bg-[#f1f1ee]">
-        <div
-          className="h-full"
-          style={{ width: `${Math.min(100, ratio * 100)}%`, background: color }}
-        />
-      </div>
-    </div>
-  );
-}
+/* ============ Carnet section (résumé compact intégré dans onglet Carnet) ============ */
 
-function FumureStat({
-  label,
-  value,
-  sub,
-  color,
+function CarnetSection({
+  parcelId,
+  onEdit,
 }: {
-  label: string;
-  value: string;
-  sub?: string;
-  color?: string;
+  parcelId: string;
+  onEdit: (i: Intervention) => void;
 }) {
+  const navigate = useNavigate();
+  const allInterventions = useInterventions();
+  const interventions = useMemo(
+    () => getInterventionsForParcel(parcelId, allInterventions),
+    [parcelId, allInterventions],
+  );
+  const recent = interventions.slice(0, 8);
+
   return (
-    <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] p-3">
-      <div className="text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
-        {label}
+    <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-3">
+      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+        <h2 className="m-0 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
+          Carnet des champs · {interventions.length} intervention
+          {interventions.length > 1 ? 's' : ''}
+        </h2>
+        <button
+          type="button"
+          onClick={() => navigate(`/carnet?parcel=${parcelId}`)}
+          className="inline-flex h-9 items-center gap-1.5 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium text-(--color-text) hover:bg-[#f8f8f5]"
+        >
+          Voir le carnet complet
+        </button>
       </div>
-      <div className="mt-1 text-base font-semibold" style={{ color }}>
-        {value}
-      </div>
-      {sub && <div className="mt-0.5 text-[11px] text-(--color-muted)">{sub}</div>}
-    </div>
+      <InterventionList interventions={recent} onEdit={onEdit} hideParcelColumn />
+      {interventions.length > 8 && (
+        <p className="m-0 mt-2 text-center text-xs text-(--color-muted)">
+          {interventions.length - 8} intervention{interventions.length - 8 > 1 ? 's' : ''} plus
+          ancienne{interventions.length - 8 > 1 ? 's' : ''} — voir le carnet complet
+        </p>
+      )}
+    </section>
   );
 }
 
 function AssolementSection({ parcelId, year }: { parcelId: string; year: number }) {
-  const navigate = useNavigate();
-  const segments = useMemo(() => getSegmentsForParcelYear(parcelId, year), [parcelId, year]);
-  const active = useMemo(() => getActiveSegment(parcelId, TODAY), [parcelId]);
+  const allSegments = useSegments();
+  const segments = useMemo(
+    () => getSegmentsForParcelYear(parcelId, year, allSegments),
+    [parcelId, year, allSegments],
+  );
+  const active = useMemo(
+    () => getActiveSegment(parcelId, TODAY, allSegments),
+    [parcelId, allSegments],
+  );
+
+  // Édition inline : pas de redirection vers /assolement, tout se passe ici.
+  // Le modal réutilisable AssolementSegmentModal gère save/delete via le store.
+  const [editing, setEditing] = useState<
+    AssolementSegment | { draft: true; parcelId: string; year: number } | null
+  >(null);
+
+  const startNew = () => {
+    setEditing({ draft: true, parcelId, year });
+  };
 
   return (
     <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5 lg:col-span-2">
-      <div className="mb-3 flex flex-wrap items-baseline justify-between gap-2">
+      <div className="mb-3">
         <h2 className="m-0 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
           Assolement · campagne {year}
         </h2>
-        <button
-          type="button"
-          onClick={() => navigate(`/assolement?parcel=${parcelId}`)}
-          className="inline-flex h-9 items-center gap-1.5 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium text-(--color-text) hover:bg-[#f8f8f5]"
-        >
-          Modifier dans le Plan d'assolement
-        </button>
       </div>
 
       {/* Culture en place aujourd'hui */}
@@ -515,8 +699,53 @@ function AssolementSection({ parcelId, year }: { parcelId: string; year: number 
         </div>
       </div>
 
-      {/* Timeline */}
-      <AssolementTimeline segments={segments} year={year} variant="detail" today={TODAY} />
+      {/* Timeline cliquable pour éditer chaque segment */}
+      <AssolementTimeline
+        segments={segments}
+        year={year}
+        variant="detail"
+        today={TODAY}
+        onSegmentClick={(s) => setEditing(s)}
+        onAdd={startNew}
+      />
+
+      {/* Liste des segments éditables */}
+      {segments.length > 0 && (
+        <div className="mt-4">
+          <h3 className="m-0 mb-2 text-[10px] font-semibold tracking-wider text-(--color-muted) uppercase">
+            Segments
+          </h3>
+          <ul className="m-0 space-y-1.5 list-none p-0">
+            {segments.map((s) => (
+              <li key={s.id}>
+                <button
+                  type="button"
+                  onClick={() => setEditing(s)}
+                  className="flex w-full items-center gap-2 rounded-(--radius-sm) border border-(--color-border) bg-(--color-surface) px-3 py-2 text-left text-sm hover:bg-[#fbfbf9]"
+                >
+                  <span
+                    aria-hidden="true"
+                    className="inline-block h-3 w-3 shrink-0 rounded-(--radius-pill)"
+                    style={{ background: cultureColor(s.culture) }}
+                  />
+                  <span className="min-w-0 flex-1 truncate">
+                    <span className="font-medium">{s.culture}</span>
+                    {s.varietyName && (
+                      <span className="text-(--color-muted)"> · {s.varietyName}</span>
+                    )}
+                  </span>
+                  <span className="shrink-0 font-mono text-[11px] text-(--color-muted)">
+                    {fmtDate(s.startDate)} → {fmtDate(s.endDate)}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {/* Modal d'édition de segment réutilisable */}
+      {editing && <AssolementSegmentModal target={editing} onClose={() => setEditing(null)} />}
     </section>
   );
 }

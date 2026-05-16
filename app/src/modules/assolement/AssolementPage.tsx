@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useIsDesktop } from '../../hooks/useMediaQuery';
 import { MapView, type Parcel } from '../../components/MapView';
@@ -6,7 +6,13 @@ import { SearchBar, type FieldDescriptor, type SearchState } from '../../compone
 import { ViewSwitcher, type ViewKey } from '../../components/ViewSwitcher';
 import { ExportButton, type ExportColumn } from '../../components/ExportButton';
 import { useFabActions, useHideFab } from '../../layouts/useFab';
-import { PARCELLES } from '../parcellaire/parcellaire.mocks';
+import { useStandardFabActions } from '../../layouts/useStandardFabActions';
+import { addParcels, useParcels } from '../parcellaire/parcellaire.store';
+import {
+  featuresToParcels,
+  parseGeojsonFile,
+  parseShapefile,
+} from '../parcellaire/parcellaire.import';
 import { AssolementTable, type AssolementRow } from './AssolementTable';
 import { AssolementTimeline } from './AssolementTimeline';
 import { AssolementDetailPanel } from './AssolementDetailPanel';
@@ -15,10 +21,12 @@ import {
   getAvailableYears,
   getDominantCulture,
   getSegmentsForParcelYear,
-  mergeAdjacentSameCulture,
-  resolveOverlaps,
 } from './assolement.helpers';
-import { ASSOLEMENT_SEGMENTS } from './assolement.mocks';
+import {
+  removeSegment as removeSegmentStore,
+  saveSegment as saveSegmentStore,
+  useSegments,
+} from './assolement.store';
 import type { AssolementSegment } from './assolement.types';
 import { cultureColor, cultureGroup, listCultureGroups } from './cultures';
 
@@ -62,21 +70,56 @@ export default function AssolementPage() {
   const [selectedId, setSelectedId] = useState<string | undefined>(
     () => searchParams.get('parcel') ?? undefined,
   );
-  const [segments, setSegments] = useState<AssolementSegment[]>([...ASSOLEMENT_SEGMENTS]);
+  const segments = useSegments();
   const [editingSegment, setEditingSegment] = useState<AssolementSegment | 'new' | null>(null);
+  const parcels = useParcels();
+  const geojsonInputRef = useRef<HTMLInputElement>(null);
+  const shapefileInputRef = useRef<HTMLInputElement>(null);
 
   // Masque le FAB sur mobile quand le panel de sélection est ouvert
   useHideFab(!isDesktop && Boolean(selectedId));
 
+  const handleGeojsonFile = async (file: File) => {
+    try {
+      const features = await parseGeojsonFile(file);
+      const additions = featuresToParcels(features);
+      if (additions.length === 0) {
+        alert('Aucune parcelle exploitable (polygones requis) dans le fichier.');
+        return;
+      }
+      addParcels(additions);
+      alert(`${additions.length} parcelle(s) importée(s).`);
+    } catch (err) {
+      console.error(err);
+      alert('Fichier GeoJSON invalide.');
+    }
+  };
+
+  const handleShapefile = async (file: File) => {
+    try {
+      const features = await parseShapefile(file);
+      const additions = featuresToParcels(features);
+      if (additions.length === 0) {
+        alert('Aucune parcelle exploitable (polygones requis) dans le fichier.');
+        return;
+      }
+      addParcels(additions);
+      alert(`${additions.length} parcelle(s) importée(s).`);
+    } catch (err) {
+      console.error(err);
+      alert('Shapefile invalide. Fournir une archive .zip contenant .shp/.dbf/.shx.');
+    }
+  };
+
   // Pour chaque parcelle, calculer ses segments de l'année et la culture dominante
   const rows: AssolementRow[] = useMemo(
     () =>
-      PARCELLES.map((parcel) => ({
+      parcels.map((parcel) => ({
         parcel,
         segments: getSegmentsForParcelYear(parcel.id, year, segments),
         dominant: getDominantCulture(parcel.id, year, segments),
       })),
-    [year, segments],
+    [parcels, year, segments],
   );
 
   // Filtrage SearchBar (sur le tableau de rows)
@@ -121,20 +164,15 @@ export default function AssolementPage() {
 
   const selectedRow = selectedId ? rows.find((r) => r.parcel.id === selectedId) : undefined;
 
-  /* ============ Édition segments ============ */
+  /* ============ Édition segments (via store partagé) ============ */
 
   const saveSegment = (next: AssolementSegment) => {
-    // resolveOverlaps découpe les segments existants chevauchés pour qu'il
-    // n'y ait jamais deux cultures simultanées sur la même parcelle.
-    // mergeAdjacentSameCulture fusionne ensuite les segments adjacents qui
-    // partagent la même culture (ex. Pâturage 01/01-01/12 + Pâturage
-    // 02/12-31/12 → Pâturage 01/01-31/12).
-    setSegments((curr) => mergeAdjacentSameCulture(resolveOverlaps(next, curr)));
+    saveSegmentStore(next);
     setEditingSegment(null);
   };
 
   const deleteSegment = (id: string) => {
-    setSegments((curr) => mergeAdjacentSameCulture(curr.filter((s) => s.id !== id)));
+    removeSegmentStore(id);
     setEditingSegment(null);
   };
 
@@ -150,27 +188,24 @@ export default function AssolementPage() {
     setEditingSegment(draft);
   };
 
-  // FAB : actions contextuelles à la sélection (Ajouter segment) ou globales.
+  // FAB unifié — l'assolement met en avant "Ajouter un segment". Si une parcelle
+  // est sélectionnée, l'action ouvre directement l'éditeur sur cette parcelle ;
+  // sinon, on fait défiler vers la liste et on demande de choisir une parcelle.
+  const onAddSegment = useMemo(
+    () => () => {
+      if (selectedRow) startNew();
+      else alert('Sélectionne une parcelle pour ajouter un segment.');
+    },
+    // startNew capture selectedRow ; on rafraîchit la closure quand la sélection change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedRow],
+  );
   useFabActions(
-    useMemo(() => {
-      if (selectedRow) {
-        return [
-          {
-            id: 'add-segment',
-            label: 'Ajouter un segment',
-            onClick: startNew,
-          },
-        ];
-      }
-      return [
-        {
-          id: 'import-geojson',
-          label: 'Importer GeoJSON',
-          onClick: () => alert("L'import GeoJSON est disponible depuis la page Parcellaire."),
-        },
-      ];
-      // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [selectedRow]),
+    useStandardFabActions({
+      highlight: 'segment',
+      parcelId: selectedId,
+      onAddSegment,
+    }),
   );
 
   /* ============ Rendu ============ */
@@ -232,6 +267,18 @@ export default function AssolementPage() {
           columns={EXPORT_COLUMNS}
           filenameBase={`assolement-${year}`}
           pdfMeta={{ title: `Plan d'assolement ${year} — Domaine Darval` }}
+          extraActions={[
+            {
+              id: 'import-geojson',
+              label: 'Importer GeoJSON…',
+              onClick: () => geojsonInputRef.current?.click(),
+            },
+            {
+              id: 'import-shapefile',
+              label: 'Importer Shapefile (.zip)…',
+              onClick: () => shapefileInputRef.current?.click(),
+            },
+          ]}
         />
       </div>
     </div>
@@ -239,6 +286,29 @@ export default function AssolementPage() {
 
   return (
     <div className="flex h-full flex-col overflow-hidden">
+      {/* Inputs cachés pour l'import fichier (parcelles ajoutées au store partagé) */}
+      <input
+        ref={geojsonInputRef}
+        type="file"
+        accept=".geojson,.json,application/geo+json,application/json"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleGeojsonFile(f);
+          e.target.value = '';
+        }}
+      />
+      <input
+        ref={shapefileInputRef}
+        type="file"
+        accept=".zip,application/zip"
+        hidden
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          if (f) void handleShapefile(f);
+          e.target.value = '';
+        }}
+      />
       <div className="flex-shrink-0 border-b border-(--color-border) bg-(--color-surface) px-3 py-2">
         {topBar}
       </div>

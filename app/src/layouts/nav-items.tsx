@@ -17,11 +17,12 @@ export const NAV_ITEMS: NavItem[] = [
     ),
   },
   {
-    path: '/assolement',
-    label: "Plan d'assolement",
+    path: '/carnet',
+    label: 'Carnet des champs',
     icon: (
       <>
-        <path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z" />
+        <path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4V4z" />
+        <path d="M4 4v16M8 8h8M8 12h8M8 16h5" />
       </>
     ),
   },

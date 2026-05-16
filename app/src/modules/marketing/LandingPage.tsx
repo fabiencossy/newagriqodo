@@ -110,61 +110,36 @@ export default function LandingPage() {
       </section>
 
       <section className="border-t border-(--color-border) bg-(--color-surface) px-4 py-16 sm:px-6 sm:py-20">
-        <div className="mx-auto grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_auto] lg:gap-16">
-          <div>
-            <span className="inline-block rounded-(--radius-pill) bg-(--color-primary)/10 px-3 py-1 text-xs font-semibold tracking-wider text-(--color-primary) uppercase">
-              100 % Open source
-            </span>
-            <h2 className="m-0 mt-3 text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
-              Pas de boîte noire. Pas de lock-in.
-            </h2>
-            <p className="m-0 mt-4 text-base text-(--color-muted)">
-              Tout le code d'AgriQodo est public sur GitHub sous licence AGPL v3. Vous pouvez
-              l'auditer, le modifier, l'héberger chez vous. Vos données restent les vôtres,
-              exportables en un clic (CSV, Excel, GeoJSON).
-            </p>
-            <ul className="m-0 mt-5 list-none space-y-2 p-0 text-sm">
-              <li className="flex items-start gap-2">
-                <CheckBullet />
-                <span>
-                  Code source <strong>auditable</strong> par votre conseiller agronomique
-                </span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckBullet />
-                <span>Auto-hébergement possible (coopérative, école, exploitation isolée)</span>
-              </li>
-              <li className="flex items-start gap-2">
-                <CheckBullet />
-                <span>
-                  <strong>Pérennité garantie</strong> : si Qodo disparaît, le projet continue
-                </span>
-              </li>
-            </ul>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Link
-                to="/open-source"
-                className="inline-flex h-11 items-center gap-2 rounded-(--radius) border border-(--color-primary) bg-(--color-primary) px-5 text-sm font-semibold text-white hover:bg-(--color-primary-hover)"
-              >
-                En savoir plus
-              </Link>
-              <a
-                href="https://github.com/fabiencossy/newagriqodo"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex h-11 items-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-bg) px-5 text-sm font-semibold text-(--color-text) hover:bg-(--color-surface)"
-              >
-                <GitHubMarkIcon />
-                GitHub
-              </a>
-            </div>
+        <div className="mx-auto max-w-3xl text-center">
+          <span className="inline-block rounded-(--radius-pill) bg-(--color-primary)/10 px-3 py-1 text-xs font-semibold tracking-wider text-(--color-primary) uppercase">
+            Transparence
+          </span>
+          <h2 className="m-0 mt-3 text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
+            Pas de boîte noire. Vos données restent les vôtres.
+          </h2>
+          <p className="m-0 mt-4 text-base text-(--color-muted) sm:text-lg">
+            Tout le code d'AgriQodo est public et vérifiable. Aucun risque d'enfermement : vous
+            pouvez à tout moment exporter toutes vos données (CSV, Excel, GeoJSON).
+          </p>
+          <div className="mt-6 grid gap-4 sm:grid-cols-3">
+            <MiniBullet title="Audit possible">
+              Votre conseiller agronomique peut vérifier comment vos données sont traitées.
+            </MiniBullet>
+            <MiniBullet title="Sécurité prouvée">
+              Pas de « faites-nous confiance ». N'importe quel expert peut auditer le code.
+            </MiniBullet>
+            <MiniBullet title="Pérennité garantie">
+              Si Qodo disparaît, le projet reste accessible. Votre outil ne dépend pas d'une seule
+              entreprise.
+            </MiniBullet>
           </div>
-          <div className="hidden lg:block">
-            <div className="rounded-(--radius-lg) border border-(--color-primary)/20 bg-(--color-primary)/5 p-6 text-center">
-              <GitHubMarkIcon size={56} />
-              <p className="m-0 mt-3 text-base font-semibold">AGPL v3</p>
-              <p className="m-0 mt-1 text-xs text-(--color-muted)">Licence copyleft fort</p>
-            </div>
+          <div className="mt-7">
+            <Link
+              to="/open-source"
+              className="inline-flex h-11 items-center gap-2 rounded-(--radius) border border-(--color-primary) bg-(--color-primary) px-5 text-sm font-semibold text-white hover:bg-(--color-primary-hover)"
+            >
+              Notre engagement de transparence
+            </Link>
           </div>
         </div>
       </section>
@@ -294,31 +269,12 @@ function FeatureSection({
   );
 }
 
-function CheckBullet() {
+function MiniBullet({ title, children }: { title: string; children: React.ReactNode }) {
   return (
-    <span className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-(--radius-pill) bg-(--color-primary)/15 text-(--color-primary)">
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        width="12"
-        height="12"
-        aria-hidden="true"
-      >
-        <path d="M20 6 9 17l-5-5" />
-      </svg>
-    </span>
-  );
-}
-
-function GitHubMarkIcon({ size = 16 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="currentColor" width={size} height={size} aria-hidden="true">
-      <path d="M12 .5C5.65.5.5 5.65.5 12c0 5.08 3.29 9.39 7.86 10.91.58.1.79-.25.79-.56 0-.28-.01-1.02-.02-2-3.2.69-3.87-1.54-3.87-1.54-.52-1.32-1.27-1.67-1.27-1.67-1.04-.71.08-.7.08-.7 1.15.08 1.76 1.18 1.76 1.18 1.02 1.75 2.69 1.25 3.34.95.1-.74.4-1.25.72-1.54-2.55-.29-5.24-1.28-5.24-5.69 0-1.26.45-2.29 1.18-3.09-.12-.29-.51-1.46.11-3.04 0 0 .97-.31 3.18 1.18a11 11 0 0 1 5.79 0c2.2-1.49 3.17-1.18 3.17-1.18.63 1.58.24 2.75.12 3.04.73.8 1.18 1.83 1.18 3.09 0 4.42-2.69 5.4-5.25 5.68.41.36.78 1.05.78 2.12 0 1.53-.01 2.77-.01 3.14 0 .31.21.67.8.56C20.21 21.39 23.5 17.08 23.5 12 23.5 5.65 18.35.5 12 .5Z" />
-    </svg>
+    <div className="rounded-(--radius-lg) border border-(--color-border) bg-(--color-bg) p-4 text-left">
+      <p className="m-0 text-sm font-semibold">{title}</p>
+      <p className="m-0 mt-1 text-xs text-(--color-muted)">{children}</p>
+    </div>
   );
 }
 

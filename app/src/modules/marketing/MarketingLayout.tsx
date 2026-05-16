@@ -11,7 +11,7 @@ import { useState } from 'react';
 
 const NAV = [
   { path: '/fonctionnalites', label: 'Fonctionnalités' },
-  { path: '/open-source', label: 'Open source' },
+  { path: '/open-source', label: 'Transparence' },
   { path: '/tarifs', label: 'Tarifs' },
   { path: '/contact', label: 'Contact' },
 ];
@@ -147,7 +147,7 @@ export default function MarketingLayout() {
               </li>
               <li>
                 <Link to="/open-source" className="hover:text-(--color-primary)">
-                  Open source
+                  Transparence
                 </Link>
               </li>
               <li>

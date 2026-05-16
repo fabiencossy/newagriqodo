@@ -16,11 +16,17 @@ import LoginPage from './modules/auth/LoginPage';
 import ResetPasswordPage from './modules/auth/ResetPasswordPage';
 import AcceptInvitePage from './modules/auth/AcceptInvitePage';
 import { initAuthListener, useAuth } from './modules/auth/auth.store';
+import { initFarmsBootstrap } from './modules/farms/farms.store';
+import { initProductsBootstrap } from './modules/products/products.store';
 
 export default function App() {
   const { mode } = useAuth();
 
-  useEffect(() => initAuthListener(), []);
+  useEffect(() => {
+    initFarmsBootstrap();
+    initProductsBootstrap();
+    return initAuthListener();
+  }, []);
 
   // Pas connecté : login + reset password + accept invite accessibles.
   if (mode === 'logged-out') {

@@ -195,7 +195,9 @@ log "Configuration Caddy"
 cp "$COMPOSE_DIR/Caddyfile" /etc/caddy/Caddyfile
 # Remplace email + domaines si différents des defaults
 sed -i "s|admin@qodo.ch|$ADMIN_EMAIL|g" /etc/caddy/Caddyfile
-systemctl reload caddy
+# enable --now : démarre si arrêté, restart si déjà running. Plus robuste que reload.
+systemctl enable --now caddy
+systemctl reload caddy 2>/dev/null || systemctl restart caddy
 
 # --- Backup quotidien ---
 log "Activation backup quotidien (cron 03:15)"

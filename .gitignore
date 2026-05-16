@@ -14,6 +14,9 @@
 .env
 .env.local
 
+# Fichiers rendus avec secrets substitués (jamais commit)
+**/kong.rendered.yml
+
 # Dependencies (sécurité — devraient être ignorés par sous-projets aussi)
 node_modules/
 

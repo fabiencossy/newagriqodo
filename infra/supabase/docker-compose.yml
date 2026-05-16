@@ -242,7 +242,10 @@ services:
       SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
       SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
     volumes:
-      - ./kong.yml:/var/lib/kong/kong.yml:ro
+      # kong.rendered.yml = kong.yml avec les vars d'env substituées
+      # (Kong 2.x ne fait pas d'interpolation $VAR dans la config YAML).
+      # Généré par scripts/render-kong.sh avant le démarrage.
+      - ./kong.rendered.yml:/var/lib/kong/kong.yml:ro
     ports:
       # Exposé localhost — le reverse proxy externe forward HTTPS vers ce port
       - '127.0.0.1:8000:8000'

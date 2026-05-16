@@ -101,8 +101,15 @@ if [ ! -d "$REPO_DIR/.git" ]; then
   fi
   git clone "$REPO_URL" "$REPO_DIR"
 else
-  log "Étape 5/7 — Repo déjà cloné, pull des dernières modifs"
-  git -C "$REPO_DIR" pull --ff-only
+  log "Étape 5/7 — Repo déjà cloné"
+  # `git pull` peut échouer si l'agent SSH n'est pas forwardé sous sudo.
+  # Pas grave : le repo a été cloné juste avant par l'utilisateur, il est à jour.
+  # Pour mettre à jour plus tard : faire `cd /opt/newagri && git pull` SANS sudo.
+  if git -C "$REPO_DIR" pull --ff-only 2>/dev/null; then
+    log "Pull OK"
+  else
+    warn "git pull a échoué (probablement agent SSH non disponible sous sudo) — on continue avec l'état actuel du repo"
+  fi
 fi
 
 # ============================================================================

@@ -190,6 +190,10 @@ for i in {1..30}; do
   sleep 2
 done
 
+# --- Alignement des rôles Postgres (auth, rest, realtime, storage) ---
+log "Alignement des rôles Postgres avec le POSTGRES_PASSWORD"
+bash "$COMPOSE_DIR/scripts/init-roles.sh" || warn "init-roles a échoué — relance manuellement : sudo bash $COMPOSE_DIR/scripts/init-roles.sh"
+
 # --- Caddy ---
 log "Configuration Caddy"
 cp "$COMPOSE_DIR/Caddyfile" /etc/caddy/Caddyfile

@@ -150,6 +150,9 @@ services:
       ERL_AFLAGS: -proto_dist inet_tcp
       ENABLE_TAILSCALE: 'false'
       DNS_NODES: "''"
+      # Bug image v2.30.34 : RLIMIT_NOFILE doit être défini, sinon run.sh
+      # plante avec "RLIMIT_NOFILE: unbound variable" et restart en boucle.
+      RLIMIT_NOFILE: '10000'
 
   # --------------------------------------------------------------------------
   # 5. Storage — uploads (photos parcelles, justificatifs, exports PDF)

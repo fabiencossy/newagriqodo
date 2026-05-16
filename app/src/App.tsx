@@ -20,6 +20,9 @@ import { initFarmsBootstrap } from './modules/farms/farms.store';
 import { initProductsBootstrap } from './modules/products/products.store';
 import { initUsersBootstrap } from './modules/users/users.store';
 import { initParcelsBootstrap } from './modules/parcellaire/parcellaire.store';
+import { initParcelGroupsBootstrap } from './modules/parcel-groups/parcel-groups.store';
+import { initAssolementBootstrap } from './modules/assolement/assolement.store';
+import { initCarnetBootstrap } from './modules/carnet/carnet.store';
 
 export default function App() {
   const { mode } = useAuth();
@@ -29,6 +32,9 @@ export default function App() {
     initProductsBootstrap();
     initUsersBootstrap();
     initParcelsBootstrap();
+    initParcelGroupsBootstrap();
+    initAssolementBootstrap();
+    initCarnetBootstrap();
     return initAuthListener();
   }, []);
 

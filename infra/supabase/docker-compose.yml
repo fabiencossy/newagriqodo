@@ -230,7 +230,7 @@ services:
     depends_on:
       - auth
       - rest
-      - realtime
+      # - realtime  (désactivé MVP, cf. service realtime commenté plus haut)
       - storage
     environment:
       KONG_DATABASE: 'off'

@@ -147,22 +147,32 @@ npm run lint        # ESLint (0 warning attendu)
 
 **État git** : pas tout commité (voir `git status`). Session 3 = grosse réorg docs + nouveaux fichiers `.claude/`.
 
-## Hooks Claude Code en place (session 3)
+## Hooks Claude Code en place
 
-`.claude/settings.json` branche 9 scripts dans `.claude/scripts/` :
+`.claude/settings.json` (à fusionner depuis `.claude/settings.security.json`) branche les scripts dans `.claude/scripts/`. Le `$` prefix dans les noms ci-dessous = bloquant (exit 2).
 
-- **PreToolUse Bash** : `block-dangerous-bash.sh` (rm -rf, push --force, reset --hard, etc.)
-- **PreToolUse Edit/Write** : `protect-darval.sh` (bloque modif darval.geojson.json)
-- **PostToolUse Edit/Write** :
-  - `post-edit-check.sh` — typecheck + lint sur fichiers app/src/
-  - `check-no-emoji-global.sh` — interdit emoji partout dans app/src/
-  - `check-component-conventions.sh` — radius CSS vars, dark, Lucide, test associé
-  - `check-page-consistency.sh` — *Page.tsx doit avoir SearchBar + ViewSwitcher + FAB + Export
-  - `validate-cultures.sh` — couleurs hex uniques + champs complets
+### Bloquants (PreToolUse)
+- `$ block-dangerous-bash.sh` (Bash) — rm -rf, push --force, reset --hard, etc.
+- `$ protect-darval.sh` (Edit/Write) — bloque modif `darval.geojson.json`
+- `$ block-secrets-in-edit.sh` (Edit/Write) — JWT, clés API (Resend/Stripe/OpenAI/AWS/GH), private keys, passwords
+- `$ block-env-files.sh` (Edit/Write) — interdit `.env*` réels (autorise `.env.example`)
+- `$ block-service-key-front.sh` (Edit/Write) — interdit `SERVICE_KEY` / `service_role` / `supabase.auth.admin` dans `app/src/`
+
+### Informatifs (PostToolUse — warning sans bloquer)
+- `post-edit-check.sh` — typecheck + lint sur fichiers app/src/
+- `check-no-emoji-global.sh` — interdit emoji partout dans app/src/
+- `check-component-conventions.sh` — radius CSS vars, dark, Lucide, test associé
+- `check-page-consistency.sh` — *Page.tsx doit avoir SearchBar + ViewSwitcher + FAB + Export
+- `validate-cultures.sh` — couleurs hex uniques + champs complets
+- `check-rls-coverage.sh` — table créée dans migration → policy RLS associée
+- `check-xss-risks.sh` — dangerouslySetInnerHTML, eval, .innerHTML =, redirections dynamiques
+- `check-debug-leaks.sh` — console.log avec password/token/session
+- `check-cors-wildcard.sh` — CORS `*` dans Caddyfile/docker-compose/kong, ports DB exposés
+- `check-deps-audit.sh` — CVE high+ après modif `package.json`
+
+### Autres
 - **Stop** : `run-changed-tests.sh` (vitest related sur fichiers modifiés)
 - **SessionStart** : `session-start-recap.sh` (git status + last commit)
-
-Tous non-bloquants sauf les Pre (qui exit 2 = blocage propre).
 
 ## Agents Claude Code en place (session 3)
 
@@ -171,8 +181,26 @@ Tous non-bloquants sauf les Pre (qui exit 2 = blocage propre).
 - **component-validator** — Audite un nouveau composant React (conventions visuelles, TS, tests, a11y).
 - **ux-reviewer** — Audite une *Page.tsx (squelette, multi-select tables, z-index, responsive).
 - **agronome-validator** — Vérifie cohérence agricole (cultures Agridéa, dates semis, normes OEngrais).
+- **security-auditor** — Audit OWASP/RLS/secrets/CORS complet. Avant chaque deploy prod ou après modif auth/RLS.
+- **rls-reviewer** — Review d'une migration SQL touchant les Row-Level Security policies.
+- **secrets-scanner** — Scan working tree + git history pour JWT / clés API / private keys / passwords fuités.
 
 Invocation : `Task` tool avec `subagent_type: "component-validator"` etc.
+
+## Sécurité — règles non-négociables
+
+Détail complet : `SECURITY.md`. Les hooks `block-*.sh` (PreToolUse) bloquent les violations en temps réel.
+
+- **Jamais `service_role` côté front** — uniquement `ANON_KEY`. Hook `block-service-key-front.sh` exit 2.
+- **Jamais éditer `.env`** — uniquement `.env.example`. Secrets générés par `bootstrap.sh`. Hook `block-env-files.sh` exit 2.
+- **Jamais de secret en dur** (JWT, clé API, password, private key). Hook `block-secrets-in-edit.sh` exit 2.
+- **RLS activée partout** — toute nouvelle table farm-scope = `enable row level security` + policies `is_farm_member()` / `is_farm_admin()`. Hook `check-rls-coverage.sh` warn si oublié.
+- **Mode démo étanche** — n'appelle JAMAIS Supabase. Pattern dual-mode (`getAuth().mode !== 'authenticated' || !supabase`) obligatoire dans tous les stores. `enterDemoMode()` purge la session Supabase.
+- **Inscription publique désactivée par défaut** (`DISABLE_SIGNUP=true` serveur + `VITE_DISABLE_SIGNUP=true` front). Comptes via invitation (RPC `accept_farm_invitation`).
+- **Ports DB jamais publics** — Postgres + Kong bindés `127.0.0.1` uniquement.
+- **CORS restreints** — uniquement `newagri.qodo.ch` + `localhost:5173`. Jamais `*`. Configuré aux 2 niveaux (Caddy + Kong).
+- **Pas de `console.log(user/session)`** — contiennent le JWT. Hook `check-debug-leaks.sh` warn.
+- **Avant chaque deploy prod** : `Task` `security-auditor` sur le diff.
 
 ## Prochaines priorités (en attente)
 

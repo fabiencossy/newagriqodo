@@ -71,7 +71,15 @@ export function useAuth(): AuthState {
 
 // — Démo —————————————————————————————————————————————————————————————
 
+/**
+ * Bascule en mode démo. Purge toute session Supabase active avant le
+ * switch — sinon le JWT resterait en localStorage et serait accessible
+ * à n'importe quel script tiers.
+ */
 export function enterDemoMode(): void {
+  if (supabase) {
+    void supabase.auth.signOut();
+  }
   setState({ mode: 'demo' });
 }
 
@@ -225,13 +233,4 @@ export function initAuthListener(): () => void {
   return () => {
     sub.subscription.unsubscribe();
   };
-}
-
-// — Compat (ancien API) ————————————————————————————————————————————
-
-/**
- * @deprecated Utilisé par d'anciens tests / écrans. Utiliser `signInWithPassword`.
- */
-export function loginAs(email: string): void {
-  setState({ mode: 'authenticated', email });
 }

@@ -10,6 +10,12 @@ import {
 
 type Tab = 'signin' | 'signup' | 'forgot';
 
+// Inscription publique désactivée par défaut. Doit matcher la variable
+// serveur DISABLE_SIGNUP de GoTrue : sinon l'UI propose un signup que le
+// serveur refusera, mauvaise UX. En B2B agricole, les comptes se créent
+// par invitation (cf. /accept-invite).
+const SIGNUP_ENABLED = import.meta.env.VITE_DISABLE_SIGNUP !== 'true';
+
 /**
  * Page de connexion / inscription / mot de passe oublié.
  *
@@ -43,6 +49,12 @@ export default function LoginPage() {
 
     if (!email.trim()) return;
     if (tab !== 'forgot' && !password) return;
+    if (tab === 'signup' && !SIGNUP_ENABLED) {
+      setError(
+        'La création de compte publique est désactivée. Demandez à votre administrateur de vous envoyer une invitation.',
+      );
+      return;
+    }
     if (tab === 'signup' && password.length < 8) {
       setError('Le mot de passe doit faire au moins 8 caractères.');
       return;
@@ -123,14 +135,16 @@ export default function LoginPage() {
                 : 'Connectez-vous à votre exploitation.'}
           </p>
 
-          <div className="mt-5 flex gap-1 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-1">
-            <TabButton active={tab === 'signin'} onClick={() => switchTab('signin')}>
-              Connexion
-            </TabButton>
-            <TabButton active={tab === 'signup'} onClick={() => switchTab('signup')}>
-              Inscription
-            </TabButton>
-          </div>
+          {SIGNUP_ENABLED && (
+            <div className="mt-5 flex gap-1 rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-1">
+              <TabButton active={tab === 'signin'} onClick={() => switchTab('signin')}>
+                Connexion
+              </TabButton>
+              <TabButton active={tab === 'signup'} onClick={() => switchTab('signup')}>
+                Inscription
+              </TabButton>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="mt-4 space-y-3" noValidate>
             <Field label="Email">

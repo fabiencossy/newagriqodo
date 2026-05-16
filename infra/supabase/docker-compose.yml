@@ -69,7 +69,10 @@ services:
 
       GOTRUE_SITE_URL: ${APP_PUBLIC_URL}
       GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
-      GOTRUE_DISABLE_SIGNUP: 'false'
+      # Inscription publique désactivée par défaut : les comptes se créent
+      # uniquement via invitation (admin de la farm). Met à 'false' UNIQUEMENT
+      # pendant un beta public bien identifié + protégé par captcha.
+      GOTRUE_DISABLE_SIGNUP: ${DISABLE_SIGNUP:-true}
 
       GOTRUE_JWT_SECRET: ${JWT_SECRET}
       GOTRUE_JWT_EXP: 3600

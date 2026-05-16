@@ -3,7 +3,7 @@ import type { Intervention, InterventionCategory } from './carnet.types';
 import { CATEGORY_COLORS, CATEGORY_LABELS } from './carnet.helpers';
 import { InterventionTypeIcon } from './InterventionTypeIcon';
 import type { ParcelDetail } from '../parcellaire/parcellaire.mocks';
-import { ProductSelect } from '../products/ProductSelect';
+import { ProductPicker } from '../products/ProductPicker';
 import { getProductById } from '../products/products.store';
 import type { Product, ProductType } from '../products/products.types';
 import { UserSelect } from '../users/UserSelect';
@@ -59,6 +59,11 @@ export function InterventionForm({
     ...initial,
   });
   const [bbchHelpOpen, setBbchHelpOpen] = useState(false);
+  const [productPickerOpen, setProductPickerOpen] = useState(false);
+  // Multi-sélection : parcelles supplémentaires (en plus de draft.parcelId).
+  // Au submit, on crée 1 intervention par parcelle (avec id distinct par parcelle).
+  const [additionalParcelIds, setAdditionalParcelIds] = useState<ReadonlyArray<string>>([]);
+  const [parcelPickerOpen, setParcelPickerOpen] = useState(false);
 
   const setField = <K extends keyof Intervention>(key: K, value: Intervention[K] | undefined) => {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -147,8 +152,9 @@ export function InterventionForm({
 
   const submit = () => {
     if (!draft.parcelId || !draft.date || !draft.category) return;
+    const baseId = draft.id ?? `INT-${draft.parcelId}-${draft.date}-${Date.now()}`;
     const intervention: Intervention = {
-      id: draft.id ?? `INT-${draft.parcelId}-${draft.date}-${Date.now()}`,
+      id: baseId,
       parcelId: draft.parcelId,
       date: draft.date,
       category: draft.category,
@@ -175,6 +181,16 @@ export function InterventionForm({
       notes: draft.notes,
     };
     onSave(intervention);
+    // Multi-sélection : crée une copie identique pour chaque parcelle additionnelle,
+    // avec id unique par parcelle. Le caller (CarnetPage / ParcelleDetailPage) reçoit
+    // chaque intervention via onSave et délègue à addInterventions du store.
+    for (const otherParcelId of additionalParcelIds) {
+      onSave({
+        ...intervention,
+        id: `${baseId}-${otherParcelId}`,
+        parcelId: otherParcelId,
+      });
+    }
   };
 
   /**
@@ -266,7 +282,78 @@ export function InterventionForm({
                 />
               )}
             </div>
+            {/* Multi-sélection : appliquer à d'autres parcelles (uniquement en création) */}
+            {isNew && !lockedParcelId && (
+              <>
+                {additionalParcelIds.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    {additionalParcelIds.map((pid) => {
+                      const p = parcels.find((x) => x.id === pid);
+                      return (
+                        <span
+                          key={pid}
+                          className="inline-flex items-center gap-1.5 rounded-(--radius-pill) border border-(--color-border) bg-[#fbfbf9] py-1 pr-1 pl-2.5 text-xs"
+                        >
+                          <span className="font-medium">{p?.name ?? pid}</span>
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setAdditionalParcelIds((curr) => curr.filter((x) => x !== pid))
+                            }
+                            aria-label={`Retirer ${p?.name ?? pid}`}
+                            className="inline-flex h-5 w-5 items-center justify-center rounded-(--radius-pill) text-(--color-muted) hover:bg-[#f1f1ee] hover:text-(--color-text)"
+                          >
+                            <svg
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth={2}
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              width={10}
+                              height={10}
+                              aria-hidden="true"
+                            >
+                              <path d="M18 6 6 18M6 6l12 12" />
+                            </svg>
+                          </button>
+                        </span>
+                      );
+                    })}
+                  </div>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setParcelPickerOpen(true)}
+                  className="mt-2 inline-flex items-center gap-1.5 text-xs font-medium text-(--color-primary) hover:underline"
+                >
+                  + Appliquer à d'autres parcelles
+                </button>
+                {additionalParcelIds.length > 0 && (
+                  <p className="m-0 mt-1 text-[11px] text-(--color-muted)">
+                    {additionalParcelIds.length + 1} interventions seront créées (1 par parcelle,
+                    identiques).
+                  </p>
+                )}
+              </>
+            )}
           </FormField>
+
+          {/* Modal multi-sélection parcelles */}
+          {parcelPickerOpen && (
+            <MultiParcelPicker
+              parcels={parcels}
+              excludedIds={
+                draft.parcelId ? [draft.parcelId, ...additionalParcelIds] : additionalParcelIds
+              }
+              initiallySelected={additionalParcelIds}
+              onConfirm={(ids) => {
+                setAdditionalParcelIds(ids);
+                setParcelPickerOpen(false);
+              }}
+              onClose={() => setParcelPickerOpen(false)}
+            />
+          )}
 
           {/* Date */}
           <FormField label="Date">
@@ -281,18 +368,43 @@ export function InterventionForm({
           {/* Produit (depuis catalogue) — pour sowing / fertilization / phyto */}
           {productType && (
             <FormField label={productLabel(productType)}>
-              <ProductSelect
-                type={productType}
-                value={draft.productId}
-                onChange={handleProductChange}
-                authorizedForCrop={productType === 'phyto' ? parcel?.culture : undefined}
-              />
+              <button
+                type="button"
+                onClick={() => setProductPickerOpen(true)}
+                className={[
+                  'flex h-10 w-full items-center gap-2 rounded-(--radius) border bg-(--color-surface) px-3 text-left text-sm transition-colors hover:bg-[#fbfbf9]',
+                  draft.productName
+                    ? 'border-(--color-border)'
+                    : 'border-dashed border-(--color-border) text-(--color-muted)',
+                ].join(' ')}
+              >
+                <span className="min-w-0 flex-1 truncate">
+                  {draft.productName ?? `Sélectionner ${productLabel(productType).toLowerCase()}…`}
+                </span>
+                <span className="shrink-0 text-(--color-muted)">
+                  <ChevronIcon />
+                </span>
+              </button>
               {draft.ofagNumber && (
                 <p className="m-0 mt-1 font-mono text-[11px] text-(--color-muted)">
                   Homologation OFAG : <strong>{draft.ofagNumber}</strong>
                 </p>
               )}
             </FormField>
+          )}
+
+          {/* Modal ProductPicker (plein écran mobile / grand desktop) */}
+          {productType && productPickerOpen && (
+            <ProductPicker
+              type={productType}
+              authorizedForCrop={productType === 'phyto' ? parcel?.culture : undefined}
+              currentValue={draft.productId}
+              onSelect={(product) => {
+                handleProductChange(product);
+                setProductPickerOpen(false);
+              }}
+              onClose={() => setProductPickerOpen(false)}
+            />
           )}
 
           {/* Champs spécifiques par catégorie */}
@@ -405,36 +517,56 @@ export function InterventionForm({
             category === 'fertilization' ||
             category === 'phyto' ||
             category === 'irrigation') && (
-            <div className="grid grid-cols-2 gap-3">
-              <FormField label="Dose">
-                <input
-                  type="number"
-                  step="0.1"
-                  value={draft.doseValue ?? ''}
-                  onChange={(e) =>
-                    handleDoseChange(e.target.value ? Number(e.target.value) : undefined)
-                  }
-                  className={inputClass}
-                />
-              </FormField>
-              <FormField label="Unité">
-                <select
-                  value={draft.doseUnit ?? 'kg/ha'}
-                  onChange={(e) => setField('doseUnit', e.target.value)}
-                  className={inputClass}
-                >
-                  <option value="kg/ha">kg/ha</option>
-                  <option value="L/ha">L/ha</option>
-                  <option value="g/ha">g/ha</option>
-                  <option value="mL/ha">mL/ha</option>
-                  <option value="kg">kg</option>
-                  <option value="L">L</option>
-                  <option value="grains/ha">grains/ha</option>
-                  <option value="m³/ha">m³/ha</option>
-                  <option value="t/ha">t/ha</option>
-                </select>
-              </FormField>
-            </div>
+            <>
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="Dose">
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={draft.doseValue ?? ''}
+                    onChange={(e) =>
+                      handleDoseChange(e.target.value ? Number(e.target.value) : undefined)
+                    }
+                    className={inputClass}
+                  />
+                </FormField>
+                <FormField label="Unité">
+                  <select
+                    value={draft.doseUnit ?? 'kg/ha'}
+                    onChange={(e) => setField('doseUnit', e.target.value)}
+                    className={inputClass}
+                  >
+                    <option value="kg/ha">kg/ha</option>
+                    <option value="L/ha">L/ha</option>
+                    <option value="g/ha">g/ha</option>
+                    <option value="mL/ha">mL/ha</option>
+                    <option value="kg">kg</option>
+                    <option value="L">L</option>
+                    <option value="grains/ha">grains/ha</option>
+                    <option value="m³/ha">m³/ha</option>
+                    <option value="t/ha">t/ha</option>
+                  </select>
+                </FormField>
+              </div>
+              {/* Total calculé : dose × surface (parcelle ou surface traitée si précisée) */}
+              {(() => {
+                const total = computeDoseTotal(
+                  draft.doseValue,
+                  draft.doseUnit,
+                  draft.surfaceTreatedHa ?? parcel?.surfaceHa,
+                );
+                if (!total) return null;
+                return (
+                  <div className="rounded-(--radius-sm) border border-(--color-border) bg-[#fbfbf9] px-3 py-2 text-xs">
+                    <span className="text-(--color-muted)">Total estimé : </span>
+                    <strong className="font-mono tabular-nums">{total.formatted}</strong>
+                    <span className="ml-2 text-(--color-muted)">
+                      ({draft.doseValue} {draft.doseUnit} × {total.surfaceHa.toFixed(2)} ha)
+                    </span>
+                  </div>
+                );
+              })()}
+            </>
           )}
 
           {/* Récolte */}
@@ -635,6 +767,30 @@ function fmtDate(iso: string): string {
   return `${d}/${m}/${y}`;
 }
 
+/**
+ * Calcule le total absolu d'une dose appliquée sur une surface.
+ *
+ * Si l'unité est "par hectare" (kg/ha, L/ha, grains/ha, m³/ha, t/ha, g/ha, mL/ha),
+ * multiplie par la surface pour obtenir le total. Si l'unité est déjà absolue
+ * (kg, L sans /ha), retourne null car le total est égal à la dose.
+ *
+ * Le label formaté gère les grandes valeurs (séparateur de milliers) et
+ * conserve la précision adaptée (entiers pour grains/g, 1 décimale sinon).
+ */
+function computeDoseTotal(
+  doseValue: number | undefined,
+  doseUnit: string | undefined,
+  surfaceHa: number | undefined,
+): { formatted: string; surfaceHa: number } | null {
+  if (!doseValue || !doseUnit || !surfaceHa || surfaceHa <= 0) return null;
+  if (!doseUnit.includes('/ha')) return null; // dose absolue, total = dose
+  const total = doseValue * surfaceHa;
+  const baseUnit = doseUnit.replace('/ha', '');
+  const isInteger = baseUnit === 'grains' || baseUnit === 'g' || baseUnit === 'mL';
+  const formatted = `${isInteger ? Math.round(total).toLocaleString('fr-CH') : total.toLocaleString('fr-CH', { maximumFractionDigits: 1 })} ${baseUnit}`;
+  return { formatted, surfaceHa };
+}
+
 function MeteoSuissePlaceholderBadge() {
   return (
     <span
@@ -718,5 +874,152 @@ function CloseIcon() {
     >
       <path d="M18 6 6 18M6 6l12 12" />
     </svg>
+  );
+}
+
+function ChevronIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width={14}
+      height={14}
+      aria-hidden="true"
+    >
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
+}
+
+/**
+ * Modal multi-sélection de parcelles. Utilisé pour "Appliquer à d'autres parcelles"
+ * dans le formulaire d'intervention (création d'une intervention identique sur N parcelles).
+ */
+function MultiParcelPicker({
+  parcels,
+  excludedIds,
+  initiallySelected,
+  onConfirm,
+  onClose,
+}: {
+  parcels: ReadonlyArray<ParcelDetail>;
+  /** Parcelles déjà prises (parcelle principale + déjà ajoutées) — affichées en grisé. */
+  excludedIds: ReadonlyArray<string>;
+  initiallySelected: ReadonlyArray<string>;
+  onConfirm: (ids: ReadonlyArray<string>) => void;
+  onClose: () => void;
+}) {
+  const [query, setQuery] = useState('');
+  const [selected, setSelected] = useState<Set<string>>(new Set(initiallySelected));
+
+  const excludedSet = new Set(excludedIds);
+  // La parcelle principale est dans excludedIds mais ne doit pas apparaître du tout.
+  const principalId = excludedIds[0];
+
+  const available = useMemo(
+    () =>
+      parcels
+        .filter((p) => p.id !== principalId)
+        .filter((p) => {
+          if (!query.trim()) return true;
+          const q = query.toLowerCase();
+          return p.name.toLowerCase().includes(q) || p.id.toLowerCase().includes(q);
+        })
+        .sort((a, b) => a.name.localeCompare(b.name)),
+    [parcels, principalId, query],
+  );
+
+  const toggle = (id: string) => {
+    setSelected((curr) => {
+      const next = new Set(curr);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  return (
+    <div className="fixed inset-0 z-[1300] flex flex-col bg-(--color-surface) md:items-center md:justify-center md:bg-black/40 md:p-6 md:backdrop-blur-sm">
+      <div className="flex h-full w-full flex-col overflow-hidden bg-(--color-surface) md:h-[80vh] md:max-w-[560px] md:rounded-(--radius-lg) md:border md:border-(--color-border) md:shadow-(--shadow-popup)">
+        <header className="flex items-center gap-2 border-b border-(--color-border) px-4 py-3">
+          <div className="min-w-0 flex-1">
+            <h2 className="m-0 text-sm font-semibold">Appliquer à d'autres parcelles</h2>
+            <p className="m-0 mt-0.5 text-xs text-(--color-muted)">
+              {selected.size} sélectionnée{selected.size > 1 ? 's' : ''} sur {available.length}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Fermer"
+            className="inline-flex h-9 w-9 items-center justify-center rounded-(--radius-sm) text-(--color-muted) hover:bg-[#f1f1ee] hover:text-(--color-text)"
+          >
+            <CloseIcon />
+          </button>
+        </header>
+        <div className="border-b border-(--color-border) p-3">
+          <input
+            type="search"
+            autoFocus
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Rechercher une parcelle…"
+            className="h-10 w-full rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-sm focus:border-(--color-primary) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/15"
+          />
+        </div>
+        <ul className="m-0 flex-1 list-none overflow-y-auto p-0">
+          {available.map((p) => {
+            const isExcluded = excludedSet.has(p.id) && p.id !== principalId;
+            const isSelected = selected.has(p.id);
+            return (
+              <li key={p.id}>
+                <label
+                  className={[
+                    'flex cursor-pointer items-center gap-3 border-b border-(--color-border) px-4 py-3 text-sm hover:bg-[#fbfbf9]',
+                    isSelected ? 'bg-(--color-primary)/5' : '',
+                    isExcluded ? 'cursor-not-allowed opacity-50' : '',
+                  ].join(' ')}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    disabled={isExcluded}
+                    onChange={() => toggle(p.id)}
+                    className="h-4 w-4 accent-(--color-primary)"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate font-medium">{p.name}</div>
+                    <div className="font-mono text-[11px] text-(--color-muted)">
+                      {p.id} · {p.surfaceHa.toFixed(2)} ha
+                      {p.culture ? ` · ${p.culture}` : ''}
+                    </div>
+                  </div>
+                </label>
+              </li>
+            );
+          })}
+        </ul>
+        <footer className="flex items-center gap-2 border-t border-(--color-border) p-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="inline-flex h-10 items-center rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-4 text-sm font-medium hover:bg-[#f8f8f5]"
+          >
+            Annuler
+          </button>
+          <button
+            type="button"
+            onClick={() => onConfirm([...selected])}
+            className="ml-auto inline-flex h-10 items-center rounded-(--radius) border border-(--color-primary) bg-(--color-primary) px-5 text-sm font-medium text-white hover:bg-(--color-primary-hover)"
+          >
+            Confirmer ({selected.size})
+          </button>
+        </footer>
+      </div>
+    </div>
   );
 }

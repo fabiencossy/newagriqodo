@@ -38,10 +38,11 @@ NewagriQodo/
 
 ## Modules implémentés
 
-### Parcellaire (`/parcellaire`)
+### Parcellaire (`/parcellaire`) — 4 vues (Fusion v2)
 - **27 parcelles réelles** du Domaine Darval (chargées depuis `app/src/modules/parcellaire/darval.geojson.json` — export VD GELAN 2026)
 - Mapping affectation Agridéa → culture du catalogue (Blé d'automne, Maïs ensilage, Prairie temporaire, Prairie naturelle, Pâturage, Prairie extensive, Forêt, Surface improductive)
-- 3 vues : Carte (Leaflet satellite Swisstopo) / Table / Dashboard
+- **4 vues** : Carte (Leaflet satellite Swisstopo) / Table / **Timeline (Gantt 12 mois × parcelles, sélecteur Campagne)** / Dashboard
+- Vue Timeline : édition inline des segments (clic segment ouvre `AssolementSegmentModal`, bouton + par ligne pour ajouter)
 - SearchBar avec filtre par groupes de cultures (Blé, Orge, Maïs, Colza, Betterave, Prairie, Jachère)
 - **Table avec multi-sélection** : checkbox + barre d'actions groupées (Fusionner, Dupliquer, Archiver, Exporter, Supprimer). Sur mobile : un seul bouton "Actions ⌄".
 - **Panneau riche** au clic sur parcelle (carte) : Plan d'assolement (timeline 12 mois + culture du jour), Stade phéno (mock BBCH), Bilan de fumure N/P/K (mock), Dernières interventions (mock), Notes. Footer "Ouvrir la fiche complète".
@@ -232,6 +233,15 @@ Invocation : `Task` tool avec `subagent_type: "component-validator"` etc.
 - **Drag des sommets** pendant dessin : chaque sommet est un marker draggable (icône divIcon violette ronde), update temps réel de la preview line.
 - Nom culture affiché sur slots Timeline assolement (variant row aussi).
 - Footer parcelle z-[1000] (chevauchement Leaflet corrigé).
+
+### Suite session 3 (2026-05-16) — Quick wins + fusion v2
+
+- **Calcul auto total dose** : sous le champ Dose, affichage temps réel du total absolu (ex. `180 grains/ha × 1.34 ha = 241 200 grains`). Helper `computeDoseTotal`.
+- **ProductPicker modal** : sélecteur produit plein écran (mobile) / grand modal (desktop) avec recherche libre, regroupement par catégorie, infos visibles (OFAG, composition, variété), filtre cultures autorisées pour phyto avec toggle "voir tous".
+- **Multi-sélection parcelles** dans `InterventionForm` : bouton "+ Appliquer à d'autres parcelles" → `MultiParcelPicker` modal. Au submit, crée N interventions identiques (1 par parcelle, id unique).
+- **Carte plein écran** : onglet Localisation prend toute la hauteur (`calc(100vh-220px)`). Bouton "Plein écran" → overlay `fixed inset-x-0 top-[104px] bottom-0 z-[900]` (sous le FAB mais au-dessus du contenu).
+- **FarmSwitcher** : module `farms/` (types, mocks 3 exploitations, store), composant dropdown dans footer sidebar. Multi-tenancy MVP visuel, filtrage des données Phase 3.
+- **Fusion v2 Parcellaire/Assolement** : 4e vue **Timeline** dans `ViewSwitcher` Parcellaire. Sélecteur Campagne conditionnel (visible uniquement view='timeline'). Édition inline des segments via `AssolementSegmentModal`. Route `/assolement` toujours fonctionnelle pour rétrocompat.
 
 ### Quick fixes
 - Bloc Stade phéno mock supprimé.

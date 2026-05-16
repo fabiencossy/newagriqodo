@@ -5,6 +5,7 @@ import { Fab } from './Fab';
 import { FabProvider } from './FabContext';
 import { InterventionFormProvider } from './InterventionFormProvider';
 import { NAV_ITEMS, type NavItem } from './nav-items';
+import { FarmSwitcher } from '../modules/farms/FarmSwitcher';
 
 const BASE_SVG = {
   viewBox: '0 0 24 24',
@@ -143,17 +144,9 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </ul>
 
-      {/* Footer */}
+      {/* Footer : sélecteur d'exploitation (multi-tenancy MVP) */}
       <div className="border-t border-(--color-border) p-3">
-        <div className="flex items-center gap-2 rounded-(--radius-sm) px-2 py-1.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-(--radius-pill) bg-(--color-primary)/10 text-sm font-semibold text-(--color-primary)">
-            FC
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-medium">Fabien Cossy</div>
-            <div className="truncate text-xs text-(--color-muted)">Domaine Darval</div>
-          </div>
-        </div>
+        <FarmSwitcher />
       </div>
     </nav>
   );

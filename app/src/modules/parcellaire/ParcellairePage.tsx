@@ -19,7 +19,16 @@ import {
 import { ParcelleSummaryPanel } from './ParcelleSummaryPanel';
 import { filterParcels } from './filtering';
 import { ParcellaireTable } from './ParcellaireTable';
-import { getActiveSegment } from '../assolement/assolement.helpers';
+import {
+  getActiveSegment,
+  getAvailableYears,
+  getDominantCulture,
+  getSegmentsForParcelYear,
+} from '../assolement/assolement.helpers';
+import { useSegments } from '../assolement/assolement.store';
+import { AssolementTimeline } from '../assolement/AssolementTimeline';
+import { AssolementSegmentModal } from '../assolement/AssolementSegmentModal';
+import type { AssolementSegment } from '../assolement/assolement.types';
 import { cultureColor, listCultureGroups } from '../assolement/cultures';
 
 const TODAY = new Date().toISOString().slice(0, 10);
@@ -87,6 +96,13 @@ export default function ParcellairePage() {
   const [searchState, setSearchState] = useState<SearchState>({ facets: [], groupBy: [] });
   const [selectedId, setSelectedId] = useState<string | undefined>(undefined);
   const parcels = useParcels();
+  const allSegments = useSegments();
+  // Année / campagne : visible uniquement en vue Timeline (assolement).
+  const years = useMemo(() => getAvailableYears(allSegments), [allSegments]);
+  const [year, setYear] = useState<number>(years[0] ?? new Date().getFullYear());
+  const [editingSegment, setEditingSegment] = useState<
+    AssolementSegment | { draft: true; parcelId: string; year: number } | null
+  >(null);
   const geojsonInputRef = useRef<HTMLInputElement>(null);
   const shapefileInputRef = useRef<HTMLInputElement>(null);
   // Polygon dessiné en attente de configuration (dialog post draw-parcel).
@@ -231,10 +247,27 @@ export default function ParcellairePage() {
           ariaLabel="Rechercher dans le parcellaire"
         />
       </div>
+      {/* Sélecteur Campagne — visible uniquement en vue Timeline (assolement). */}
+      {view === 'timeline' && (
+        <div className="shrink-0">
+          <select
+            aria-label="Campagne"
+            value={year}
+            onChange={(e) => setYear(Number(e.target.value))}
+            className="h-9 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-2 text-sm font-medium text-(--color-text) hover:bg-[#f8f8f5]"
+          >
+            {years.map((y) => (
+              <option key={y} value={y}>
+                {y}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {/* Vues : dropdown icône seule sur mobile, segmented icon+label sur desktop. */}
       <div className="shrink-0 md:hidden">
         <ViewSwitcher
-          views={['map', 'table', 'dashboard']}
+          views={['map', 'table', 'timeline', 'dashboard']}
           activeView={view}
           onChange={setView}
           layout="dropdown"
@@ -243,10 +276,11 @@ export default function ParcellairePage() {
       </div>
       <div className="hidden shrink-0 md:block">
         <ViewSwitcher
-          views={['map', 'table', 'dashboard']}
+          views={['map', 'table', 'timeline', 'dashboard']}
           activeView={view}
           onChange={setView}
           layout="segmented"
+          display="icon-only"
         />
       </div>
       <div className="shrink-0">{exportBtn}</div>
@@ -334,11 +368,115 @@ export default function ParcellairePage() {
         <div className="flex-1 overflow-y-auto p-4">
           {view === 'table' ? (
             <ParcellaireTable parcels={filtered} selectedId={selectedId} onSelect={setSelectedId} />
+          ) : view === 'timeline' ? (
+            <TimelineView
+              parcels={filtered}
+              year={year}
+              segments={allSegments}
+              selectedId={selectedId}
+              onSelectParcel={setSelectedId}
+              onSelectSegment={(s) => setEditingSegment(s)}
+              onAddSegment={(parcelId) => setEditingSegment({ draft: true, parcelId, year })}
+            />
           ) : (
             <DashboardView parcels={filtered} />
           )}
         </div>
       )}
+
+      {/* Modal d'édition segment réutilisable (commun aux vues map / timeline / table) */}
+      {editingSegment && (
+        <AssolementSegmentModal target={editingSegment} onClose={() => setEditingSegment(null)} />
+      )}
+    </div>
+  );
+}
+
+/* ============ Vue Timeline : Gantt 12 mois × parcelles (fusion v2 assolement) ============ */
+
+const TIMELINE_TODAY = new Date().toISOString().slice(0, 10);
+
+function TimelineView({
+  parcels,
+  year,
+  segments,
+  selectedId,
+  onSelectParcel,
+  onSelectSegment,
+  onAddSegment,
+}: {
+  parcels: ReadonlyArray<ParcelDetail>;
+  year: number;
+  segments: ReadonlyArray<AssolementSegment>;
+  selectedId?: string;
+  onSelectParcel: (id: string) => void;
+  onSelectSegment: (s: AssolementSegment) => void;
+  onAddSegment: (parcelId: string) => void;
+}) {
+  if (parcels.length === 0) {
+    return (
+      <div className="py-10 text-center text-sm text-(--color-muted)">
+        Aucune parcelle pour ces filtres.
+      </div>
+    );
+  }
+  return (
+    <div className="overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface)">
+      {parcels.map((p, idx) => {
+        const parcelSegments = getSegmentsForParcelYear(p.id, year, segments);
+        const dominant = getDominantCulture(p.id, year, segments);
+        return (
+          <div
+            key={p.id}
+            className={[
+              'flex items-stretch gap-3 px-3 py-3 transition-colors hover:bg-[#fbfbf9]',
+              idx > 0 ? 'border-t border-(--color-border)' : '',
+              selectedId === p.id ? 'bg-(--color-primary)/5' : '',
+            ].join(' ')}
+          >
+            <button
+              type="button"
+              onClick={() => onSelectParcel(p.id)}
+              className="w-40 shrink-0 text-left"
+            >
+              <div className="truncate text-sm font-medium">{p.name}</div>
+              <div className="font-mono text-[11px] text-(--color-muted)">
+                {p.id} · {p.surfaceHa.toFixed(2)} ha
+                {dominant ? ` · ${dominant.culture}` : ''}
+              </div>
+            </button>
+            <div className="min-w-0 flex-1">
+              <AssolementTimeline
+                segments={parcelSegments}
+                year={year}
+                today={TIMELINE_TODAY}
+                onSegmentClick={onSelectSegment}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => onAddSegment(p.id)}
+              aria-label={`Ajouter un segment sur ${p.name}`}
+              title="Ajouter un segment"
+              className="inline-flex h-9 w-9 shrink-0 items-center justify-center self-center rounded-(--radius-sm) border border-dashed border-(--color-border) text-(--color-muted) hover:border-(--color-primary) hover:bg-(--color-primary)/5 hover:text-(--color-primary)"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth={1.75}
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                width={16}
+                height={16}
+                aria-hidden="true"
+              >
+                <path d="M12 5v14M5 12h14" />
+              </svg>
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }

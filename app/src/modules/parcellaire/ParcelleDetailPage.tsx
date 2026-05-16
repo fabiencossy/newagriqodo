@@ -90,6 +90,7 @@ export default function ParcelleDetailPage() {
     Intervention | 'new' | 'observation' | null
   >(null);
   const [activeTab, setActiveTab] = useState<string>('overview');
+  const [mapFullscreen, setMapFullscreen] = useState(false);
 
   // FAB unifié — la fiche met en avant "Créer une intervention" (action principale
   // sur une parcelle). Les overrides ouvrent le formulaire inline plutôt que de
@@ -347,35 +348,57 @@ export default function ParcelleDetailPage() {
       </TabPanel>
 
       <TabPanel tabKey="map" active={activeTab}>
-        <section className="rounded-(--radius) border border-(--color-border) bg-(--color-surface) p-5">
-          <div className="mb-3 flex items-center justify-between gap-2">
+        <section
+          className={[
+            'flex flex-col overflow-hidden rounded-(--radius) border border-(--color-border) bg-(--color-surface)',
+            // Mode fullscreen : overlay sous le header (h-14 mobile) + onglets (~h-10),
+            // au-dessus de tout sauf le FAB (z-[1050]).
+            mapFullscreen
+              ? 'fixed inset-x-0 top-[104px] bottom-0 z-[900] !rounded-none border-x-0 border-b-0'
+              : 'h-[calc(100vh-220px)] min-h-[480px]',
+          ].join(' ')}
+        >
+          <div className="flex items-center justify-between gap-2 border-b border-(--color-border) px-4 py-2">
             <h2 className="m-0 text-sm font-semibold tracking-wider text-(--color-muted) uppercase">
               Localisation
             </h2>
-            <a
-              href={googleMapsDirUrl(draft)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex h-9 items-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium text-(--color-text) hover:bg-[#f8f8f5]"
-            >
-              <GoogleMapsIcon />
-              <span>Itinéraire</span>
-              <ExternalLinkIcon />
-            </a>
+            <div className="flex items-center gap-2">
+              <a
+                href={googleMapsDirUrl(draft)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex h-9 items-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-xs font-medium text-(--color-text) hover:bg-[#f8f8f5]"
+              >
+                <GoogleMapsIcon />
+                <span className="hidden sm:inline">Itinéraire</span>
+                <ExternalLinkIcon />
+              </a>
+              <button
+                type="button"
+                onClick={() => setMapFullscreen((f) => !f)}
+                aria-label={mapFullscreen ? 'Réduire la carte' : 'Plein écran'}
+                title={mapFullscreen ? 'Réduire' : 'Plein écran'}
+                className="inline-flex h-9 w-9 items-center justify-center rounded-(--radius-sm) text-(--color-muted) hover:bg-[#f1f1ee] hover:text-(--color-text)"
+              >
+                {mapFullscreen ? <MinimizeIcon /> : <MaximizeIcon />}
+              </button>
+            </div>
           </div>
-          <MapView
-            parcels={[draft]}
-            selectedId={draft.id}
-            onSelectionChange={() => {
-              /* lecture seule */
-            }}
-            center={computeCentroid(draft)}
-            zoom={16}
-            enabledTools={[]}
-            showBasemapToggle
-            height="480px"
-            className="!rounded-(--radius)"
-          />
+          <div className="flex-1">
+            <MapView
+              parcels={[draft]}
+              selectedId={draft.id}
+              onSelectionChange={() => {
+                /* lecture seule */
+              }}
+              center={computeCentroid(draft)}
+              zoom={16}
+              enabledTools={[]}
+              showBasemapToggle
+              height="100%"
+              className="!rounded-none !border-0"
+            />
+          </div>
         </section>
       </TabPanel>
 
@@ -831,6 +854,42 @@ function ExternalLinkIcon() {
     >
       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
       <path d="M15 3h6v6M10 14 21 3" />
+    </svg>
+  );
+}
+
+function MaximizeIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width={16}
+      height={16}
+      aria-hidden="true"
+    >
+      <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
+    </svg>
+  );
+}
+
+function MinimizeIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={1.75}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      width={16}
+      height={16}
+      aria-hidden="true"
+    >
+      <path d="M8 3v3a2 2 0 0 1-2 2H3M21 8h-3a2 2 0 0 1-2-2V3M3 16h3a2 2 0 0 1 2 2v3M16 21v-3a2 2 0 0 1 2-2h3" />
     </svg>
   );
 }

@@ -73,7 +73,7 @@ export default function AcceptInvitePage() {
   return (
     <div className="flex min-h-screen flex-col bg-(--color-bg)">
       <header className="flex items-center border-b border-(--color-border) bg-(--color-surface) px-4 py-3 sm:px-6">
-        <img src="/qodo-logo.svg" alt="Qodo Digital" className="h-7" />
+        <img src="/agriqodo-mark.svg" alt="Qodo Digital" className="h-7" />
       </header>
 
       <main className="flex flex-1 items-center justify-center p-4 sm:p-8">

@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg id="Calque_1" data-name="Calque 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1000 1000">
+  <defs>
+    <style>
+      .cls-1 {
+        fill: #2fb196;
+      }
+
+      .cls-2 {
+        fill: #f4a02c;
+        font-size: 751.42px;
+      }
+
+      .cls-2, .cls-3 {
+        font-family: Raleway-SemiBold, Raleway;
+        font-weight: 600;
+      }
+
+      .cls-3 {
+        font-size: 761.35px;
+        letter-spacing: -.03em;
+      }
+    </style>
+  </defs>
+  <rect class="cls-1" x="-7.55" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="62.64" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="132.83" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="203.02" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="273.21" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="343.4" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="413.59" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="483.78" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="553.97" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="624.16" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="694.35" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="764.54" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="834.73" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="904.92" y="547.96" width="32.44" height="452.04"/>
+  <rect class="cls-1" x="975.11" y="547.96" width="32.44" height="452.04"/>
+  <g>
+    <text class="cls-2" transform="translate(372.51 733.81)"><tspan x="0" y="0">Q</tspan></text>
+    <text class="cls-3" transform="translate(63.93 736.92)"><tspan x="0" y="0">A</tspan></text>
+  </g>
+</svg>

@@ -29,7 +29,7 @@ export default function MarketingLayout() {
       <header className="sticky top-0 z-50 border-b border-(--color-border) bg-(--color-bg)/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
           <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-            <img src="/qodo-mark.svg" alt="" className="h-7 w-7" />
+            <img src="/agriqodo-mark.svg" alt="" className="h-7 w-7" />
             <span className="text-base font-semibold">
               <span className="text-(--color-primary)">Newagri</span>Qodo
             </span>

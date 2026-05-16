@@ -328,9 +328,9 @@ export function MapView({
     }
     for (const p of drawnPolygons) {
       L.polygon(p.coords, {
-        color: '#a855f7',
+        color: '#f4a02c',
         weight: 3,
-        fillColor: '#a855f7',
+        fillColor: '#f4a02c',
         fillOpacity: 0.25,
       }).addTo(layer);
     }
@@ -413,7 +413,7 @@ export function MapView({
         if (previewLine) draftLayer.removeLayer(previewLine);
         if (vertices.length >= 2) {
           previewLine = L.polyline(vertices, {
-            color: '#a855f7',
+            color: '#f4a02c',
             weight: 3,
             dashArray: '6 4',
           });
@@ -431,7 +431,7 @@ export function MapView({
         if (vertices.length >= 3 && first) {
           firstVertexHalo = L.circleMarker(first, {
             radius: 10,
-            color: '#a855f7',
+            color: '#f4a02c',
             fillColor: '#ffffff',
             fillOpacity: 0.6,
             weight: 2.5,
@@ -463,7 +463,7 @@ export function MapView({
       /** Icône divIcon — cercle violet plein (8px) avec liseré blanc. */
       const vertexIcon = L.divIcon({
         className: 'qodo-vertex-marker',
-        html: '<span style="display:block;width:12px;height:12px;border-radius:50%;background:#a855f7;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);"></span>',
+        html: '<span style="display:block;width:12px;height:12px;border-radius:50%;background:#f4a02c;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,.4);"></span>',
         iconSize: [12, 12],
         iconAnchor: [6, 6],
       });

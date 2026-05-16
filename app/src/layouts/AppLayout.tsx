@@ -77,7 +77,7 @@ export function AppLayout() {
                 <h1 className="m-0 flex-1 text-base font-semibold">
                   {activeItem?.label ?? 'NewagriQodo'}
                 </h1>
-                <img src="/qodo-mark.svg" alt="Qodo" className="h-7 w-7" />
+                <img src="/agriqodo-mark.svg" alt="Qodo" className="h-7 w-7" />
               </header>
             )}
 
@@ -103,7 +103,7 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     >
       {/* Logo header */}
       <div className="flex h-16 items-center gap-3 border-b border-(--color-border) px-5">
-        <img src="/qodo-logo.svg" alt="Qodo Digital" className="h-7" />
+        <img src="/agriqodo-mark.svg" alt="Qodo Digital" className="h-7" />
         {onNavigate && (
           <button
             type="button"

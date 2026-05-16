@@ -6,9 +6,15 @@
    ============================================================ */
 @theme {
   /* === Couleurs === */
-  --color-primary: #2d5016;
-  --color-primary-hover: #1f3a0e;
-  --color-accent: #875a7b; /* Aubergine Odoo */
+  --color-primary: #1f7a4d; /* Vert NewagriQodo (logo officiel AgriQodo) */
+  --color-primary-hover: #155c39;
+  --color-accent: #1f7a4d; /* Aligné sur primary — plus de violet aubergine */
+
+  /* Surbrillance orange (logo Q AgriQodo) — UNIQUEMENT pour les éléments qui
+     doivent ressortir du vert (dessin parcelle en cours, sélection active sur
+     fond vert, badges importants). Pas pour les CTA principaux : utiliser primary. */
+  --color-highlight: #f4a02c;
+  --color-highlight-hover: #d88817;
 
   --color-bg: #fafaf7;
   --color-surface: #ffffff;

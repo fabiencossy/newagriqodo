@@ -1,0 +1,80 @@
+# ============================================================================
+# Dependabot — alertes auto pour CVE + bumps versions
+# ============================================================================
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+# ============================================================================
+
+version: 2
+
+updates:
+  # ---- App (React/Vite) ----
+  - package-ecosystem: npm
+    directory: /app
+    schedule:
+      interval: weekly
+      day: monday
+      time: '06:00'
+      timezone: Europe/Zurich
+    open-pull-requests-limit: 5
+    groups:
+      # Bumps mineurs/patches groupés en 1 PR par catégorie
+      react-ecosystem:
+        patterns:
+          - 'react'
+          - 'react-*'
+          - '@types/react*'
+      tailwind:
+        patterns:
+          - 'tailwindcss'
+          - '@tailwindcss/*'
+      build-tooling:
+        patterns:
+          - 'vite'
+          - 'typescript'
+          - 'eslint*'
+          - 'prettier*'
+          - '@vitest/*'
+          - 'vitest'
+      supabase:
+        patterns:
+          - '@supabase/*'
+    commit-message:
+      prefix: 'deps(app)'
+      include: scope
+    labels:
+      - dependencies
+      - app
+
+  # ---- Website legacy (Astro) ----
+  - package-ecosystem: npm
+    directory: /website
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 2
+    commit-message:
+      prefix: 'deps(website)'
+    labels:
+      - dependencies
+      - website
+
+  # ---- GitHub Actions ----
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'ci'
+    labels:
+      - dependencies
+      - ci
+
+  # ---- Docker (Supabase self-host) ----
+  - package-ecosystem: docker
+    directory: /infra/supabase
+    schedule:
+      interval: monthly
+    commit-message:
+      prefix: 'infra'
+    labels:
+      - dependencies
+      - infra

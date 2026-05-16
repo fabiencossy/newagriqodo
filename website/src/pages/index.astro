@@ -10,149 +10,124 @@ const APP_URL = 'https://newagri.qodo.ch/login';
 const benefits = [
   {
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="m3 6 6-3 6 3 6-3v15l-6 3-6-3-6 3z" /><path d="M9 3v15M15 6v15" /></svg>',
-    title: 'Parcellaire géoréférencé',
+    title: 'Toutes vos parcelles sur une carte',
     description:
-      'Vos parcelles sur fond satellite Swisstopo. Import GeoJSON / Shapefile, dessin direct sur la carte avec snap automatique.',
+      'Vue satellite suisse. Vos parcelles colorées selon la culture en place. Aucun papier à sortir.',
+  },
+  {
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" /></svg>',
+    title: 'Saisie en quelques secondes',
+    description:
+      'Notez une intervention en 3 taps depuis votre téléphone, même avec des gants.',
   },
   {
     icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M4 4h12a4 4 0 0 1 4 4v12H8a4 4 0 0 1-4-4V4z" /><path d="M4 4v16M8 8h8M8 12h8M8 16h5" /></svg>',
-    title: 'Carnet des champs réglementaire',
+    title: 'Carnet des champs en règle',
     description:
-      'Toutes vos interventions (semis, fertilisation, phyto, récolte) tracées avec produits du catalogue OFAG, délais d\'attente, BBCH.',
+      "Toutes vos interventions enregistrées et prêtes pour les contrôles. Tranquillité d'esprit.",
   },
   {
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M5 8h14l-2 12H7L5 8z" /><path d="M9 8V5a3 3 0 0 1 6 0v3" /><circle cx="10" cy="13" r="0.6" /><circle cx="14" cy="13" r="0.6" /><circle cx="12" cy="16" r="0.6" /></svg>',
-    title: 'Plan de fumure OEngrais 2024',
+    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z" /><circle cx="12" cy="12" r="3" /></svg>',
+    title: 'Une vue complète de chaque parcelle',
     description:
-      'Bilan N/P/K conforme norme suisse. Précédent cultural, coefficients organiques (lisier/fumier), fenêtres BBCH conseillées.',
-  },
-  {
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><rect x="3" y="4" width="18" height="18" rx="2" /><path d="M16 2v4M8 2v4M3 10h18" /></svg>',
-    title: 'Plan d\'assolement multi-campagnes',
-    description:
-      'Timeline Gantt 12 mois × parcelles. Découpe automatique anti-chevauchements, fusion segments adjacents, rotation suivie.',
-  },
-  {
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><circle cx="9" cy="7" r="4" /><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" /><circle cx="17" cy="7" r="3" /><path d="M21 21v-2a4 4 0 0 0-3-3.8" /></svg>',
-    title: 'RH et timesheet',
-    description:
-      'Saisie heures par employé, bilan mensuel, congés. Sync Odoo hr.attendance native (Phase 3).',
-  },
-  {
-    icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><path d="M21 9.5 12 3 3 9.5V18l9 3 9-3V9.5z" /></svg>',
-    title: 'Multi-exploitations',
-    description:
-      'Gérez plusieurs domaines depuis un compte. Switch instantané entre exploitations. Isolation des données.',
+      'Toute l\'histoire de la parcelle en un coup d\'œil : culture, interventions, rendements.',
   },
 ];
 ---
 
 <BaseLayout
-  title="NewagriQodo — Gestion d'exploitation agricole suisse"
-  description="Logiciel mobile-first pour agriculteurs suisses. Parcellaire géoréférencé, carnet des champs OFAG, plan de fumure OEngrais 2024, RH. Intégré Odoo."
+  title="NewagriQodo — Votre exploitation agricole dans une seule app"
+  description="L'application des agriculteurs suisses. Voir vos parcelles sur une carte, noter vos interventions, suivre votre carnet des champs. Sur votre téléphone et au bureau."
 >
   <Hero
-    eyebrow="Agriculture suisse · Mobile-first"
-    title="Votre exploitation agricole, gérée du champ au bureau"
-    subtitle="Parcellaire, carnet des champs, plan de fumure, RH. Une seule app conçue pour la réalité suisse — depuis votre smartphone dans le tracteur ou votre ordinateur au bureau."
-    ctaPrimary={{ label: 'Essayer la démo gratuitement', href: APP_URL }}
+    eyebrow="Pour les agriculteurs suisses"
+    title="Votre exploitation dans une seule app"
+    subtitle="Voir vos parcelles sur la carte, noter vos interventions au champ, suivre votre carnet — tout est au même endroit. Sur votre téléphone et au bureau."
+    ctaPrimary={{ label: 'Essayer la démo', href: APP_URL }}
     ctaSecondary={{ label: 'Voir les fonctionnalités', href: '/fonctionnalites' }}
     screenshot={{
       src: '/screenshots/01_Hero/H1_Hero_Desktop_-_Carte_dzoome.png',
-      alt: "Vue d'ensemble de l'application NewagriQodo : carte satellite Swisstopo avec parcelles colorées par culture",
+      alt: "Vue d'ensemble de l'application avec la carte des parcelles",
     }}
   />
 
   <FeatureGrid
-    title="Une app, tous les modules métier"
-    subtitle="Conçue avec un exploitant suisse, pour les exploitants suisses. Données réelles, normes réelles."
+    title="Ce que NewagriQodo fait pour vous"
+    subtitle="Conçue avec un exploitant suisse, pour les exploitants suisses."
     features={benefits}
   />
 
   <FeatureSection
-    eyebrow="Parcellaire"
-    title="Vos parcelles, vivantes sur la carte"
-    description="Visualisez l'ensemble de votre exploitation sur fond satellite Swisstopo. Chaque parcelle prend la couleur de sa culture du jour, calculée automatiquement depuis votre plan d'assolement."
+    eyebrow="Vos parcelles sur une carte"
+    title="Comme Google Maps, mais pour votre exploitation"
+    description="Vue satellite suisse. Chaque parcelle prend la couleur de sa culture du jour. Vous voyez tout d'un coup d'œil."
     bullets={[
-      'Import <strong>GeoJSON</strong> / <strong>Shapefile</strong> (GELAN, Acorda)',
-      'Dessin direct sur la carte avec <strong>snap automatique</strong> au 1er sommet',
-      'Sommets <strong>draggables</strong> pendant le dessin',
-      '4 vues : Carte / Table / Timeline assolement / Dashboard',
-      '<strong>Multi-sélection</strong> avec actions groupées (fusionner, dupliquer, exporter)',
+      'Vue <strong>satellite suisse</strong> de qualité',
+      "Couleurs <strong>automatiques</strong> selon ce qui pousse aujourd'hui",
+      'Cliquez sur une parcelle pour voir tous ses détails',
+      'Importez vos parcelles depuis <strong>GELAN</strong> ou <strong>Acorda</strong>',
     ]}
     screenshot={{
       src: '/screenshots/01_Hero/H3_Hero_Desktop_-_Panel__droite.png',
-      alt: 'Vue Parcellaire avec panneau de détail à droite',
+      alt: 'Carte des parcelles avec panneau de détail à droite',
+    }}
+  />
+
+  {/* SECTION "SAISIE FACILE" — DÉSACTIVÉE TEMPORAIREMENT
+   * En attente des vrais screenshots du formulaire InterventionForm.
+   * Voir fonctionnalites.astro pour le détail. */}
+
+  <FeatureSection
+    eyebrow="Fiche parcelle complète"
+    title="Toute l'histoire d'une parcelle, à portée de main"
+    description="Culture en place, interventions passées, rendements, statistiques. Tout est rangé par onglets clairs, vous trouvez ce que vous cherchez en 2 secondes."
+    bullets={[
+      'Un <strong>résumé visuel</strong> dès l\'ouverture',
+      'Onglets : Aperçu, Carnet, Assolement, Statistiques, Carte',
+      '<strong>Mini-carte</strong> de la parcelle directement intégrée',
+      'Lien direct pour aller au champ via <strong>Google Maps</strong>',
+    ]}
+    screenshot={{
+      src: '/screenshots/03_DetailParcelle/D1_Detail_-_Aperu.png',
+      alt: 'Fiche détaillée d\'une parcelle avec résumé et mini-carte',
     }}
   />
 
   <FeatureSection
     eyebrow="Carnet des champs"
-    title="Traçabilité réglementaire, sans friction"
-    description="Saisissez vos interventions en quelques secondes — semis, fertilisation, traitement phyto, récolte. Tout ce qui est exigé par la loi suisse (SwissGAP, OFAG) est capturé automatiquement."
+    title="Vos interventions, prêtes pour les contrôles"
+    description="Tout ce que vous faites sur vos parcelles est enregistré au bon format. Quand un contrôleur passe, vous avez tout sous la main."
     reverse
     bullets={[
-      'Catalogue <strong>produits homologués OFAG</strong> (n° d\'homologation, substance active, délai d\'attente)',
-      '<strong>Date de récolte autorisée</strong> calculée automatiquement',
-      'Calcul auto du total : <code>180 grains/ha × 1.34 ha = 241 200 grains</code>',
-      'Appliquez une intervention à <strong>plusieurs parcelles d\'un coup</strong>',
-      'Groupes de parcelles pré-définis (Bloc Nord, Prairies Sud…)',
+      'Liste complète, filtrable par <strong>date, parcelle, type</strong>',
+      "Numéro d'homologation des produits enregistré automatiquement",
+      "Date de récolte autorisée <strong>calculée pour vous</strong> selon le délai du produit",
+      'Export PDF / Excel quand vous voulez',
     ]}
     screenshot={{
       src: '/screenshots/04_Carnet/C1_Carnet_-_Table_interventions.png',
-      alt: 'Carnet des champs avec liste des interventions',
+      alt: 'Liste des interventions du carnet des champs',
     }}
   />
 
-  <FeatureSection
-    eyebrow="Plan de fumure"
-    title="Bilan N/P/K conforme OEngrais 2024"
-    description="Le seul logiciel agricole qui calcule votre bilan azoté en tenant compte du précédent cultural, des coefficients d'efficacité des amendements organiques et des fenêtres d'apport BBCH."
-    bullets={[
-      'Apports cumulés <strong>par élément N / P₂O₅ / K₂O</strong> en temps réel',
-      '<strong>Précédent cultural</strong> (légumineuses +30 à +60 kg N/ha)',
-      'Coefficients d\'efficacité <strong>lisier / fumier / compost</strong> selon saison',
-      'Drawer détaillé au clic : historique apports + fenêtres BBCH conseillées',
-      'Suisse-Bilanz export PDF (Phase 3 — autorités cantonales)',
-    ]}
-    screenshot={{
-      src: '/screenshots/06_Fumure/FU2_Fumure_-_Drawer_N_ouvert.png',
-      alt: 'Détail du bilan azoté avec historique des apports et fenêtres BBCH',
-    }}
-  />
-
-  <FeatureSection
-    eyebrow="Mobile-first"
-    title="Pensée pour le terrain, parfaite au bureau"
-    description="Tables denses sur desktop, cards verticales sur smartphone. Chaque écran a été pensé pour les deux contextes — saisir une intervention dans le tracteur avec des gants doit être aussi facile que de planifier l'assolement au bureau."
-    reverse
-    mobileFrame
-    bullets={[
-      'Interface <strong>tactile optimisée</strong> (cibles 44px sur mobile)',
-      'FAB unifié : 5 actions principales accessibles partout en 2 taps',
-      'Liens internes : du carnet à la parcelle, de la fiche au plan de fumure, en 1 tap',
-      'Tout fonctionne <strong>hors-ligne</strong> (PWA — Phase 3)',
-    ]}
-    screenshot={{
-      src: '/screenshots/01_Hero/H2_Hero_Mobile_-_Carte.png',
-      alt: 'Vue mobile de la carte parcellaire',
-    }}
-  />
-
-  <FeatureSection
-    eyebrow="Statistiques"
-    title="Mesurez l'évolution de votre exploitation"
-    description="Rendements par campagne, apports cumulés N/P/K par année, nombre d'interventions par catégorie. Détectez les tendances et optimisez vos itinéraires techniques."
-    screenshot={{
-      src: '/screenshots/03_DetailParcelle/D6_Detail_-_Statistiques.png',
-      alt: "Statistiques d'une parcelle : rendement par campagne, apports cumulés",
-    }}
-  />
+  <section class="border-t border-(--color-border) bg-(--color-bg) px-4 py-16 sm:px-6 sm:py-20">
+    <div class="mx-auto max-w-3xl rounded-(--radius-lg) border border-(--color-border) bg-(--color-surface) p-8 text-center shadow-(--shadow-card)">
+      <span class="inline-block rounded-(--radius-pill) bg-(--color-accent)/10 px-3 py-1 text-xs font-semibold tracking-wider text-(--color-accent) uppercase">
+        Intégration
+      </span>
+      <h2 class="m-0 mt-3 text-2xl font-bold sm:text-3xl">Connecté à votre Odoo</h2>
+      <p class="m-0 mt-3 text-base text-(--color-muted)">
+        Si vous utilisez déjà <a href="https://www.odoo.com" target="_blank" rel="noopener noreferrer" class="font-medium text-(--color-primary) hover:underline">Odoo</a>
+        pour votre comptabilité ou vos employés, NewagriQodo s'y branche directement.
+        Pas de double saisie : ce que vous notez ici remonte automatiquement dans votre Odoo.
+      </p>
+    </div>
+  </section>
 
   <CTASection
-    title="Prêt à essayer ?"
-    subtitle="Accès démo immédiat avec les données réelles du Domaine Darval — pas de carte de crédit, pas d'inscription."
+    title="Essayez en 30 secondes"
+    subtitle="Pas d'inscription, pas de carte de crédit. Vous arrivez directement sur un vrai domaine, avec de vraies parcelles."
     ctaPrimary={{ label: 'Lancer la démo', href: APP_URL }}
-    ctaSecondary={{ label: 'Nous contacter', href: '/contact' }}
+    ctaSecondary={{ label: 'Voir les fonctionnalités', href: '/fonctionnalites' }}
   />
 </BaseLayout>

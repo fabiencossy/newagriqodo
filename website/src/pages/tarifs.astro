@@ -3,80 +3,11 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import CTASection from '../components/CTASection.astro';
 
 const APP_URL = 'https://newagri.qodo.ch/login';
-
-const plans = [
-  {
-    name: 'Démo',
-    price: 'Gratuit',
-    period: 'sans limite',
-    description: 'Découvrez toutes les fonctionnalités avec les données du Domaine Darval.',
-    cta: { label: 'Lancer la démo', href: APP_URL },
-    features: [
-      '27 parcelles réelles Darval',
-      '80+ interventions exemples',
-      'Tous les modules accessibles',
-      'Pas de carte de crédit',
-      'Données réinitialisées chaque session',
-    ],
-    highlight: false,
-  },
-  {
-    name: 'Essentiel',
-    price: 'CHF 25',
-    period: '/ mois / exploitation',
-    description: 'Pour une exploitation jusqu\'à 50 ha. Tous les modules métier inclus.',
-    cta: { label: 'Nous contacter', href: '/contact' },
-    features: [
-      'Jusqu\'à <strong>50 ha</strong>',
-      'Parcellaire + Carnet + Fumure + Assolement',
-      'Jusqu\'à 3 utilisateurs',
-      'Imports GeoJSON / Shapefile',
-      'Catalogue produits OFAG',
-      'Support email',
-    ],
-    highlight: false,
-  },
-  {
-    name: 'Pro',
-    price: 'CHF 60',
-    period: '/ mois / exploitation',
-    description: 'Pour les exploitations moyennes à grandes avec employés et besoin de traçabilité.',
-    cta: { label: 'Nous contacter', href: '/contact' },
-    features: [
-      'Surface <strong>illimitée</strong>',
-      'Tout Essentiel +',
-      '<strong>Utilisateurs illimités</strong>',
-      'Module <strong>RH</strong> (timesheet, congés)',
-      'Multi-exploitations',
-      '<strong>Sync Odoo</strong> bidirectionnelle (Phase 3)',
-      'Export Suisse-Bilanz PDF',
-      'Support prioritaire (réponse < 24h)',
-    ],
-    highlight: true,
-  },
-  {
-    name: 'Sur-mesure',
-    price: 'Sur devis',
-    period: 'pour entrepreneurs agricoles',
-    description: 'Intégration personnalisée pour entrepreneurs, coopératives, multi-sites.',
-    cta: { label: 'Nous contacter', href: '/contact' },
-    features: [
-      'Tout Pro +',
-      'Module <strong>Travaux tiers</strong> (facturation)',
-      'Module Troupeau (SRPA, SST)',
-      'Connecteurs personnalisés',
-      'Hébergement dédié possible',
-      'Formation sur place',
-      'SLA dédié',
-    ],
-    highlight: false,
-  },
-];
 ---
 
 <BaseLayout
   title="Tarifs"
-  description="Tarifs NewagriQodo : démo gratuite, Essentiel CHF 25/mois, Pro CHF 60/mois, Sur-mesure pour entrepreneurs."
+  description="Tarifs adaptés à votre exploitation. Démo gratuite à vie, devis personnalisé sur demande."
 >
   <section class="border-b border-(--color-border) bg-gradient-to-b from-(--color-bg) to-(--color-surface)/40 px-4 py-16 sm:px-6">
     <div class="mx-auto max-w-3xl text-center">
@@ -84,75 +15,22 @@ const plans = [
         Tarifs
       </span>
       <h1 class="m-0 mt-4 text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
-        Un prix juste, simple, sans surprise
+        Un tarif adapté à votre exploitation
       </h1>
       <p class="m-0 mt-4 text-lg text-(--color-muted)">
-        Démo gratuite à vie. Premier mois offert sur tous les plans payants.
+        Chaque exploitation est différente. On vous propose un tarif sur mesure selon votre
+        surface, le nombre d'utilisateurs et ce dont vous avez besoin.
+      </p>
+      <p class="m-0 mt-3 text-base text-(--color-muted)">
+        La démo est <strong class="text-(--color-text)">gratuite à vie</strong>, sans inscription.
       </p>
     </div>
   </section>
 
-  <section class="bg-(--color-surface) px-4 py-16 sm:px-6 sm:py-20">
-    <div class="mx-auto grid max-w-6xl grid-cols-1 gap-4 lg:grid-cols-4">
-      {
-        plans.map((plan) => (
-          <div
-            class={[
-              'flex flex-col rounded-(--radius-lg) border bg-(--color-surface) p-6',
-              plan.highlight
-                ? 'border-(--color-primary) shadow-(--shadow-hero) ring-2 ring-(--color-primary)/20'
-                : 'border-(--color-border) shadow-(--shadow-card)',
-            ].join(' ')}
-          >
-            {plan.highlight && (
-              <span class="mb-3 inline-block self-start rounded-(--radius-pill) bg-(--color-primary) px-2.5 py-0.5 text-[10px] font-bold tracking-wider text-white uppercase">
-                Recommandé
-              </span>
-            )}
-            <h2 class="m-0 text-xl font-bold">{plan.name}</h2>
-            <p class="m-0 mt-1 text-xs text-(--color-muted)">{plan.description}</p>
-            <div class="mt-4 flex items-baseline gap-1">
-              <span class="text-3xl font-extrabold tracking-tight">{plan.price}</span>
-              <span class="text-xs text-(--color-muted)">{plan.period}</span>
-            </div>
-            <ul class="m-0 mt-5 mb-6 flex-1 list-none space-y-2 p-0 text-sm">
-              {plan.features.map((f) => (
-                <li class="flex items-start gap-2">
-                  <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-(--radius-pill) bg-(--color-primary)/15 text-(--color-primary)">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="12" height="12" aria-hidden="true">
-                      <path d="M20 6 9 17l-5-5" />
-                    </svg>
-                  </span>
-                  <span set:html={f} />
-                </li>
-              ))}
-            </ul>
-            <a
-              href={plan.cta.href}
-              class={[
-                'inline-flex h-11 items-center justify-center rounded-(--radius) px-4 text-sm font-semibold',
-                plan.highlight
-                  ? 'border border-(--color-primary) bg-(--color-primary) text-white hover:bg-(--color-primary-hover)'
-                  : 'border border-(--color-border) bg-(--color-surface) text-(--color-text) hover:border-(--color-primary)/50 hover:text-(--color-primary)',
-              ].join(' ')}
-            >
-              {plan.cta.label}
-            </a>
-          </div>
-        ))
-      }
-    </div>
-
-    <p class="mx-auto mt-12 max-w-2xl text-center text-xs text-(--color-muted)">
-      Les prix sont en CHF HT, facturés annuellement. Hébergement Suisse (Infomaniak). Données
-      isolées par exploitation. Conditions générales sur demande.
-    </p>
-  </section>
-
   <CTASection
-    title="Une question sur les tarifs ?"
-    subtitle="Contactez-nous, on prend le temps de comprendre votre besoin."
+    title="Discutons de votre projet"
+    subtitle="Un appel rapide ou un email, on prend le temps de comprendre votre besoin et on vous fait une proposition claire."
     ctaPrimary={{ label: 'Nous contacter', href: '/contact' }}
-    ctaSecondary={{ label: 'Lancer la démo', href: APP_URL }}
+    ctaSecondary={{ label: 'Essayer la démo', href: APP_URL }}
   />
 </BaseLayout>

@@ -51,9 +51,10 @@ img {
   display: block;
 }
 
-/* Style des screenshots — bordure subtile + ombre + radius pour donner du relief */
+/* Style des screenshots — radius minimal (4px) : presque carré, bords nets.
+ * Le user n'aime pas les coins trop arrondis. */
 .screenshot {
-  border-radius: var(--radius-lg);
+  border-radius: 4px;
   border: 1px solid var(--color-border);
   box-shadow: var(--shadow-popup);
   overflow: hidden;
@@ -61,7 +62,7 @@ img {
 }
 
 .screenshot-hero {
-  border-radius: var(--radius-xl);
+  border-radius: 6px;
   box-shadow: var(--shadow-hero);
   border: 1px solid var(--color-border);
   overflow: hidden;

@@ -1,0 +1,136 @@
+---
+/**
+ * Composant interactif : switch entre images desktop / mobile.
+ *
+ * Stabilité visuelle :
+ *   - Hauteur fixe (--device-stage-h) sur le conteneur pour éviter le reflow
+ *     quand on passe de desktop à mobile (les images ont des ratios différents).
+ *   - L'image est centrée dans la zone, taille adaptative (object-fit:contain).
+ *   - Le toggle est centré horizontalement au-dessus.
+ *
+ * Implémentation : JS vanilla inline pour rester compatible Astro SSG.
+ */
+interface Props {
+  id: string;
+  desktop: { src: string; alt: string };
+  mobile: { src: string; alt: string };
+  defaultDevice?: 'desktop' | 'mobile';
+  /** Hauteur de la zone d'affichage en pixels (responsive : un peu moins sur mobile). */
+  stageHeight?: number;
+}
+
+const { id, desktop, mobile, defaultDevice = 'desktop', stageHeight = 560 } = Astro.props;
+---
+
+<div class="device-switcher flex flex-col items-center" data-device-switcher={id}>
+  <div class="mb-4 inline-flex items-center gap-1 rounded-(--radius-pill) border border-(--color-border) bg-(--color-surface) p-1 shadow-(--shadow-card)">
+    <button
+      type="button"
+      data-device="desktop"
+      data-active={defaultDevice === 'desktop' ? 'true' : 'false'}
+      aria-pressed={defaultDevice === 'desktop'}
+      class="device-btn inline-flex h-9 items-center gap-2 rounded-(--radius-pill) px-4 text-xs font-semibold transition-colors"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true">
+        <rect x="2" y="4" width="20" height="14" rx="2" />
+        <path d="M8 22h8M12 18v4" />
+      </svg>
+      Ordinateur
+    </button>
+    <button
+      type="button"
+      data-device="mobile"
+      data-active={defaultDevice === 'mobile' ? 'true' : 'false'}
+      aria-pressed={defaultDevice === 'mobile'}
+      class="device-btn inline-flex h-9 items-center gap-2 rounded-(--radius-pill) px-4 text-xs font-semibold transition-colors"
+    >
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" aria-hidden="true">
+        <rect x="7" y="2" width="10" height="20" rx="2" />
+        <path d="M11 18h2" />
+      </svg>
+      Téléphone
+    </button>
+  </div>
+
+  {/* Stage à hauteur fixe : aucun reflow au switch */}
+  <div
+    class="device-stage flex w-full items-center justify-center"
+    style={`height: ${stageHeight}px; max-height: 70vh;`}
+  >
+    <div
+      data-device-view="desktop"
+      class={[
+        'h-full w-full items-center justify-center',
+        defaultDevice === 'desktop' ? 'flex' : 'hidden',
+      ].join(' ')}
+    >
+      <img
+        src={desktop.src}
+        alt={desktop.alt}
+        loading="lazy"
+        class="screenshot max-h-full max-w-full object-contain"
+      />
+    </div>
+    <div
+      data-device-view="mobile"
+      class={[
+        'h-full w-full items-center justify-center',
+        defaultDevice === 'mobile' ? 'flex' : 'hidden',
+      ].join(' ')}
+    >
+      <div class="mobile-frame h-full" style="display:flex;align-items:center;">
+        <img
+          src={mobile.src}
+          alt={mobile.alt}
+          loading="lazy"
+          style="max-height:100%;width:auto;"
+        />
+      </div>
+    </div>
+  </div>
+</div>
+
+<style is:global>
+  .device-btn[data-active='true'] {
+    background: var(--color-primary);
+    color: white;
+  }
+  .device-btn[data-active='false'] {
+    color: var(--color-muted);
+  }
+  .device-btn[data-active='false']:hover {
+    color: var(--color-text);
+    background: #f1f1ee;
+  }
+  /* Le cadre mobile s'adapte en hauteur quand utilisé dans le DeviceSwitcher */
+  .device-stage .mobile-frame {
+    max-width: 260px;
+  }
+</style>
+
+<script>
+  // Toggle entre vue ordinateur et vue téléphone, par composant.
+  document.querySelectorAll<HTMLElement>('[data-device-switcher]').forEach((container) => {
+    const buttons = container.querySelectorAll<HTMLButtonElement>('.device-btn');
+    const views = container.querySelectorAll<HTMLElement>('[data-device-view]');
+    buttons.forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const device = btn.dataset.device;
+        buttons.forEach((b) => {
+          const isActive = b.dataset.device === device;
+          b.dataset.active = String(isActive);
+          b.setAttribute('aria-pressed', String(isActive));
+        });
+        views.forEach((v) => {
+          if (v.dataset.deviceView === device) {
+            v.classList.remove('hidden');
+            v.classList.add('flex');
+          } else {
+            v.classList.add('hidden');
+            v.classList.remove('flex');
+          }
+        });
+      });
+    });
+  });
+</script>

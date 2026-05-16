@@ -114,7 +114,9 @@ export function MapView({
       touchZoom: interactive,
     });
 
-    if (interactive) {
+    // Boutons +/- zoom : uniquement sur desktop. Sur mobile, le pinch-to-zoom
+    // natif suffit et les boutons prennent inutilement de la place visible.
+    if (interactive && isDesktop) {
       L.control.zoom({ position: 'bottomleft' }).addTo(map);
     }
 

@@ -1,0 +1,235 @@
+# ============================================================================
+# Supabase auto-hébergé — NewagriQodo (VPS Infomaniak, CH strict RGPD/LPD)
+# ============================================================================
+# Stack minimale Supabase : Postgres + Auth + REST (PostgREST) + Realtime
+# + Storage + Studio + Kong (gateway). Pas de Edge Functions (pas requis
+# pour le MVP).
+#
+# Prérequis :
+#   - Docker + Docker Compose v2 (`docker compose`, pas `docker-compose`)
+#   - Domaine `supabase.newagri.qodo.ch` pointant vers le VPS
+#   - Reverse proxy externe (Caddy/Traefik/Nginx) qui termine TLS et
+#     forward HTTPS vers Kong (port 8000 interne).
+#
+# Démarrage :
+#   1. cp .env.example .env  (puis remplir tous les secrets)
+#   2. docker compose up -d
+#   3. docker compose exec db psql -U postgres -f /docker-entrypoint-initdb.d/migrations/0001_initial_schema.sql
+#   4. docker compose exec db psql -U postgres -f /docker-entrypoint-initdb.d/migrations/seed.sql
+#
+# Backup quotidien : voir scripts/backup.sh
+# ============================================================================
+
+name: supabase-newagri
+
+services:
+  # --------------------------------------------------------------------------
+  # 1. Postgres — instance principale
+  # --------------------------------------------------------------------------
+  db:
+    image: supabase/postgres:15.6.1.146
+    restart: unless-stopped
+    healthcheck:
+      test: ['CMD', 'pg_isready', '-U', 'postgres', '-h', 'localhost']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    environment:
+      POSTGRES_HOST: /var/run/postgresql
+      POSTGRES_PORT: 5432
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_EXP: 3600
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      # Migrations + seed appliqués au premier démarrage (initdb.d)
+      - ../../supabase/migrations:/docker-entrypoint-initdb.d/migrations:ro
+      - ../../supabase/seed.sql:/docker-entrypoint-initdb.d/zzz_seed.sql:ro
+    ports:
+      # Exposé localhost UNIQUEMENT (jamais 0.0.0.0) — accès via SSH tunnel
+      - '127.0.0.1:5432:5432'
+
+  # --------------------------------------------------------------------------
+  # 2. GoTrue (Supabase Auth) — gestion users, JWT, reset password, SMTP
+  # --------------------------------------------------------------------------
+  auth:
+    image: supabase/gotrue:v2.158.1
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      GOTRUE_API_HOST: 0.0.0.0
+      GOTRUE_API_PORT: 9999
+      API_EXTERNAL_URL: ${SUPABASE_PUBLIC_URL}
+
+      GOTRUE_DB_DRIVER: postgres
+      GOTRUE_DB_DATABASE_URL: postgres://supabase_auth_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+
+      GOTRUE_SITE_URL: ${APP_PUBLIC_URL}
+      GOTRUE_URI_ALLOW_LIST: ${ADDITIONAL_REDIRECT_URLS}
+      GOTRUE_DISABLE_SIGNUP: 'false'
+
+      GOTRUE_JWT_SECRET: ${JWT_SECRET}
+      GOTRUE_JWT_EXP: 3600
+      GOTRUE_JWT_DEFAULT_GROUP_NAME: authenticated
+      GOTRUE_JWT_ADMIN_ROLES: service_role
+      GOTRUE_JWT_AUD: authenticated
+
+      # SMTP via Resend (cf. variables RESEND_* dans .env)
+      GOTRUE_SMTP_ADMIN_EMAIL: ${SMTP_ADMIN_EMAIL}
+      GOTRUE_SMTP_HOST: ${SMTP_HOST}
+      GOTRUE_SMTP_PORT: ${SMTP_PORT}
+      GOTRUE_SMTP_USER: ${SMTP_USER}
+      GOTRUE_SMTP_PASS: ${SMTP_PASS}
+      GOTRUE_SMTP_SENDER_NAME: ${SMTP_SENDER_NAME}
+      GOTRUE_MAILER_AUTOCONFIRM: 'false'
+
+      # Templates email custom (sujets en français)
+      GOTRUE_MAILER_SUBJECTS_CONFIRMATION: 'Confirmez votre adresse email — NewagriQodo'
+      GOTRUE_MAILER_SUBJECTS_RECOVERY: 'Réinitialisation de votre mot de passe — NewagriQodo'
+      GOTRUE_MAILER_SUBJECTS_INVITE: 'Invitation à rejoindre une exploitation — NewagriQodo'
+      GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: 'Votre lien de connexion — NewagriQodo'
+
+      GOTRUE_MAILER_URLPATHS_CONFIRMATION: /auth/confirm
+      GOTRUE_MAILER_URLPATHS_RECOVERY: /reset-password
+      GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE: /auth/email-change
+      GOTRUE_MAILER_URLPATHS_INVITE: /auth/invite
+
+      GOTRUE_PASSWORD_MIN_LENGTH: 8
+
+  # --------------------------------------------------------------------------
+  # 3. PostgREST — API REST auto-générée + RLS
+  # --------------------------------------------------------------------------
+  rest:
+    image: postgrest/postgrest:v12.2.0
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGRST_DB_URI: postgres://authenticator:${POSTGRES_PASSWORD}@db:5432/postgres
+      PGRST_DB_SCHEMAS: public,storage
+      PGRST_DB_ANON_ROLE: anon
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      PGRST_DB_USE_LEGACY_GUCS: 'false'
+      PGRST_APP_SETTINGS_JWT_SECRET: ${JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_EXP: 3600
+
+  # --------------------------------------------------------------------------
+  # 4. Realtime — websockets pour les subscriptions Postgres
+  # --------------------------------------------------------------------------
+  realtime:
+    image: supabase/realtime:v2.30.34
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: supabase_admin
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      DB_NAME: postgres
+      DB_AFTER_CONNECT_QUERY: 'SET search_path TO _realtime'
+      DB_ENC_KEY: ${REALTIME_ENC_KEY}
+      API_JWT_SECRET: ${JWT_SECRET}
+      SECRET_KEY_BASE: ${REALTIME_SECRET_KEY_BASE}
+      ERL_AFLAGS: -proto_dist inet_tcp
+      ENABLE_TAILSCALE: 'false'
+      DNS_NODES: "''"
+
+  # --------------------------------------------------------------------------
+  # 5. Storage — uploads (photos parcelles, justificatifs, exports PDF)
+  # --------------------------------------------------------------------------
+  storage:
+    image: supabase/storage-api:v1.11.13
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+      rest:
+        condition: service_started
+    environment:
+      ANON_KEY: ${SUPABASE_ANON_KEY}
+      SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+      POSTGREST_URL: http://rest:3000
+      PGRST_JWT_SECRET: ${JWT_SECRET}
+      DATABASE_URL: postgres://supabase_storage_admin:${POSTGRES_PASSWORD}@db:5432/postgres
+      FILE_SIZE_LIMIT: 52428800        # 50 MiB
+      STORAGE_BACKEND: file
+      FILE_STORAGE_BACKEND_PATH: /var/lib/storage
+      TENANT_ID: stub
+      REGION: stub
+      GLOBAL_S3_BUCKET: stub
+    volumes:
+      - storage-data:/var/lib/storage
+
+  # --------------------------------------------------------------------------
+  # 6. Studio — UI d'administration Supabase
+  # --------------------------------------------------------------------------
+  studio:
+    image: supabase/studio:20240729-ce42139
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      STUDIO_PG_META_URL: http://meta:8080
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      DEFAULT_ORGANIZATION_NAME: 'Qodo Digital'
+      DEFAULT_PROJECT_NAME: 'NewagriQodo'
+      SUPABASE_URL: http://kong:8000
+      SUPABASE_PUBLIC_URL: ${SUPABASE_PUBLIC_URL}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+
+  # --------------------------------------------------------------------------
+  # 7. Postgres Meta — UI Studio
+  # --------------------------------------------------------------------------
+  meta:
+    image: supabase/postgres-meta:v0.83.2
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PG_META_PORT: 8080
+      PG_META_DB_HOST: db
+      PG_META_DB_PORT: 5432
+      PG_META_DB_NAME: postgres
+      PG_META_DB_USER: supabase_admin
+      PG_META_DB_PASSWORD: ${POSTGRES_PASSWORD}
+
+  # --------------------------------------------------------------------------
+  # 8. Kong — API Gateway (route /auth, /rest, /realtime, /storage)
+  # --------------------------------------------------------------------------
+  kong:
+    image: kong:2.8.1
+    restart: unless-stopped
+    depends_on:
+      - auth
+      - rest
+      - realtime
+      - storage
+    environment:
+      KONG_DATABASE: 'off'
+      KONG_DECLARATIVE_CONFIG: /var/lib/kong/kong.yml
+      KONG_DNS_ORDER: LAST,A,CNAME
+      KONG_PLUGINS: request-transformer,cors,key-auth,acl
+      KONG_NGINX_PROXY_PROXY_BUFFER_SIZE: 160k
+      KONG_NGINX_PROXY_PROXY_BUFFERS: '64 160k'
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY}
+      SUPABASE_SERVICE_KEY: ${SUPABASE_SERVICE_KEY}
+    volumes:
+      - ./kong.yml:/var/lib/kong/kong.yml:ro
+    ports:
+      # Exposé localhost — le reverse proxy externe forward HTTPS vers ce port
+      - '127.0.0.1:8000:8000'
+      - '127.0.0.1:8443:8443'
+
+volumes:
+  db-data:
+  storage-data:

@@ -1,0 +1,64 @@
+# ============================================================================
+# Caddy — Reverse proxy avec TLS auto (Let's Encrypt)
+# ============================================================================
+# Termine HTTPS et forward vers Kong (port 8000 localhost).
+#
+# Démarrage :
+#   caddy run --config /etc/caddy/Caddyfile
+# ou via systemd :
+#   systemctl enable --now caddy
+#
+# Important : le port 80 doit être ouvert sur le firewall Infomaniak
+# pour le challenge HTTP-01 (renouvellement auto du certificat).
+# ============================================================================
+
+{
+  email admin@qodo.ch
+  # log d'accès vers journald
+}
+
+supabase.newagri.qodo.ch {
+  encode zstd gzip
+
+  # CORS — uniquement depuis l'app NewagriQodo
+  @cors_preflight {
+    method OPTIONS
+  }
+  handle @cors_preflight {
+    header Access-Control-Allow-Origin "https://newagri.qodo.ch"
+    header Access-Control-Allow-Methods "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+    header Access-Control-Allow-Headers "apikey, authorization, content-type, x-client-info, range, prefer"
+    header Access-Control-Allow-Credentials "true"
+    header Access-Control-Max-Age "86400"
+    respond 204
+  }
+
+  header {
+    Access-Control-Allow-Origin "https://newagri.qodo.ch"
+    Access-Control-Allow-Credentials "true"
+    Strict-Transport-Security "max-age=63072000; includeSubDomains; preload"
+    X-Content-Type-Options "nosniff"
+    X-Frame-Options "DENY"
+    Referrer-Policy "strict-origin-when-cross-origin"
+    -Server
+  }
+
+  reverse_proxy 127.0.0.1:8000 {
+    header_up Host {host}
+    header_up X-Real-IP {remote_host}
+    header_up X-Forwarded-For {remote_host}
+    header_up X-Forwarded-Proto {scheme}
+  }
+
+  log {
+    output file /var/log/caddy/supabase.access.log {
+      roll_size 100MiB
+      roll_keep 7
+    }
+  }
+}
+
+# Optionnel — exposer le Studio sur un sous-domaine séparé (admin only)
+# studio.newagri.qodo.ch {
+#   reverse_proxy 127.0.0.1:3000     # ajouter `ports: ['127.0.0.1:3000:3000']` au service studio
+# }

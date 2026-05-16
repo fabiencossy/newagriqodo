@@ -1,0 +1,28 @@
+---
+interface Props {
+  desktop: { src: string; alt: string };
+  mobile: { src: string; alt: string };
+  caption?: string;
+}
+
+const { desktop, mobile, caption } = Astro.props;
+---
+
+<figure class="relative">
+  <div class="relative">
+    <img src={desktop.src} alt={desktop.alt} loading="lazy" class="screenshot w-full" />
+    <!-- Mobile en overlay bas-droite, comme un Picture-in-Picture -->
+    <div class="absolute -right-3 -bottom-6 hidden w-1/4 max-w-[180px] sm:block">
+      <div class="mobile-frame">
+        <img src={mobile.src} alt={mobile.alt} loading="lazy" />
+      </div>
+    </div>
+  </div>
+  {
+    caption && (
+      <figcaption class="m-0 mt-8 text-center text-xs text-(--color-muted) sm:mt-4">
+        {caption}
+      </figcaption>
+    )
+  }
+</figure>

@@ -1,0 +1,42 @@
+---
+const year = new Date().getFullYear();
+---
+
+<footer class="border-t border-(--color-border) bg-(--color-surface) px-4 py-10 sm:px-6">
+  <div class="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-4">
+    <div class="md:col-span-2">
+      <p class="m-0 text-lg font-semibold">
+        <span class="text-(--color-primary)">Newagri</span>Qodo
+      </p>
+      <p class="m-0 mt-2 max-w-md text-sm text-(--color-muted)">
+        Logiciel de gestion d'exploitation agricole conçu pour les agriculteurs suisses.
+        Parcellaire, carnet des champs, plan de fumure, RH. Mobile-first, intégré Odoo.
+      </p>
+    </div>
+
+    <div>
+      <h3 class="m-0 text-xs font-semibold tracking-wider text-(--color-muted) uppercase">
+        Produit
+      </h3>
+      <ul class="m-0 mt-3 list-none space-y-2 p-0 text-sm">
+        <li><a href="/fonctionnalites" class="text-(--color-text) hover:text-(--color-primary)">Fonctionnalités</a></li>
+        <li><a href="/tarifs" class="text-(--color-text) hover:text-(--color-primary)">Tarifs</a></li>
+        <li><a href="https://newagri.qodo.ch/login" class="text-(--color-text) hover:text-(--color-primary)">Essayer la démo</a></li>
+      </ul>
+    </div>
+
+    <div>
+      <h3 class="m-0 text-xs font-semibold tracking-wider text-(--color-muted) uppercase">
+        Société
+      </h3>
+      <ul class="m-0 mt-3 list-none space-y-2 p-0 text-sm">
+        <li><a href="/contact" class="text-(--color-text) hover:text-(--color-primary)">Contact</a></li>
+        <li><a href="https://qodo.ch" class="text-(--color-text) hover:text-(--color-primary)">Qodo Digital</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mx-auto mt-10 max-w-6xl border-t border-(--color-border) pt-6 text-center text-xs text-(--color-muted)">
+    © {year} Qodo Digital · NewagriQodo v2 — Domaine Darval, Échallens (VD, Suisse)
+  </div>
+</footer>

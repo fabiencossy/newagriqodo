@@ -1,0 +1,142 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import FeatureSection from '../components/FeatureSection.astro';
+import CTASection from '../components/CTASection.astro';
+
+const APP_URL = 'https://newagri.qodo.ch/login';
+---
+
+<BaseLayout
+  title="Fonctionnalités"
+  description="Tous les modules de NewagriQodo : Parcellaire, Carnet des champs, Plan de fumure OEngrais, Plan d'assolement, RH, Paramètres."
+>
+  <section class="border-b border-(--color-border) bg-gradient-to-b from-(--color-bg) to-(--color-surface)/40 px-4 py-16 sm:px-6">
+    <div class="mx-auto max-w-3xl text-center">
+      <span class="inline-block rounded-(--radius-pill) bg-(--color-primary)/10 px-3 py-1 text-xs font-semibold tracking-wider text-(--color-primary) uppercase">
+        Modules
+      </span>
+      <h1 class="m-0 mt-4 text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
+        Tout ce qu'il faut pour piloter une exploitation
+      </h1>
+      <p class="m-0 mt-4 text-lg text-(--color-muted)">
+        Six modules métier, totalement intégrés. Pas de double saisie, pas de fichiers Excel à
+        synchroniser. Une seule source de vérité, accessible partout.
+      </p>
+    </div>
+  </section>
+
+  <FeatureSection
+    eyebrow="Parcellaire"
+    title="Cartographie satellite Swisstopo intégrée"
+    description="Vos parcelles affichées avec précision sur fond satellite suisse. Plus de papier, plus de fichiers KML perdus."
+    bullets={[
+      '<strong>4 vues</strong> : Carte, Table, Timeline assolement, Dashboard',
+      '<strong>Import GeoJSON / Shapefile</strong> direct depuis GELAN ou Acorda',
+      '<strong>Dessin de parcelles</strong> avec snap auto au 1er sommet et drag des sommets',
+      'Édition inline des segments d\'assolement depuis chaque parcelle',
+      'Filtres par culture (groupes Blé, Maïs, Prairie…), variété, statut, année',
+    ]}
+    screenshot={{
+      src: '/screenshots/02_Parcellaire/P3_Parcellaire_-_Timeline_Gantt.png',
+      alt: 'Vue Timeline du parcellaire : Gantt 12 mois × parcelles',
+    }}
+  />
+
+  <FeatureSection
+    eyebrow="Carnet des champs"
+    title="Conforme SwissGAP et OFAG"
+    description="Saisie rapide de toutes vos interventions, avec les contraintes réglementaires intégrées dès la saisie."
+    reverse
+    bullets={[
+      '<strong>9 catégories</strong> : semis, fertilisation, phyto, travail du sol, travaux culturaux, récolte, observation, irrigation, autre',
+      'Catalogue <strong>produits OFAG</strong> avec n° d\'homologation et délai d\'attente',
+      'Auto-fill : sélectionner Adexar pré-remplit type fongicide, délai 35 jours, dose 1.5 L/ha',
+      '<strong>Multi-sélection parcelles</strong> + groupes pré-définis (1 clic = N parcelles)',
+      'Sélecteur visuel des catégories (grille d\'icônes — pas de dropdown texte)',
+      'Durée travail (heures) — anticipe module Travaux tiers / facturation',
+    ]}
+    screenshot={{
+      src: '/screenshots/05_Formulaires/F1_Form_-_Phyto_avec_ProductPicker.png',
+      alt: "Formulaire d'intervention phyto avec ProductPicker",
+    }}
+  />
+
+  <FeatureSection
+    eyebrow="Plan de fumure"
+    title="OEngrais 2024 / Suisse-Bilanz"
+    description="Le seul plan de fumure qui calcule réellement votre bilan en tenant compte des résidus du précédent et des coefficients d'efficacité organique."
+    bullets={[
+      'Besoins théoriques par culture (15 cultures référencées)',
+      '<strong>Précédent cultural</strong> : luzerne +50, prairie +40, colza −10 kg N/ha',
+      'Coefficients organiques : <strong>lisier printemps 0.5 / automne 0.3</strong>',
+      'Cards N / P / K <strong>cliquables</strong> → drawer détaillé avec historique apports',
+      'Fenêtres BBCH conseillées (sortie hiver, montaison, dernière feuille)',
+      'Statut équilibré / sous-fertilisé / sur-fertilisé en un coup d\'œil',
+    ]}
+    screenshot={{
+      src: '/screenshots/06_Fumure/FU1_Fumure_-_Panel_complet.png',
+      alt: 'Plan de fumure complet avec cards N/P/K et précédent cultural',
+    }}
+  />
+
+  <FeatureSection
+    eyebrow="Plan d'assolement"
+    title="Rotation multi-campagnes simplifiée"
+    description="Vos cultures planifiées sur plusieurs années. Le système empêche les chevauchements automatiquement et fusionne les segments adjacents."
+    reverse
+    bullets={[
+      'Timeline <strong>Gantt 12 mois × parcelles</strong>',
+      'Sélecteur Campagne (2024 / 2025 / 2026)',
+      '<strong>Catalogue 42 cultures</strong> Agridéa avec couleurs vives flashy',
+      'Découpe automatique : pas deux cultures simultanées sur une parcelle',
+      'Fusion adjacente : segments même culture fusionnés automatiquement',
+      'Édition <strong>inline depuis la fiche parcelle</strong> (pas de redirection)',
+    ]}
+    screenshot={{
+      src: '/screenshots/03_DetailParcelle/D4_Detail_-_Assolement.png',
+      alt: "Plan d'assolement d'une parcelle avec timeline et segments éditables",
+    }}
+  />
+
+  <FeatureSection
+    eyebrow="RH et Travaux"
+    title="Heures, présences, congés"
+    description="Suivi du temps de travail par employé, bilan mensuel, gestion des congés. Tout est lié aux interventions pour calculer le coût de revient."
+    bullets={[
+      'Bilan heures mensuel par employé',
+      '<strong>Saisie présence</strong> rapide (timesheet par jour)',
+      'Demandes de congés (read-only — saisie dans Odoo)',
+      'Anticipe le module <strong>Travaux tiers / facturation M11</strong>',
+      'Sync Odoo <code>hr.attendance</code> en Phase 3',
+    ]}
+    screenshot={{
+      src: '/screenshots/09_Bonus/B6_Bonus_Mobile_-_RH_Heures.png',
+      alt: 'Bilan heures mensuel sur mobile',
+    }}
+    mobileFrame
+  />
+
+  <FeatureSection
+    eyebrow="Multi-exploitations + Paramètres"
+    title="Gérez plusieurs domaines depuis un compte"
+    description="Si vous gérez plusieurs exploitations (régies, entrepreneur, location), changez d'exploitation en un clic. Catalogue produits et utilisateurs configurables."
+    reverse
+    bullets={[
+      '<strong>FarmSwitcher</strong> dropdown dans la sidebar (multi-tenancy)',
+      'CRUD <strong>utilisateurs</strong> avec rôles Admin / Éditeur / Lecteur',
+      'CRUD <strong>catalogue produits</strong> (phyto OFAG, engrais N/P/K, semences)',
+      'Sync Odoo en Phase 3 (catalogue OFAG auto-importé)',
+    ]}
+    screenshot={{
+      src: '/screenshots/09_Bonus/B3_Bonus_Desktop_-_Catalogue_Produits.png',
+      alt: 'Paramètres catalogue produits',
+    }}
+  />
+
+  <CTASection
+    title="Découvrez l'app en moins de 30 secondes"
+    subtitle="Mode démo avec 27 parcelles réelles du Domaine Darval — pas d'inscription, pas de carte de crédit."
+    ctaPrimary={{ label: 'Lancer la démo', href: APP_URL }}
+    ctaSecondary={{ label: 'Tarifs', href: '/tarifs' }}
+  />
+</BaseLayout>

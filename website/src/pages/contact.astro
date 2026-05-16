@@ -1,0 +1,143 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+
+const APP_URL = 'https://newagri.qodo.ch/login';
+---
+
+<BaseLayout
+  title="Contact"
+  description="Contactez l'équipe NewagriQodo (Qodo Digital, Échallens, Suisse) pour une démo personnalisée, une question tarif ou un partenariat."
+>
+  <section class="border-b border-(--color-border) bg-gradient-to-b from-(--color-bg) to-(--color-surface)/40 px-4 py-16 sm:px-6">
+    <div class="mx-auto max-w-3xl text-center">
+      <span class="inline-block rounded-(--radius-pill) bg-(--color-primary)/10 px-3 py-1 text-xs font-semibold tracking-wider text-(--color-primary) uppercase">
+        Contact
+      </span>
+      <h1 class="m-0 mt-4 text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl">
+        On vous répond rapidement
+      </h1>
+      <p class="m-0 mt-4 text-lg text-(--color-muted)">
+        Une question, une demande de démo personnalisée ou un partenariat ? Écrivez-nous.
+      </p>
+    </div>
+  </section>
+
+  <section class="bg-(--color-surface) px-4 py-16 sm:px-6">
+    <div class="mx-auto grid max-w-5xl grid-cols-1 gap-10 lg:grid-cols-2">
+      <div>
+        <h2 class="m-0 text-2xl font-bold">Écrivez-nous</h2>
+        <p class="m-0 mt-2 text-sm text-(--color-muted)">
+          Email, téléphone ou formulaire. Le plus rapide, c'est souvent la démo directe.
+        </p>
+
+        <dl class="mt-8 space-y-5 text-sm">
+          <div>
+            <dt class="text-xs font-semibold tracking-wider text-(--color-muted) uppercase">Email</dt>
+            <dd class="m-0 mt-1">
+              <a href="mailto:hello@qodo.ch" class="font-medium text-(--color-primary) hover:underline">
+                hello@qodo.ch
+              </a>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs font-semibold tracking-wider text-(--color-muted) uppercase">Téléphone</dt>
+            <dd class="m-0 mt-1 font-medium">
+              <a href="tel:+41215555555" class="text-(--color-text) hover:text-(--color-primary)">
+                +41 21 555 55 55
+              </a>
+              <span class="ml-2 text-xs text-(--color-muted)">(lu–ven 9h–17h)</span>
+            </dd>
+          </div>
+          <div>
+            <dt class="text-xs font-semibold tracking-wider text-(--color-muted) uppercase">Adresse</dt>
+            <dd class="m-0 mt-1 text-sm">
+              Qodo Digital<br />
+              Domaine Darval<br />
+              1040 Échallens (VD), Suisse
+            </dd>
+          </div>
+        </dl>
+
+        <div class="mt-8 rounded-(--radius) border border-(--color-border) bg-(--color-bg) p-4">
+          <p class="m-0 text-xs text-(--color-muted)">
+            <strong class="text-(--color-text)">Astuce :</strong> avant de nous écrire, essayez
+            la démo. Vous saurez en 5 minutes si l'app correspond à votre besoin.
+          </p>
+          <a
+            href={APP_URL}
+            class="mt-3 inline-flex h-9 items-center gap-2 rounded-(--radius) border border-(--color-primary) bg-(--color-primary) px-3 text-xs font-medium text-white hover:bg-(--color-primary-hover)"
+          >
+            Lancer la démo
+            <svg viewBox="0 0 24 24" fill="currentColor" width="11" height="11" aria-hidden="true">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <form
+        class="rounded-(--radius-lg) border border-(--color-border) bg-(--color-bg) p-6"
+        action="mailto:hello@qodo.ch"
+        method="post"
+        enctype="text/plain"
+      >
+        <h2 class="m-0 text-xl font-bold">Formulaire rapide</h2>
+        <p class="m-0 mt-1 text-xs text-(--color-muted)">
+          Tous les champs sont obligatoires. On vous recontacte sous 24h ouvrées.
+        </p>
+
+        <div class="mt-5 space-y-3">
+          <label class="block">
+            <span class="mb-1 block text-xs font-medium">Nom</span>
+            <input
+              type="text"
+              name="nom"
+              required
+              placeholder="Ex. Fabien Cossy"
+              class="h-10 w-full rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-sm focus:border-(--color-primary) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/15"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-1 block text-xs font-medium">Email</span>
+            <input
+              type="email"
+              name="email"
+              required
+              placeholder="vous@exploitation.ch"
+              class="h-10 w-full rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-sm focus:border-(--color-primary) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/15"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-1 block text-xs font-medium">Exploitation</span>
+            <input
+              type="text"
+              name="exploitation"
+              placeholder="Nom de votre domaine"
+              class="h-10 w-full rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 text-sm focus:border-(--color-primary) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/15"
+            />
+          </label>
+
+          <label class="block">
+            <span class="mb-1 block text-xs font-medium">Message</span>
+            <textarea
+              name="message"
+              required
+              rows="5"
+              placeholder="Quel est votre besoin ? Combien de parcelles ? Quelles cultures ?"
+              class="w-full rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 py-2 text-sm focus:border-(--color-primary) focus:outline-none focus:ring-2 focus:ring-(--color-primary)/15"
+            ></textarea>
+          </label>
+
+          <button
+            type="submit"
+            class="inline-flex h-11 w-full items-center justify-center rounded-(--radius) border border-(--color-primary) bg-(--color-primary) px-4 text-sm font-semibold text-white hover:bg-(--color-primary-hover)"
+          >
+            Envoyer le message
+          </button>
+        </div>
+      </form>
+    </div>
+  </section>
+</BaseLayout>

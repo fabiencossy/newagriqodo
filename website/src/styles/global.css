@@ -1,0 +1,81 @@
+@import 'tailwindcss';
+
+/* Design tokens cohérents avec l'app (cf. app/src/index.css) */
+@theme {
+  --color-primary: #2d5016;
+  --color-primary-hover: #234012;
+  --color-accent: #875a7b;
+  --color-bg: #fafaf7;
+  --color-surface: #ffffff;
+  --color-text: #1a1a1a;
+  --color-muted: #6b6b6b;
+  --color-border: #e5e5e5;
+  --color-success: #16a34a;
+  --color-warning: #f59e0b;
+  --color-error: #dc2626;
+
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-pill: 9999px;
+
+  --shadow-popup: 0 8px 24px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.04);
+  --shadow-hero: 0 24px 64px rgba(45, 80, 22, 0.15);
+
+  --font-sans: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* Style des screenshots — bordure subtile + ombre + radius pour donner du relief */
+.screenshot {
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-popup);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+.screenshot-hero {
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-hero);
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  background: var(--color-surface);
+}
+
+/* Mockup mobile (cadre iPhone subtil) */
+.mobile-frame {
+  border-radius: 32px;
+  padding: 12px 8px;
+  background: linear-gradient(180deg, #1a1a1a, #2d2d2d);
+  box-shadow: var(--shadow-popup);
+  max-width: 280px;
+}
+.mobile-frame img {
+  border-radius: 22px;
+}

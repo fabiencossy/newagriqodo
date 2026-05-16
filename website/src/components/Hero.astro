@@ -1,0 +1,82 @@
+---
+interface Props {
+  eyebrow?: string;
+  title: string;
+  subtitle: string;
+  ctaPrimary?: { label: string; href: string };
+  ctaSecondary?: { label: string; href: string };
+  screenshot: { src: string; alt: string };
+}
+
+const { eyebrow, title, subtitle, ctaPrimary, ctaSecondary, screenshot } = Astro.props;
+---
+
+<section class="bg-gradient-to-b from-(--color-bg) to-(--color-surface)/40 px-4 pt-12 pb-16 sm:px-6 sm:pt-16 sm:pb-24">
+  <div class="mx-auto max-w-6xl">
+    <div class="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
+      <div class="text-center lg:text-left">
+        {
+          eyebrow && (
+            <span class="inline-block rounded-(--radius-pill) bg-(--color-primary)/10 px-3 py-1 text-xs font-semibold tracking-wider text-(--color-primary) uppercase">
+              {eyebrow}
+            </span>
+          )
+        }
+        <h1 class="m-0 mt-4 text-4xl leading-tight font-extrabold tracking-tight sm:text-5xl lg:text-6xl">
+          {title}
+        </h1>
+        <p class="m-0 mt-5 max-w-xl text-lg text-(--color-muted) lg:max-w-none">
+          {subtitle}
+        </p>
+
+        {
+          (ctaPrimary || ctaSecondary) && (
+            <div class="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-start">
+              {ctaPrimary && (
+                <a
+                  href={ctaPrimary.href}
+                  class="inline-flex h-12 items-center gap-2 rounded-(--radius) border border-(--color-primary) bg-(--color-primary) px-6 text-sm font-semibold text-white hover:bg-(--color-primary-hover)"
+                >
+                  {ctaPrimary.label}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    width="16"
+                    height="16"
+                    aria-hidden="true"
+                  >
+                    <path d="M5 12h14M13 5l7 7-7 7" />
+                  </svg>
+                </a>
+              )}
+              {ctaSecondary && (
+                <a
+                  href={ctaSecondary.href}
+                  class="inline-flex h-12 items-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-6 text-sm font-semibold text-(--color-text) hover:border-(--color-primary)/50 hover:text-(--color-primary)"
+                >
+                  {ctaSecondary.label}
+                </a>
+              )}
+            </div>
+          )
+        }
+      </div>
+
+      <div class="relative">
+        <img
+          src={screenshot.src}
+          alt={screenshot.alt}
+          loading="eager"
+          fetchpriority="high"
+          width="1200"
+          height="750"
+          class="screenshot-hero w-full"
+        />
+      </div>
+    </div>
+  </div>
+</section>

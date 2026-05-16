@@ -1,0 +1,48 @@
+---
+interface Props {
+  title: string;
+  subtitle?: string;
+  ctaPrimary: { label: string; href: string };
+  ctaSecondary?: { label: string; href: string };
+}
+
+const { title, subtitle, ctaPrimary, ctaSecondary } = Astro.props;
+---
+
+<section class="border-t border-(--color-border) bg-(--color-primary) px-4 py-16 text-white sm:px-6 sm:py-20">
+  <div class="mx-auto max-w-3xl text-center">
+    <h2 class="m-0 text-3xl leading-tight font-bold tracking-tight sm:text-4xl">{title}</h2>
+    {subtitle && <p class="m-0 mt-3 text-base text-white/85">{subtitle}</p>}
+    <div class="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
+      <a
+        href={ctaPrimary.href}
+        class="inline-flex h-12 items-center gap-2 rounded-(--radius) bg-white px-6 text-sm font-semibold text-(--color-primary) hover:bg-white/95"
+      >
+        {ctaPrimary.label}
+        <svg
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          width="16"
+          height="16"
+          aria-hidden="true"
+        >
+          <path d="M5 12h14M13 5l7 7-7 7"></path>
+        </svg>
+      </a>
+      {
+        ctaSecondary && (
+          <a
+            href={ctaSecondary.href}
+            class="inline-flex h-12 items-center rounded-(--radius) border border-white/40 px-6 text-sm font-semibold text-white hover:bg-white/10"
+          >
+            {ctaSecondary.label}
+          </a>
+        )
+      }
+    </div>
+  </div>
+</section>

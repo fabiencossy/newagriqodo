@@ -1,0 +1,76 @@
+---
+interface Props {
+  eyebrow: string;
+  title: string;
+  description: string;
+  bullets?: string[];
+  screenshot: { src: string; alt: string };
+  /** Inverse l'ordre (texte à droite, image à gauche) — par défaut texte à gauche. */
+  reverse?: boolean;
+  /** Variante visuelle mobile : utilise le cadre iPhone (mobile-frame). */
+  mobileFrame?: boolean;
+}
+
+const { eyebrow, title, description, bullets = [], screenshot, reverse = false, mobileFrame = false } = Astro.props;
+---
+
+<section class="border-t border-(--color-border) bg-(--color-surface) px-4 py-16 sm:px-6 sm:py-20">
+  <div class="mx-auto max-w-6xl">
+    <div
+      class={[
+        'grid items-center gap-10 lg:grid-cols-2 lg:gap-16',
+        reverse ? 'lg:[&>*:first-child]:order-2' : '',
+      ].join(' ')}
+    >
+      <div>
+        <span class="inline-block rounded-(--radius-pill) bg-(--color-primary)/10 px-3 py-1 text-xs font-semibold tracking-wider text-(--color-primary) uppercase">
+          {eyebrow}
+        </span>
+        <h2 class="m-0 mt-3 text-3xl leading-tight font-bold tracking-tight sm:text-4xl">
+          {title}
+        </h2>
+        <p class="m-0 mt-4 text-base text-(--color-muted)">
+          {description}
+        </p>
+        {
+          bullets.length > 0 && (
+            <ul class="m-0 mt-5 list-none space-y-2 p-0 text-sm">
+              {bullets.map((b) => (
+                <li class="flex items-start gap-2">
+                  <span class="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-(--radius-pill) bg-(--color-primary)/15 text-(--color-primary)">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2.5"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      width="12"
+                      height="12"
+                      aria-hidden="true"
+                    >
+                      <path d="M20 6 9 17l-5-5" />
+                    </svg>
+                  </span>
+                  <span set:html={b} />
+                </li>
+              ))}
+            </ul>
+          )
+        }
+      </div>
+
+      <div class={mobileFrame ? 'flex justify-center' : ''}>
+        {
+          mobileFrame ? (
+            <div class="mobile-frame">
+              <img src={screenshot.src} alt={screenshot.alt} loading="lazy" />
+            </div>
+          ) : (
+            <img src={screenshot.src} alt={screenshot.alt} loading="lazy" class="screenshot w-full" />
+          )
+        }
+      </div>
+    </div>
+  </div>
+</section>

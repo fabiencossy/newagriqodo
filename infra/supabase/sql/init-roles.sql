@@ -93,3 +93,64 @@ grant all on schema realtime, _realtime to supabase_admin;
 
 -- Permettre aux rôles applicatifs de lire les schémas standards
 grant usage on schema public to anon, authenticated, service_role;
+
+-- ========================================================================
+-- Transfert d'ownership des schémas système à leurs admins respectifs
+-- ========================================================================
+-- L'image supabase/postgres pré-crée auth.uid()/role()/email() au démarrage
+-- en owner=postgres. GoTrue (qui se connecte en supabase_auth_admin) doit
+-- pouvoir CREATE OR REPLACE ces fonctions lors de ses migrations.
+-- Sans transfert d'ownership : "must be owner of function uid (SQLSTATE 42501)".
+
+alter schema auth owner to supabase_auth_admin;
+alter schema storage owner to supabase_storage_admin;
+
+do $$
+declare obj record;
+begin
+  -- Tables/sequences/vues du schéma auth
+  for obj in
+    select c.relname, c.relkind from pg_class c
+    join pg_namespace n on c.relnamespace = n.oid
+    where n.nspname = 'auth' and c.relkind in ('r', 'S', 'v')
+  loop
+    if obj.relkind = 'S' then
+      execute format('alter sequence auth.%I owner to supabase_auth_admin', obj.relname);
+    else
+      execute format('alter table auth.%I owner to supabase_auth_admin', obj.relname);
+    end if;
+  end loop;
+
+  -- Fonctions du schéma auth (signature complète obligatoire)
+  for obj in
+    select p.proname, pg_get_function_identity_arguments(p.oid) as args
+    from pg_proc p
+    join pg_namespace n on p.pronamespace = n.oid
+    where n.nspname = 'auth'
+  loop
+    execute format('alter function auth.%I(%s) owner to supabase_auth_admin', obj.proname, obj.args);
+  end loop;
+
+  -- Tables/sequences/vues du schéma storage
+  for obj in
+    select c.relname, c.relkind from pg_class c
+    join pg_namespace n on c.relnamespace = n.oid
+    where n.nspname = 'storage' and c.relkind in ('r', 'S', 'v')
+  loop
+    if obj.relkind = 'S' then
+      execute format('alter sequence storage.%I owner to supabase_storage_admin', obj.relname);
+    else
+      execute format('alter table storage.%I owner to supabase_storage_admin', obj.relname);
+    end if;
+  end loop;
+
+  -- Fonctions du schéma storage
+  for obj in
+    select p.proname, pg_get_function_identity_arguments(p.oid) as args
+    from pg_proc p
+    join pg_namespace n on p.pronamespace = n.oid
+    where n.nspname = 'storage'
+  loop
+    execute format('alter function storage.%I(%s) owner to supabase_storage_admin', obj.proname, obj.args);
+  end loop;
+end $$;

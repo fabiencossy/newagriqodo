@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppLayout } from './layouts/AppLayout';
 import ParcellairePage from './modules/parcellaire/ParcellairePage';
@@ -12,16 +13,20 @@ import SaisirPresencePage from './modules/rh/SaisirPresencePage';
 import MesCongesPage from './modules/rh/MesCongesPage';
 import ParametresPage from './modules/parametres/ParametresPage';
 import LoginPage from './modules/auth/LoginPage';
-import { useAuth } from './modules/auth/auth.store';
+import ResetPasswordPage from './modules/auth/ResetPasswordPage';
+import { initAuthListener, useAuth } from './modules/auth/auth.store';
 
 export default function App() {
   const { mode } = useAuth();
 
-  // Pas connecté : on force la page de login (sauf si on est déjà dessus).
+  useEffect(() => initAuthListener(), []);
+
+  // Pas connecté : login + reset password accessibles.
   if (mode === 'logged-out') {
     return (
       <Routes>
         <Route path="/login" element={<LoginPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
     );
@@ -51,6 +56,8 @@ export default function App() {
         <Route path="/login" element={<Navigate to="/parcellaire" replace />} />
         <Route path="*" element={<Navigate to="/parcellaire" replace />} />
       </Route>
+      {/* Reset password reste accessible même connecté (rare, mais utile). */}
+      <Route path="/reset-password" element={<ResetPasswordPage />} />
     </Routes>
   );
 }

@@ -35,3 +35,8 @@ lerna-debug.log*
 
 # Vitest
 *.timestamp-*
+
+# Env
+.env
+.env.local
+.env.*.local

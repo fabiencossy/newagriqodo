@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import DeviceSwitcher from './DeviceSwitcher';
 
 export default function FonctionnalitesPage() {
   return (
@@ -12,7 +13,10 @@ export default function FonctionnalitesPage() {
             Simple. Sur tous vos écrans.
           </h1>
           <p className="m-0 mt-4 text-lg text-(--color-muted)">
-            Une app pensée pour la saisie au champ comme pour le suivi au bureau.
+            Sur chaque fonctionnalité, basculez entre la vue{' '}
+            <strong className="text-(--color-text)">ordinateur</strong> et la vue{' '}
+            <strong className="text-(--color-text)">téléphone</strong> avec les boutons à côté des
+            images.
           </p>
         </div>
       </section>
@@ -27,7 +31,14 @@ export default function FonctionnalitesPage() {
           'Cliquez sur une parcelle pour voir ses détails',
           'Importez vos parcelles depuis GELAN ou Acorda',
         ]}
-        image="/screenshots/01_Hero/H3_Hero_Desktop_-_Panel__droite.png"
+        desktop={{
+          src: '/screenshots/01_Hero/H3_Hero_Desktop_-_Panel__droite.png',
+          alt: 'Carte des parcelles avec panneau de détail (ordinateur)',
+        }}
+        mobile={{
+          src: '/screenshots/01_Hero/H4_Hero_Mobile_-_Bottom_sheet.png',
+          alt: 'Carte des parcelles avec panneau coulissant (téléphone)',
+        }}
       />
 
       <Feature
@@ -40,7 +51,14 @@ export default function FonctionnalitesPage() {
           'Mini-carte de la parcelle directement intégrée',
           'Lien pour aller au champ via Google Maps',
         ]}
-        image="/screenshots/03_DetailParcelle/D1_Detail_-_Aperu.png"
+        desktop={{
+          src: '/screenshots/03_DetailParcelle/D1_Detail_-_Aperu.png',
+          alt: "Fiche détaillée d'une parcelle (ordinateur)",
+        }}
+        mobile={{
+          src: '/screenshots/03_DetailParcelle/D2_Detail_Mobile_-_Aperu.png',
+          alt: "Fiche détaillée d'une parcelle (téléphone)",
+        }}
       />
 
       <Feature
@@ -53,7 +71,14 @@ export default function FonctionnalitesPage() {
           'Date de récolte autorisée calculée pour vous',
           'Export PDF / Excel à tout moment',
         ]}
-        image="/screenshots/04_Carnet/C1_Carnet_-_Table_interventions.png"
+        desktop={{
+          src: '/screenshots/04_Carnet/C1_Carnet_-_Table_interventions.png',
+          alt: 'Liste des interventions du carnet (ordinateur)',
+        }}
+        mobile={{
+          src: '/screenshots/04_Carnet/C2_Carnet_Mobile_-_Cards.png',
+          alt: 'Liste des interventions du carnet (téléphone)',
+        }}
         reverse
       />
 
@@ -67,7 +92,14 @@ export default function FonctionnalitesPage() {
           'Précédent cultural pris en compte',
           'Historique chronologique de tous les apports',
         ]}
-        image="/screenshots/03_DetailParcelle/D5_Detail_-_Fumure.png"
+        desktop={{
+          src: '/screenshots/03_DetailParcelle/D5_Detail_-_Fumure.png',
+          alt: 'Bilan de fumure N/P/K (ordinateur)',
+        }}
+        mobile={{
+          src: '/screenshots/02_Parcellaire/P2_Parcellaire_Mobile_-_Cards.png',
+          alt: 'Vue parcellaire mobile (téléphone)',
+        }}
       />
 
       <section className="border-t border-(--color-border) bg-(--color-bg) px-4 py-16 sm:px-6 sm:py-20">
@@ -125,14 +157,16 @@ function Feature({
   title,
   description,
   bullets,
-  image,
+  desktop,
+  mobile,
   reverse = false,
 }: {
   eyebrow: string;
   title: string;
   description: string;
   bullets: string[];
-  image: string;
+  desktop: { src: string; alt: string };
+  mobile: { src: string; alt: string };
   reverse?: boolean;
 }) {
   return (
@@ -175,9 +209,7 @@ function Feature({
               ))}
             </ul>
           </div>
-          <div className="rounded-(--radius-lg) border border-(--color-border) bg-(--color-bg) p-2 shadow-(--shadow-card)">
-            <img src={image} alt={title} className="w-full rounded-[4px]" loading="lazy" />
-          </div>
+          <DeviceSwitcher desktop={desktop} mobile={mobile} />
         </div>
       </div>
     </section>

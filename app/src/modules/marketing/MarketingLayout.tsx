@@ -28,11 +28,9 @@ export default function MarketingLayout() {
     <div className="flex min-h-screen flex-col bg-(--color-bg) text-(--color-text)">
       <header className="sticky top-0 z-50 border-b border-(--color-border) bg-(--color-bg)/95 backdrop-blur">
         <div className="mx-auto flex h-14 max-w-6xl items-center justify-between px-4 sm:px-6">
-          <Link to="/" className="flex items-center gap-2" onClick={() => setOpen(false)}>
-            <img src="/agriqodo-mark.svg" alt="" className="h-7 w-7" />
-            <span className="text-base font-semibold">
-              <span className="text-(--color-primary)">Newagri</span>Qodo
-            </span>
+          <Link to="/" className="flex items-center gap-2.5" onClick={() => setOpen(false)}>
+            <img src="/agriqodo-mark.svg" alt="" className="h-8 w-8" />
+            <span className="wordmark-agriqodo text-lg text-(--color-text)">AgriQodo</span>
           </Link>
 
           <nav className="hidden items-center gap-1 md:flex">
@@ -117,9 +115,10 @@ export default function MarketingLayout() {
       <footer className="border-t border-(--color-border) bg-(--color-surface) px-4 py-10 sm:px-6">
         <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 md:grid-cols-4">
           <div className="md:col-span-2">
-            <p className="m-0 text-lg font-semibold">
-              <span className="text-(--color-primary)">Newagri</span>Qodo
-            </p>
+            <div className="flex items-center gap-2.5">
+              <img src="/agriqodo-mark.svg" alt="" className="h-8 w-8" />
+              <span className="wordmark-agriqodo text-lg text-(--color-text)">AgriQodo</span>
+            </div>
             <p className="m-0 mt-2 max-w-md text-sm text-(--color-muted)">
               Gestion d'exploitation agricole pour les agriculteurs suisses. Parcellaire, carnet des
               champs, plan de fumure. Mobile-first, intégré{' '}

@@ -102,8 +102,9 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
       className="flex h-full flex-col border-r border-(--color-border) bg-(--color-surface)"
     >
       {/* Logo header */}
-      <div className="flex h-16 items-center gap-3 border-b border-(--color-border) px-5">
-        <img src="/agriqodo-mark.svg" alt="Qodo Digital" className="h-7" />
+      <div className="flex h-16 items-center gap-2.5 border-b border-(--color-border) px-4">
+        <img src="/agriqodo-mark.svg" alt="" className="h-9 w-9" />
+        <span className="wordmark-agriqodo text-lg text-(--color-text)">AgriQodo</span>
         {onNavigate && (
           <button
             type="button"

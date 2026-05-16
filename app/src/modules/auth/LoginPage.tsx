@@ -106,7 +106,8 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col bg-(--color-bg)">
       <header className="flex items-center justify-between border-b border-(--color-border) bg-(--color-surface) px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3">
-          <img src="/agriqodo-mark.svg" alt="Qodo Digital" className="h-7" />
+          <img src="/agriqodo-mark.svg" alt="" className="h-9 w-9" />
+          <span className="wordmark-agriqodo text-lg text-(--color-text)">AgriQodo</span>
         </div>
         <button
           type="button"

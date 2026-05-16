@@ -6,6 +6,7 @@ import { FabProvider } from './FabContext';
 import { InterventionFormProvider } from './InterventionFormProvider';
 import { NAV_ITEMS, type NavItem } from './nav-items';
 import { FarmSwitcher } from '../modules/farms/FarmSwitcher';
+import { logout, useAuth } from '../modules/auth/auth.store';
 
 const BASE_SVG = {
   viewBox: '0 0 24 24',
@@ -144,12 +145,56 @@ function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         ))}
       </ul>
 
-      {/* Footer : sélecteur d'exploitation (multi-tenancy MVP) */}
+      {/* Footer : sélecteur d'exploitation + bouton déconnexion */}
       <div className="border-t border-(--color-border) p-3">
         <FarmSwitcher />
+        <LogoutButton />
       </div>
     </nav>
   );
+}
+
+function LogoutButton() {
+  const { mode, email } = useAuth();
+  const handleLogout = async () => {
+    await logout();
+    window.location.href = '/login';
+  };
+  if (mode === 'demo') {
+    return (
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 py-2 text-xs font-medium text-(--color-muted) hover:bg-(--color-bg) hover:text-(--color-text)"
+        title="Quitter la démo et revenir à l'écran de connexion"
+      >
+        <svg {...BASE_SVG} width={14} height={14} aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        Quitter la démo
+      </button>
+    );
+  }
+  if (mode === 'authenticated') {
+    return (
+      <button
+        type="button"
+        onClick={handleLogout}
+        className="mt-3 flex w-full items-center justify-center gap-2 rounded-(--radius) border border-(--color-border) bg-(--color-surface) px-3 py-2 text-xs font-medium text-(--color-muted) hover:bg-(--color-bg) hover:text-(--color-text)"
+        title={email ? `Déconnecter ${email}` : 'Se déconnecter'}
+      >
+        <svg {...BASE_SVG} width={14} height={14} aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+          <polyline points="16 17 21 12 16 7" />
+          <line x1="21" y1="12" x2="9" y2="12" />
+        </svg>
+        Se déconnecter
+      </button>
+    );
+  }
+  return null;
 }
 
 function ItemIcon({ item }: { item: NavItem }) {
